@@ -97,21 +97,41 @@ async Task DownloadFileAsync(string url, string filePath)
 }
 
 // B站验证下载
-async Task DownloadBilibiliM4sAsync(string url, string referer, string filePath)
+async Task DownloadBilibiliM4sAsync(string url, string referer, string outputPath)
 {
     using var http = new HttpClient();
-
-    // 模拟浏览器请求头
-    http.DefaultRequestHeaders.Add("User-Agent",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36");
+    http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
     http.DefaultRequestHeaders.Add("Referer", referer);
 
-    using var response = await http.GetAsync(url);
+    using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
     response.EnsureSuccessStatusCode();
 
-    await using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-    await response.Content.CopyToAsync(fs);
+    var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+    var canReportProgress = totalBytes != -1;
+
+    await using var stream = await response.Content.ReadAsStreamAsync();
+    await using var file = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+
+    var buffer = new byte[81920];
+    long totalRead = 0L;
+    int read;
+    while ((read = await stream.ReadAsync(buffer)) > 0)
+    {
+        await file.WriteAsync(buffer.AsMemory(0, read));
+        totalRead += read;
+
+        if (canReportProgress)
+        {
+            double progress = totalRead * 100.0 / totalBytes;
+            Console.Write($"\r下载中: {progress:F1}%");
+        }
+        else
+        {
+            Console.Write($"\r已下载: {totalRead / 1024.0 / 1024.0:F2} MB");
+        }
+    }
+
+    Console.WriteLine("\n✅ 下载完成：" + outputPath);
 }
 
 void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
@@ -155,7 +175,7 @@ async Task GetBilibiliUpInfoAsync(string bvId)
     Console.WriteLine($"Up主: {name} : {mid}");
 }
 
-//await GetBilibiliVideoAsync(bvId);
+await GetBilibiliVideoAsync(bvId);
 
 //await GetBilibiliUpInfoAsync(bvId);
 
@@ -246,6 +266,7 @@ string longUrl = "https://youtu.be/ij89E9qABho";
 string shortUrl = "https://www.youtube.com/shorts/fOlW2f38PFE"; //含标题日文
 //string shortUrl = "https://www.youtube.com/shorts/P2EtaBiEDGg";
 //string url = "https://www.youtube.com/watch?v=CvDpSRuGsjY";
-await GetVideoInfoAsync(shortUrl);
-await GetYoutubeVideoAsync(shortUrl);
+
+//await GetVideoInfoAsync(shortUrl);
+//await GetYoutubeVideoAsync(shortUrl);
 #endregion
