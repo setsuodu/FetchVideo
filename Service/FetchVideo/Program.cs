@@ -129,7 +129,11 @@ void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
 // 替换为 下划线 _
 static string MakeFileNameSafe(string name)
 {
-    char[] invalidChars = Path.GetInvalidFileNameChars();
+    // 常见所有系统的不合法字符
+    char[] invalidChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }; //跨平台写法
+    //char[] invalidChars = Path.GetInvalidFileNameChars(); //Windows写法
+    
+    // 过滤
     foreach (char c in invalidChars)
     {
         name = name.Replace(c, '_');
