@@ -1,6 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Net.Http;
 using System.Diagnostics;
-using System.Net.Http;
+using Newtonsoft.Json.Linq;
 //using HtmlAgilityPack; // 需要安装的库
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
@@ -19,39 +19,51 @@ Console.WriteLine($"saved in {filePath}");
 */
 
 #region Bilibili
-async Task GetBilibiliVideoAsync(string bvId, string cid)
+
+// BvId 👉 cid 👉 url
+//var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // B站视频
+string baseUrl = "https://api.bilibili.com/x/player/";
+string jsonp = "jsonp"; // 假设 jsonp 也是一个参数
+string bvId = "BV1ysySBsExt";
+string referer = $"https://www.bilibili.com/video/{bvId}";
+string part = ""; //视频名称
+
+async Task GetBilibiliVideoAsync(string bvId)
 {
-    // BvId 👉 cid 👉 url
-    //var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // 目前B站地址
-
-    // 👇解析成API地址
-    var apiUrl = $"https://api.bilibili.com/x/player/playurl?bvid={bvId}&cid={cid}&qn=80&fnval=16";
-    // cid 需要从网页解析或 API 获取
-
     var httpClient = new HttpClient();
-    var jsonStr = await httpClient.GetStringAsync(apiUrl);
-    Console.WriteLine($"返回值: {jsonStr}");
-
-    var json = JObject.Parse(jsonStr);
-    //var videoUrl = json["data"]?["dash"]?["video"]?[0]?["baseUrl"]?.ToString();
 
 
-    var videoArray = json["data"]?["dash"]?["video"] as JArray;
-    var bestVideo = videoArray
-        .OrderByDescending(v => (int)v["width"])
-        .First();
+    // 1. 获取 cid
+    string finalUrl = $"{baseUrl}pagelist?bvid={bvId}&jsonp={jsonp}";
+    //Console.WriteLine($"URL是: {finalUrl}");
+    string pagelistJson = await httpClient.GetStringAsync(finalUrl);
+    //Console.WriteLine($"返回值: {pagelistJson}");
+    var jsonPage = JObject.Parse(pagelistJson);
+    string cid = jsonPage["data"]?[0]?["cid"]?.ToString();
+    Console.WriteLine($"Cid是: {cid}");
+
+    part = jsonPage["data"]?[0]?["part"]?.ToString();
+    Console.WriteLine($"标题是: {part}");
+
+
+    // 2. 获取视频 URL
+    var apiUrl = $"{baseUrl}playurl?bvid={bvId}&cid={cid}&qn=80&fnval=16";
+    var playUrlJson = await httpClient.GetStringAsync(apiUrl);
+    Console.WriteLine($"返回值: {playUrlJson}");
+    var jsonPlayer = JObject.Parse(playUrlJson);
+
+    var videoArray = jsonPlayer["data"]?["dash"]?["video"] as JArray;
+    var bestVideo = videoArray.OrderByDescending(v => (int)v["width"]).First();
     var videoUrl = bestVideo["baseUrl"].ToString();
     Console.WriteLine($"视频地址: {videoUrl}");
 
-
-    var audioArray = json["data"]?["dash"]?["audio"] as JArray;
-    var bestAudio = audioArray
-        .OrderByDescending(a => (int)a["bandwidth"])
-        .First();
+    var audioArray = jsonPlayer["data"]?["dash"]?["audio"] as JArray;
+    var bestAudio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
     var audioUrl = bestAudio["baseUrl"].ToString();
     Console.WriteLine($"音频地址: {audioUrl}");
 
 
+    // 3. 下载到本地
     // videoArray, audioArray 已从 JSON 获取
     var video = videoArray.OrderByDescending(v => (int)v["width"]).First();
     var audio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
@@ -60,10 +72,7 @@ async Task GetBilibiliVideoAsync(string bvId, string cid)
         Directory.CreateDirectory("temp");
     string videoFile = "temp\\video.m4s";
     string audioFile = "temp\\audio.m4s";
-    string outputFile = "temp\\output.mp4";
-
-    string bv = "BV1ysySBsExt";
-    string referer = $"https://www.bilibili.com/video/{bv}";
+    string outputFile = $"temp\\{part}.mp4";
 
     //await DownloadFileAsync(videoUrl, videoFile); //403 Forbidden
     await DownloadBilibiliM4sAsync(videoUrl, referer, videoFile);
@@ -116,13 +125,23 @@ void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
     ffmpeg.WaitForExit();
 }
 
-await GetBilibiliVideoAsync("BV1ysySBsExt", "33495319307");
+// 获取该视频 Up 主信息
+async Task GetBilibiliUpInfoAsync(string bvId)
+{
+    string url = "https://api.bilibili.com/x/web-interface/view?bvid=BV1ysySBsExt";
+    var httpClient = new HttpClient();
+    string json = await httpClient.GetStringAsync(url);
+    Console.WriteLine($"返回值: {json}");
+    var jsonObject = JObject.Parse(json);
+    var mid = jsonObject["data"]["owner"]["mid"]; //B站Uid
+    var name = jsonObject["data"]["owner"]["name"]; //B站用户名
+    var face = jsonObject["data"]["owner"]["face"]; //头像
+    Console.WriteLine($"Up主: {name} : {mid}");
+}
 
+await GetBilibiliVideoAsync(bvId);
 
-
-
-
-
+//await GetBilibiliUpInfoAsync(bvId);
 
 #endregion
 
