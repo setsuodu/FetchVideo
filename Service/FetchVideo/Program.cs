@@ -162,6 +162,12 @@ async Task GetBilibiliUpInfoAsync(string bvId)
 #endregion
 
 #region Youtube
+// 创建进度回调
+var progress = new Progress<double>(p =>
+{
+    Console.Write($"\r下载进度: {p:P1}"); // P1 = 百分比(一位小数)
+});
+
 async Task GetYoutubeVideoAsync(string url)
 {
     if (!Directory.Exists("temp"))
@@ -169,7 +175,7 @@ async Task GetYoutubeVideoAsync(string url)
     string videoFile = "temp\\video.mp4";
     string audioFile = "temp\\audio.m4a";
     string outputFile = $"temp\\{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4";
-    Console.WriteLine($"outputFile是: {outputFile}");
+    Console.WriteLine($"outputFile是: {MakeFileNameSafe(outputFile)}");
 
     var youtube = new YoutubeClient();
     var video = await youtube.Videos.GetAsync(url);
@@ -187,8 +193,8 @@ async Task GetYoutubeVideoAsync(string url)
     var muxed = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
     if (muxed != null)
     {
-        await youtube.Videos.Streams.DownloadAsync(muxed, outputFile); // 不分轨的
-        Console.WriteLine($"不分轨的:完成");
+        await youtube.Videos.Streams.DownloadAsync(muxed, outputFile, progress); // 不分轨的
+        Console.WriteLine($"不分轨的: {outputFile}");
     }
     else
     {
@@ -196,10 +202,10 @@ async Task GetYoutubeVideoAsync(string url)
         var videoStream = streamManifest.GetVideoOnlyStreams().GetWithHighestVideoQuality(); // 下载最高质量
         var audioStream = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
-        await youtube.Videos.Streams.DownloadAsync(videoStream, videoFile);
-        Console.WriteLine($"视频下载:完成");
-        await youtube.Videos.Streams.DownloadAsync(audioStream, audioFile);
-        Console.WriteLine($"音频下载:完成");
+        await youtube.Videos.Streams.DownloadAsync(videoStream, videoFile, progress);
+        Console.WriteLine($"视频下载: {videoFile}");
+        await youtube.Videos.Streams.DownloadAsync(audioStream, audioFile, progress);
+        Console.WriteLine($"音频下载: {audioFile}");
 
         // 用 FFmpeg 合并
         MergeAudioVideo(videoFile, audioFile, outputFile);
@@ -231,14 +237,15 @@ async Task GetVideoInfoAsync(string url)
     Console.WriteLine($"封面: {video.Thumbnails[0].Url}");
     Console.WriteLine($"描述: {video.Description}");
 
-    part = MakeFileNameSafe(video.Title);
+    part = video.Title;
     Console.WriteLine($"保存文件名: {part}");
 }
 
 string fullUrl = "https://www.youtube.com/watch?v=ij89E9qABho";
 string longUrl = "https://youtu.be/ij89E9qABho";
-//string shortUrl = "https://www.youtube.com/shorts/fOlW2f38PFE"; //含标题日文
-string shortUrl = "https://www.youtube.com/shorts/P2EtaBiEDGg";
+string shortUrl = "https://www.youtube.com/shorts/fOlW2f38PFE"; //含标题日文
+//string shortUrl = "https://www.youtube.com/shorts/P2EtaBiEDGg";
+//string url = "https://www.youtube.com/watch?v=CvDpSRuGsjY";
 await GetVideoInfoAsync(shortUrl);
 await GetYoutubeVideoAsync(shortUrl);
 #endregion
