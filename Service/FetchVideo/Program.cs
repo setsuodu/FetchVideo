@@ -72,7 +72,7 @@ async Task GetBilibiliVideoAsync(string bvId)
         Directory.CreateDirectory("temp");
     string videoFile = "temp\\video.m4s";
     string audioFile = "temp\\audio.m4s";
-    string outputFile = $"temp\\{part}.mp4";
+    string outputFile = $"temp\\{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4";
 
     //await DownloadFileAsync(videoUrl, videoFile); //403 Forbidden
     await DownloadBilibiliM4sAsync(videoUrl, referer, videoFile);
@@ -130,8 +130,8 @@ void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
 static string MakeFileNameSafe(string name)
 {
     // 常见所有系统的不合法字符
-    char[] invalidChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }; //跨平台写法
-    //char[] invalidChars = Path.GetInvalidFileNameChars(); //Windows写法
+    //char[] invalidChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }; //跨平台写法
+    char[] invalidChars = Path.GetInvalidFileNameChars(); //Windows写法
     
     // 过滤
     foreach (char c in invalidChars)
@@ -155,7 +155,7 @@ async Task GetBilibiliUpInfoAsync(string bvId)
     Console.WriteLine($"Up主: {name} : {mid}");
 }
 
-await GetBilibiliVideoAsync(bvId);
+//await GetBilibiliVideoAsync(bvId);
 
 //await GetBilibiliUpInfoAsync(bvId);
 
@@ -164,28 +164,81 @@ await GetBilibiliVideoAsync(bvId);
 #region Youtube
 async Task GetYoutubeVideoAsync(string url)
 {
+    if (!Directory.Exists("temp"))
+        Directory.CreateDirectory("temp");
+    string videoFile = "temp\\video.mp4";
+    string audioFile = "temp\\audio.m4a";
+    string outputFile = $"temp\\{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4";
+    Console.WriteLine($"outputFile是: {outputFile}");
+
     var youtube = new YoutubeClient();
     var video = await youtube.Videos.GetAsync(url);
     var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
 
-    // 获取最佳 MP4 视频流（6.5.6不可用）
-    //var streamInfo = streamManifest.GetMuxed().WithHighestVideoQuality(); //
-    //Console.WriteLine($"视频标题: {video.Title}");
-    //Console.WriteLine($"下载链接: {streamInfo.Url}");
+    // 视频流列表
+    var videoStreams = streamManifest.GetVideoOnlyStreams();
+    // 列出所有分辨率
+    foreach (var stream in videoStreams)
+    {
+        Console.WriteLine($"{stream.VideoQuality.Label} | {stream.Container.Name} | {(stream.Bitrate.BitsPerSecond / 1000000.0):F1} Mbps");
+    }
 
-    // 视频 only
-    IVideoStreamInfo videoStreamInfo = streamManifest
-        .GetVideoOnlyStreams()
-        .Where(s => s.Container == Container.Mp4)   // 可选：选择 MP4 容器
-        .GetWithHighestVideoQuality();
+    // 优先使用已合成的流
+    var muxed = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
+    if (muxed != null)
+    {
+        await youtube.Videos.Streams.DownloadAsync(muxed, outputFile); // 不分轨的
+        Console.WriteLine($"不分轨的:完成");
+    }
+    else
+    {
+        // 否则分开下载
+        var videoStream = streamManifest.GetVideoOnlyStreams().GetWithHighestVideoQuality(); // 下载最高质量
+        var audioStream = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
-    // 音频 only
-    IStreamInfo audioStreamInfo = streamManifest
-        .GetAudioOnlyStreams()
-        .GetWithHighestBitrate();
+        await youtube.Videos.Streams.DownloadAsync(videoStream, videoFile);
+        Console.WriteLine($"视频下载:完成");
+        await youtube.Videos.Streams.DownloadAsync(audioStream, audioFile);
+        Console.WriteLine($"音频下载:完成");
 
-    // 下载示例
-    await youtube.Videos.Streams.DownloadAsync(videoStreamInfo, "video.mp4");
-    await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, "audio.mp4");
+        // 用 FFmpeg 合并
+        MergeAudioVideo(videoFile, audioFile, outputFile);
+        Console.WriteLine($"合并完成: {outputFile}");
+    }
 }
+
+async Task GetVideoInfoAsync(string url)
+{
+    var youtube = new YoutubeClient();
+    var video = await youtube.Videos.GetAsync(url);
+
+    //var info = new YouTubeVideoInfo
+    //{
+    //    Title = video.Title,
+    //    Author = video.Author.ChannelTitle,
+    //    ChannelId = video.Author.ChannelId,
+    //    Description = video.Description,
+    //    ThumbnailUrl = video.Thumbnails.LastOrDefault()?.Url,
+    //    UploadDate = video.UploadDate,
+    //    Duration = video.Duration
+    //};
+
+    Console.WriteLine($"标题: {video.Title}");
+    Console.WriteLine($"作者: {video.Author.ChannelTitle}");
+    Console.WriteLine($"频道ID: {video.Author.ChannelId}");
+    Console.WriteLine($"发布时间: {video.UploadDate}");
+    Console.WriteLine($"时长: {video.Duration}");
+    Console.WriteLine($"封面: {video.Thumbnails[0].Url}");
+    Console.WriteLine($"描述: {video.Description}");
+
+    part = MakeFileNameSafe(video.Title);
+    Console.WriteLine($"保存文件名: {part}");
+}
+
+string fullUrl = "https://www.youtube.com/watch?v=ij89E9qABho";
+string longUrl = "https://youtu.be/ij89E9qABho";
+//string shortUrl = "https://www.youtube.com/shorts/fOlW2f38PFE"; //含标题日文
+string shortUrl = "https://www.youtube.com/shorts/P2EtaBiEDGg";
+await GetVideoInfoAsync(shortUrl);
+await GetYoutubeVideoAsync(shortUrl);
 #endregion
