@@ -42,7 +42,7 @@ async Task GetBilibiliVideoAsync(string bvId)
     string cid = jsonPage["data"]?[0]?["cid"]?.ToString();
     Console.WriteLine($"Cid是: {cid}");
 
-    part = jsonPage["data"]?[0]?["part"]?.ToString();
+    part = MakeFileNameSafe(jsonPage["data"]?[0]?["part"]?.ToString());
     Console.WriteLine($"标题是: {part}");
 
 
@@ -123,6 +123,18 @@ void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
     ffmpeg.StartInfo.CreateNoWindow = true;
     ffmpeg.Start();
     ffmpeg.WaitForExit();
+}
+
+// Windows文件名不允许文件名含（\ / : * ? " < > |）
+// 替换为 下划线 _
+static string MakeFileNameSafe(string name)
+{
+    char[] invalidChars = Path.GetInvalidFileNameChars();
+    foreach (char c in invalidChars)
+    {
+        name = name.Replace(c, '_');
+    }
+    return name;
 }
 
 // 获取该视频 Up 主信息
