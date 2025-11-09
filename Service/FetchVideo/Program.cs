@@ -10,16 +10,20 @@ string part = ""; //视频名称
 
 // B站视频下载示例
 var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // B站视频
-//var extractor = new BilibiliController();
-//await extractor.GetBilibiliUpInfoAsync(webUrl);
-//await extractor.GetBilibiliVideoAsync("BV1ysySBsExt");
-
+var bili = new BilibiliController();
+//await bili.GetBilibiliUpInfoAsync(webUrl);
+//await bili.GetBilibiliVideoAsync("BV1ysySBsExt");
+await bili.GetM3U8("1792597682");
 
 // YouTube视频下载示例
 string fullUrl = "https://www.youtube.com/watch?v=ij89E9qABho";
 string longUrl = "https://youtu.be/ij89E9qABho";
 string shortUrl = "https://www.youtube.com/shorts/fOlW2f38PFE"; //含标题日文
 //string url = "https://www.youtube.com/watch?v=CvDpSRuGsjY"; //长视频测试
-//var extractor = new YoutubeController();
-//await extractor.GetVideoInfoAsync(shortUrl);
-//await extractor.GetYoutubeVideoAsync(shortUrl);
+//var tube = new YoutubeController();
+//await tube.GetVideoInfoAsync(shortUrl);
+//await tube.GetYoutubeVideoAsync(shortUrl);
+
+
+Console.WriteLine("程序执行完毕，按任意键退出...");
+Console.ReadKey(); // 等待用户按键

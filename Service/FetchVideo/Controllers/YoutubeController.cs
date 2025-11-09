@@ -20,7 +20,7 @@ public class YoutubeController
         string videoFile = "temp\\video.mp4";
         string audioFile = "temp\\audio.m4a";
         string outputFile = $"temp\\{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4";
-        Console.WriteLine($"outputFile是: {BilibiliController.MakeFileNameSafe(outputFile)}");
+        Console.WriteLine($"outputFile是: {Shared.MakeFileNameSafe(outputFile)}");
 
         var youtube = new YoutubeClient();
         var video = await youtube.Videos.GetAsync(url);
@@ -53,7 +53,7 @@ public class YoutubeController
             Console.WriteLine($"音频下载: {audioFile}");
 
             // 用 FFmpeg 合并
-            BilibiliController.MergeAudioVideo(videoFile, audioFile, outputFile);
+            Shared.MergeAudioVideo(videoFile, audioFile, outputFile);
             Console.WriteLine($"合并完成: {outputFile}");
         }
     }

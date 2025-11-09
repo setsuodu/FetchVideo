@@ -1,22 +1,22 @@
-﻿using System.Diagnostics;
+﻿using System.Net.Http;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace FetchVideo.Controllers;
 
 public class BilibiliController
 {
-    // BvId 👉 cid 👉 url
     //var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // B站视频
     string baseUrl = "https://api.bilibili.com/x/player/";
+    string interfaceUrl = "https://api.bilibili.com/x/web-interface/";
     string jsonp = "jsonp"; // 假设 jsonp 也是一个参数
-    string bvId = "BV1Xe1LB5ENJ";
     string referer(string bvId) => $"https://www.bilibili.com/video/{bvId}";
     string part = ""; //视频名称
 
+    // 视频下载 BvId 👉 cid 👉 url
     public async Task GetBilibiliVideoAsync(string bvId)
     {
         var httpClient = new HttpClient();
-
 
         // 1. 获取 cid
         string finalUrl = $"{baseUrl}pagelist?bvid={bvId}&jsonp={jsonp}";
@@ -27,7 +27,7 @@ public class BilibiliController
         string cid = jsonPage["data"]?[0]?["cid"]?.ToString();
         Console.WriteLine($"Cid是: {cid}");
 
-        part = MakeFileNameSafe(jsonPage["data"]?[0]?["part"]?.ToString());
+        part = Shared.MakeFileNameSafe(jsonPage["data"]?[0]?["part"]?.ToString());
         Console.WriteLine($"标题是: {part}");
 
 
@@ -67,7 +67,7 @@ public class BilibiliController
         Console.WriteLine($"音频下载: {audioFile}");
 
         // 调用
-        MergeAudioVideo(videoFile, audioFile, outputFile);
+        Shared.MergeAudioVideo(videoFile, audioFile, outputFile);
         Console.WriteLine($"合并完成: {outputFile}");
     }
 
@@ -80,7 +80,6 @@ public class BilibiliController
         await using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
         await response.Content.CopyToAsync(fs);
     }
-
     // B站验证下载
     async Task DownloadBilibiliM4sAsync(string url, string referer, string outputPath)
     {
@@ -122,9 +121,9 @@ public class BilibiliController
     // 获取该视频 Up 主信息
     public async Task GetBilibiliUpInfoAsync(string bvId)
     {
-        string url = "https://api.bilibili.com/x/web-interface/view?bvid=BV1ysySBsExt";
+        string finalUrl = $"{interfaceUrl}view?bvid={bvId}";
         var httpClient = new HttpClient();
-        string json = await httpClient.GetStringAsync(url);
+        string json = await httpClient.GetStringAsync(finalUrl);
         Console.WriteLine($"返回值: {json}");
         var jsonObject = JObject.Parse(json);
         var mid = jsonObject["data"]["owner"]["mid"]; //B站Uid
@@ -133,37 +132,59 @@ public class BilibiliController
         Console.WriteLine($"Up主: {name} : {mid}");
     }
 
-    //await GetBilibiliVideoAsync(bvId);
 
+    //string bvId = "BV1Xe1LB5ENJ";
+    //await GetBilibiliVideoAsync(bvId);
     //await GetBilibiliUpInfoAsync(bvId);
 
-
-
-    public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
+    // 直播流
+    string roomUrl = "https://api.live.bilibili.com/room/v1/Room/";
+    //https://live.bilibili.com/1792597682
+    public async Task GetM3U8(string room_id)
     {
-        var ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
-        ffmpeg.StartInfo.Arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c copy \"{outputPath}\" -y";
-        ffmpeg.StartInfo.UseShellExecute = false;
-        ffmpeg.StartInfo.CreateNoWindow = true;
-        ffmpeg.Start();
-        ffmpeg.WaitForExit();
-    }
+        string finalUrl = $"{roomUrl}playUrl?cid={room_id}&platform=web";
+        //Console.WriteLine($"URL是: {finalUrl}");
+        var httpClient = new HttpClient();
+        string roomJson = await httpClient.GetStringAsync(finalUrl);
+        Console.WriteLine($"返回值: {roomJson}");
+        var jsonData = JObject.Parse(roomJson);
+        string u3u8 = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
+        Console.WriteLine($"u3u8是: {u3u8}");
 
-    // Windows文件名不允许文件名含（\ / : * ? " < > |）
-    // 替换为 下划线 _
-    public static string MakeFileNameSafe(string name)
-    {
-        // 常见所有系统的不合法字符
-        //char[] invalidChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }; //跨平台写法
-        char[] invalidChars = Path.GetInvalidFileNameChars(); //Windows写法
-
-        // 过滤
-        foreach (char c in invalidChars)
+        Shared.M3U8toMP4(room_id, u3u8, "temp\\live_record.mp4");
+        /*
+        var psi = new ProcessStartInfo
         {
-            name = name.Replace(c, '_');
-        }
-        return name;
-    }
+            FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe", // ffmpeg.exe 路径
+            Arguments = $"-headers \"Referer: https://live.bilibili.com/{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{u3u8}\" -c copy \"live_record.mp4\" -y",
+            UseShellExecute = false,
+            CreateNoWindow = false, //关键①，true不执行
+        };
+        var ffmpeg = Process.Start(psi);
+        ffmpeg.WaitForExit();
+        */
 
+        /*
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+        http.DefaultRequestHeaders.Add("Referer", "https://live.bilibili.com/房间号");
+
+        using var response = await http.GetAsync(u3u8, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        await using var file = File.Create("live_record.flv");
+
+        var buffer = new byte[81920];
+        long totalRead = 0;
+        int read;
+        while ((read = await stream.ReadAsync(buffer)) > 0)
+        {
+            await file.WriteAsync(buffer.AsMemory(0, read));
+            totalRead += read;
+            Console.Write($"\r已下载: {totalRead / 1024 / 1024.0:F2} MB");
+        }
+        Console.WriteLine("\n✅ 录制完成");
+        */
+    }
 }
