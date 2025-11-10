@@ -1,9 +1,24 @@
 ﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace FetchVideo.Controllers;
 
 public class Shared
 {
+    public const string BILI_VIDEO = "https://www.bilibili.com/video/";
+    public const string BILI_PLAYER = "https://api.bilibili.com/x/player/";
+    public const string BILI_INTERFACE = "https://api.bilibili.com/x/web-interface/";
+
+    public static string GetBvId(string url)
+    {
+        // 正则表达式 (Regex) 提取BV
+        string pattern = @"(BV[a-zA-Z0-9]+)/?";
+        Match match = Regex.Match(url, pattern);
+        string bvId = match.Groups[0].Value.TrimEnd('/'); // 使用 TrimEnd('/') 确保去除末尾可选的斜杠
+        Console.WriteLine($"提取到的 BV 号码: **{bvId}**");
+        return bvId;
+    }
+
     public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
     {
         var ffmpeg = new Process();
@@ -13,6 +28,11 @@ public class Shared
         ffmpeg.StartInfo.CreateNoWindow = true;
         ffmpeg.Start();
         ffmpeg.WaitForExit();
+
+        // 只有当 FFmpeg 进程退出后，代码才会执行到这里
+        //删除源视频的代码 // <-- 这里的代码
+        File.Delete(videoPath);
+        File.Delete(audioPath);
     }
 
     public static void M3U8toMP4(string room_id, string m3u8Path, string outputPath)

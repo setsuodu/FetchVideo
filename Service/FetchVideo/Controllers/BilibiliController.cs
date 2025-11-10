@@ -1,40 +1,32 @@
 ﻿using System.Net.Http;
-using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using Newtonsoft.Json.Linq;
 
 namespace FetchVideo.Controllers;
 
 public class BilibiliController
 {
-    //var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // B站视频
-    string baseUrl = "https://api.bilibili.com/x/player/";
-    string interfaceUrl = "https://api.bilibili.com/x/web-interface/";
-    string jsonp = "jsonp"; // 假设 jsonp 也是一个参数
-    string referer(string bvId) => $"https://www.bilibili.com/video/{bvId}";
-    string part = ""; //视频名称
-
-    // 视频下载 BvId 👉 cid 👉 url
+    // 视频下载 bvId 👉 cid/part 👉 url
     public async Task GetBilibiliVideoAsync(string bvId)
     {
         var httpClient = new HttpClient();
 
         // 1. 获取 cid
-        string finalUrl = $"{baseUrl}pagelist?bvid={bvId}&jsonp={jsonp}";
+        string finalUrl = $"{Shared.BILI_PLAYER}pagelist?bvid={bvId}&jsonp=jsonp";
         //Console.WriteLine($"URL是: {finalUrl}");
         string pagelistJson = await httpClient.GetStringAsync(finalUrl);
         //Console.WriteLine($"返回值: {pagelistJson}");
         var jsonPage = JObject.Parse(pagelistJson);
         string cid = jsonPage["data"]?[0]?["cid"]?.ToString();
-        Console.WriteLine($"Cid是: {cid}");
-
-        part = Shared.MakeFileNameSafe(jsonPage["data"]?[0]?["part"]?.ToString());
-        Console.WriteLine($"标题是: {part}");
+        Console.WriteLine($"cid是: {cid}");
+        string part = Shared.MakeFileNameSafe(jsonPage["data"]?[0]?["part"]?.ToString());
+        Console.WriteLine($"视频标题是: {part}");
 
 
         // 2. 获取视频 URL
-        var apiUrl = $"{baseUrl}playurl?bvid={bvId}&cid={cid}&qn=80&fnval=16";
+        var apiUrl = $"{Shared.BILI_PLAYER}playurl?bvid={bvId}&cid={cid}&qn=80&fnval=16";
         var playUrlJson = await httpClient.GetStringAsync(apiUrl);
-        Console.WriteLine($"返回值: {playUrlJson}");
+        //Console.WriteLine($"返回值: {playUrlJson}");
         var jsonPlayer = JObject.Parse(playUrlJson);
 
         var videoArray = jsonPlayer["data"]?["dash"]?["video"] as JArray;
@@ -53,17 +45,17 @@ public class BilibiliController
         var video = videoArray.OrderByDescending(v => (int)v["width"]).First();
         var audio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
 
-        if (!Directory.Exists("temp"))
-            Directory.CreateDirectory("temp");
-        string videoFile = "temp\\video.m4s";
-        string audioFile = "temp\\audio.m4s";
-        string outputFile = $"temp\\{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4";
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string videoFile = Path.Combine(desktopPath, "video.m4s");
+        string audioFile = Path.Combine(desktopPath, "audio.m4s");
+        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4");
 
+        string referer = $"{Shared.BILI_VIDEO}{bvId}";
         //await DownloadFileAsync(videoUrl, videoFile); //403 Forbidden
-        await DownloadBilibiliM4sAsync(videoUrl, referer(bvId), videoFile);
+        await DownloadBilibiliM4sAsync(videoUrl, referer, videoFile);
         Console.WriteLine($"视频下载: {videoFile}");
         //await DownloadFileAsync(audioUrl, audioFile); //403 Forbidden
-        await DownloadBilibiliM4sAsync(audioUrl, referer(bvId), audioFile);
+        await DownloadBilibiliM4sAsync(audioUrl, referer, audioFile);
         Console.WriteLine($"音频下载: {audioFile}");
 
         // 调用
@@ -121,10 +113,10 @@ public class BilibiliController
     // 获取该视频 Up 主信息
     public async Task GetBilibiliUpInfoAsync(string bvId)
     {
-        string finalUrl = $"{interfaceUrl}view?bvid={bvId}";
+        string finalUrl = $"{Shared.BILI_INTERFACE}view?bvid={bvId}";
         var httpClient = new HttpClient();
         string json = await httpClient.GetStringAsync(finalUrl);
-        Console.WriteLine($"返回值: {json}");
+        //Console.WriteLine($"返回值: {json}");
         var jsonObject = JObject.Parse(json);
         var mid = jsonObject["data"]["owner"]["mid"]; //B站Uid
         var name = jsonObject["data"]["owner"]["name"]; //B站用户名
@@ -132,10 +124,6 @@ public class BilibiliController
         Console.WriteLine($"Up主: {name} : {mid}");
     }
 
-
-    //string bvId = "BV1Xe1LB5ENJ";
-    //await GetBilibiliVideoAsync(bvId);
-    //await GetBilibiliUpInfoAsync(bvId);
 
     // 直播流
     string roomUrl = "https://api.live.bilibili.com/room/v1/Room/";
@@ -151,7 +139,7 @@ public class BilibiliController
         string u3u8 = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
         Console.WriteLine($"u3u8是: {u3u8}");
 
-        Shared.M3U8toMP4(room_id, u3u8, "temp\\live_record.mp4");
+        Shared.M3U8toMP4(room_id, u3u8, "Download\\live_record.mp4");
         /*
         var psi = new ProcessStartInfo
         {

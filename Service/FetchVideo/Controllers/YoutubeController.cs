@@ -15,11 +15,11 @@ public class YoutubeController
 
     public async Task GetYoutubeVideoAsync(string url)
     {
-        if (!Directory.Exists("temp"))
-            Directory.CreateDirectory("temp");
-        string videoFile = "temp\\video.mp4";
-        string audioFile = "temp\\audio.m4a";
-        string outputFile = $"temp\\{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4";
+        if (!Directory.Exists("Download"))
+            Directory.CreateDirectory("Download");
+        string videoFile = "Download\\video.mp4";
+        string audioFile = "Download\\audio.m4a";
+        string outputFile = $"Download\\{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4";
         Console.WriteLine($"outputFile是: {Shared.MakeFileNameSafe(outputFile)}");
 
         var youtube = new YoutubeClient();

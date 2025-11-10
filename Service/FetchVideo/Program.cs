@@ -1,5 +1,27 @@
 ﻿using FetchVideo.Controllers;
 
+Console.WriteLine("--- .NET URL 下载器 ---");
+Console.Write("请输入要下载的 URL (例如: https://www.example.com): ");
+
+// 1. 读取用户输入
+string url = Console.ReadLine();
+
+if (string.IsNullOrWhiteSpace(url))
+{
+    Console.WriteLine("URL 不能为空。程序退出。");
+    return;
+}
+
+Console.WriteLine($"准备下载: {url}");
+
+// 2. 开始下载
+var route = new Router();
+route.Check(url);
+
+Console.WriteLine("\n按任意键退出...");
+Console.ReadKey();
+
+return;
 
 //var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // B站视频
 string baseUrl = "https://api.bilibili.com/x/player/";
@@ -11,7 +33,7 @@ string part = ""; //视频名称
 // B站视频下载示例
 var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // B站视频
 var bili = new BilibiliController();
-//await bili.GetBilibiliUpInfoAsync(webUrl);
+//await bili.GetBilibiliUpInfoAsync(bvId);
 //await bili.GetBilibiliVideoAsync("BV1ysySBsExt");
 await bili.GetM3U8("1792597682");
 
