@@ -32,12 +32,15 @@ public class Router //路由器
         }
         else if (url.Contains("youtu"))
         {
-            string fullUrl = "https://www.youtube.com/watch?v=ij89E9qABho"; // 标准地址
-            string sUrl = "https://youtu.be/ij89E9qABho"; // 短地址
-            string shortUrl = "https://www.youtube.com/shorts/fOlW2f38PFE"; // Short地址（含标题日文）
-            string longUrl = "https://www.youtube.com/watch?v=CvDpSRuGsjY"; // 标准地址2（测试）
+            //string fullUrl = "https://www.youtube.com/watch?v=ij89E9qABho"; // 标准地址
+            //string sUrl = "https://youtu.be/ij89E9qABho"; // 短地址
+            //string shortUrl = "https://www.youtube.com/shorts/fOlW2f38PFE"; // Short地址（含标题日文）
+            //string longUrl = "https://www.youtube.com/watch?v=CvDpSRuGsjY"; // 标准地址2（测试）
             // 获取视频标题
             Console.WriteLine($"是 Youtube视频: ");
+
+            var tube = new YoutubeController();
+            await tube.GetYoutubeVideoAsync(url);
         }
         else
         {

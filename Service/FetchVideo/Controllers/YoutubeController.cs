@@ -5,8 +5,6 @@ namespace FetchVideo.Controllers;
 
 public class YoutubeController
 {
-    string part = ""; //视频名称
-
     // 创建进度回调
     Progress<double> progress = new Progress<double>(p =>
     {
@@ -15,12 +13,12 @@ public class YoutubeController
 
     public async Task GetYoutubeVideoAsync(string url)
     {
-        if (!Directory.Exists("Download"))
-            Directory.CreateDirectory("Download");
-        string videoFile = "Download\\video.mp4";
-        string audioFile = "Download\\audio.m4a";
-        string outputFile = $"Download\\{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4";
-        Console.WriteLine($"outputFile是: {Shared.MakeFileNameSafe(outputFile)}");
+        string part = await GetVideoInfoAsync(url);
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string videoFile = Path.Combine(desktopPath, $"video.mp4");
+        string audioFile = Path.Combine(desktopPath, $"audio.m4a");
+        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4");
+        Console.WriteLine($"outputFile是: {outputFile}");
 
         var youtube = new YoutubeClient();
         var video = await youtube.Videos.GetAsync(url);
@@ -58,22 +56,10 @@ public class YoutubeController
         }
     }
 
-    public async Task GetVideoInfoAsync(string url)
+    private async Task<string> GetVideoInfoAsync(string url)
     {
         var youtube = new YoutubeClient();
         var video = await youtube.Videos.GetAsync(url);
-
-        //var info = new YouTubeVideoInfo
-        //{
-        //    Title = video.Title,
-        //    Author = video.Author.ChannelTitle,
-        //    ChannelId = video.Author.ChannelId,
-        //    Description = video.Description,
-        //    ThumbnailUrl = video.Thumbnails.LastOrDefault()?.Url,
-        //    UploadDate = video.UploadDate,
-        //    Duration = video.Duration
-        //};
-
         Console.WriteLine($"标题: {video.Title}");
         Console.WriteLine($"作者: {video.Author.ChannelTitle}");
         Console.WriteLine($"频道ID: {video.Author.ChannelId}");
@@ -82,7 +68,8 @@ public class YoutubeController
         Console.WriteLine($"封面: {video.Thumbnails[0].Url}");
         Console.WriteLine($"描述: {video.Description}");
 
-        part = video.Title;
-        Console.WriteLine($"保存文件名: {part}");
+        //part = video.Title;
+        //Console.WriteLine($"保存文件名: {part}");
+        return Shared.MakeFileNameSafe(video.Title);
     }
 }
