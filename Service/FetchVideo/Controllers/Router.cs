@@ -8,7 +8,6 @@ public class Router //路由器
         // ②B站直播
         // ③YouTube视频
         // missav访问时用油猴自动提交SQL，没有则记入本地文件
-
         if (url.Contains("bilibili.com/video/BV"))
         {
             // https://www.bilibili.com/video/BV1ysySBsExt/
@@ -17,14 +16,19 @@ public class Router //路由器
             Console.WriteLine($"是 Bilibili视频: bvId={bvId}");
 
             var bili = new BilibiliController();
-            //await bili.GetBilibiliUpInfoAsync(bvId); // 获取Up信息，不需要
+            //await bili.GetUpInfo(bvId); // 获取Up信息，不需要
             await bili.GetBilibiliVideoAsync(bvId); // 获取视频
         }
         else if (url.Contains("live.bilibili"))
         {
             // https://live.bilibili.com/1792597682
             // Up主信息 + 当前时间戳
-            Console.WriteLine($"是 Bilibili直播: ");
+            string roomId = Shared.GetRoomId(url);
+            Console.WriteLine($"是 Bilibili直播: 房间: {roomId}");
+            var bili = new BilibiliController();
+            string title = await bili.GetTitleAsync(url);
+            Console.WriteLine($"直播标题: {title}");
+            await bili.GetM3U8(roomId, title);
         }
         else if (url.Contains("youtu"))
         {

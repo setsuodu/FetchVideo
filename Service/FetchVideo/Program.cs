@@ -12,30 +12,14 @@ if (string.IsNullOrWhiteSpace(url))
     return;
 }
 
-Console.WriteLine($"准备下载: {url}");
-
 // 2. 开始下载
 var route = new Router();
 route.Check(url);
 
-Console.WriteLine("\n按任意键退出...");
-Console.ReadKey();
+//Console.WriteLine("\n按任意键退出...");
+//Console.ReadKey();
 
 return;
-
-//var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // B站视频
-string baseUrl = "https://api.bilibili.com/x/player/";
-string bvId = "BV1Xe1LB5ENJ";
-string referer(string bvId) => $"https://www.bilibili.com/video/{bvId}";
-string part = ""; //视频名称
-
-
-// B站视频下载示例
-var webUrl = "https://www.bilibili.com/video/BV1ysySBsExt/"; // B站视频
-var bili = new BilibiliController();
-//await bili.GetBilibiliUpInfoAsync(bvId);
-//await bili.GetBilibiliVideoAsync("BV1ysySBsExt");
-await bili.GetM3U8("1792597682");
 
 // YouTube视频下载示例
 string fullUrl = "https://www.youtube.com/watch?v=ij89E9qABho";

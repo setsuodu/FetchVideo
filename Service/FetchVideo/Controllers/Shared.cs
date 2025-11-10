@@ -6,8 +6,11 @@ namespace FetchVideo.Controllers;
 public class Shared
 {
     public const string BILI_VIDEO = "https://www.bilibili.com/video/";
+    public const string BILI_LIVE = "https://live.bilibili.com/";
     public const string BILI_PLAYER = "https://api.bilibili.com/x/player/";
+    public const string BILI_SPACE = "https://api.bilibili.com/x/space/";
     public const string BILI_INTERFACE = "https://api.bilibili.com/x/web-interface/";
+    public const string BILI_ROOM = "https://api.live.bilibili.com/room/v1/Room/";
 
     public static string GetBvId(string url)
     {
@@ -17,6 +20,15 @@ public class Shared
         string bvId = match.Groups[0].Value.TrimEnd('/'); // 使用 TrimEnd('/') 确保去除末尾可选的斜杠
         Console.WriteLine($"提取到的 BV 号码: **{bvId}**");
         return bvId;
+    }
+    public static string GetRoomId(string url)
+    {
+        // 正则表达式 (Regex) 提取房间号
+        string pattern = @"live\.bilibili\.com/(\d+)";
+        Match match = Regex.Match(url, pattern);
+        string roomId = match.Groups[1].Value;
+        Console.WriteLine($"提取到的 房间号: **{roomId}**");
+        return roomId;
     }
 
     public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
@@ -35,12 +47,11 @@ public class Shared
         File.Delete(audioPath);
     }
 
-    public static void M3U8toMP4(string room_id, string m3u8Path, string outputPath)
+    public static void M3U8toMP4(string room_id, string m3u8Url, string outputPath)
     {
         var ffmpeg = new Process();
         ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
-        //ffmpeg.StartInfo.Arguments = $" -headers \"Referer: https://live.bilibili.com/{room_id}\\r\\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Path}\" -c copy \"{outputPath}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
-        ffmpeg.StartInfo.Arguments = $"-headers \"Referer: https://live.bilibili.com/{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Path}\" -c copy \"live_record.mp4\" -y"; // -y 直接覆盖同名文件，不用交互式选择
+        ffmpeg.StartInfo.Arguments = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -c copy \"{outputPath}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         // -t 01:00:00"; // 录制1h自动停止
         ffmpeg.StartInfo.UseShellExecute = false;
         ffmpeg.StartInfo.CreateNoWindow = false; //关键①，true不执行

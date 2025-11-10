@@ -1,6 +1,7 @@
-﻿using System.Net.Http;
-using System.Diagnostics;
+﻿using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
+using System.Net.Http;
 
 namespace FetchVideo.Controllers;
 
@@ -110,8 +111,9 @@ public class BilibiliController
         Console.WriteLine("\n✅ 下载完成：" + outputPath);
     }
 
-    // 获取该视频 Up 主信息
-    public async Task GetBilibiliUpInfoAsync(string bvId)
+
+    // bvId 查询 Up 主信息
+    public async Task GetUpInfo(string bvId)
     {
         string finalUrl = $"{Shared.BILI_INTERFACE}view?bvid={bvId}";
         var httpClient = new HttpClient();
@@ -123,23 +125,34 @@ public class BilibiliController
         var face = jsonObject["data"]["owner"]["face"]; //头像
         Console.WriteLine($"Up主: {name} : {mid}");
     }
-
+    // uid 查询 Up 主信息
+    public async Task GetUpInfoByUid(string uid)
+    {
+        string finalUrl = $"{Shared.BILI_SPACE}acc/info?mid={uid}";
+        var httpClient = new HttpClient();
+        string json = await httpClient.GetStringAsync(finalUrl);
+        //Console.WriteLine($"返回值: {json}");
+        var jsonObject = JObject.Parse(json);
+        var name = jsonObject["data"]["name"]; //B站用户名
+        var face = jsonObject["data"]["face"]; //头像
+        Console.WriteLine($"Up主: {name} : {uid}");
+    }
 
     // 直播流
-    string roomUrl = "https://api.live.bilibili.com/room/v1/Room/";
-    //https://live.bilibili.com/1792597682
-    public async Task GetM3U8(string room_id)
+    public async Task GetM3U8(string room_id, string title)
     {
-        string finalUrl = $"{roomUrl}playUrl?cid={room_id}&platform=web";
+        string finalUrl = $"{Shared.BILI_ROOM}playUrl?cid={room_id}&platform=web";
         //Console.WriteLine($"URL是: {finalUrl}");
         var httpClient = new HttpClient();
         string roomJson = await httpClient.GetStringAsync(finalUrl);
-        Console.WriteLine($"返回值: {roomJson}");
+        //Console.WriteLine($"返回值: {roomJson}");
         var jsonData = JObject.Parse(roomJson);
-        string u3u8 = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
-        Console.WriteLine($"u3u8是: {u3u8}");
+        string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
+        Console.WriteLine($"u3u8是: {m3u8Url}");
 
-        Shared.M3U8toMP4(room_id, u3u8, "Download\\live_record.mp4");
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
+        Shared.M3U8toMP4(room_id, m3u8Url, outputFile);
         /*
         var psi = new ProcessStartInfo
         {
@@ -174,5 +187,46 @@ public class BilibiliController
         }
         Console.WriteLine("\n✅ 录制完成");
         */
+    }
+    // 获取直播房间信息
+    public async Task GetRoomInfo(string room_id)
+    {
+        string finalUrl = $"{Shared.BILI_ROOM}get_info?room_id={room_id}";
+        var httpClient = new HttpClient();
+        string roomJson = await httpClient.GetStringAsync(finalUrl);
+        Console.WriteLine(roomJson);
+        var jsonObject = JObject.Parse(roomJson);
+        var uid = jsonObject["data"]["uid"]; //直播间Up主
+        var title = jsonObject["data"]["title"]; //直播间标题
+    }
+
+    // 获取网页标题
+    public async Task<string> GetTitleAsync(string url)
+    {
+        string title = "找不到 <title> 标签";
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        //string logFile = $"log_{timestamp}.txt";
+
+        using (var http = new HttpClient())
+        {
+            // 一些 headers 模拟浏览器访问
+            http.DefaultRequestHeaders.Add("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/122.0.0.0 Safari/537.36");
+
+            string html = await http.GetStringAsync(url);
+
+            // 用 HtmlAgilityPack 解析 HTML
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+
+            var titleNode = doc.DocumentNode.SelectSingleNode("//title");
+            if (titleNode != null)
+                title = titleNode.InnerText.Trim();
+
+            //Console.WriteLine("标题：" + title);
+            return $"{title}_{timestamp}";
+        }
     }
 }
