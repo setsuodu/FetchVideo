@@ -1,4 +1,5 @@
-**Languages:** English | [中文 (Chinese)](README.zh.md)
+🌍 **Language / 语言 / 言語**
+[English](./README.md) | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
 
 [![en](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![zh](https://img.shields.io/badge/语言-中文-red.svg)](README.zh.md)
