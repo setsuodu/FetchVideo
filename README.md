@@ -66,3 +66,16 @@ docker run -d \
 - 效果：
 	- 位置路径宿主机/download/pic.jpg（C:/downloads/pic.jpg）
 	- 容器内/app/downloads/pic.jpg
+
+## Push DockerHub
+
+1. create a new repository on hub.docker.com, named "setsuodu/fetch-service"
+2. docker build -t fetch-service .
+3. docker tag fetch-service setsuodu/fetch-service:latest
+4. docker login(if needed, use Credential Storage in your OS)
+5. docker push setsuodu/fetch-service:latest
+
+## WebView
+
+WebView：http://Your IP:8080 → jump to index.html
+How to get 404 logs：on index click → http://your IP:8080/downloads/download_404.txt

@@ -76,14 +76,42 @@ public class DownloadController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.FirstUrl) || string.IsNullOrWhiteSpace(request.LastUrl))
             return BadRequest("FirstUrl 和 LastUrl 必须提供");
 
-        // 1. 解析两端 URL，生成所有 URL
+        // 1. 解析两端 URL，生成规则
         var urlInfos = GenerateSequentialUrls(request.FirstUrl, request.LastUrl);
         if (urlInfos == null)
-            return BadRequest("无法解析连号规则：请确保两端 URL 只在数字部分不同，且数字长度一致（例如 img_001.jpg → img_999.jpg）");
+            return BadRequest("无法解析连号规则：请确保两端 URL 只在数字部分不同，且数字长度一致");
 
         var (basePrefix, baseSuffix, startNum, endNum, pad) = urlInfos.Value;
 
-        // 2. 并发下载
+        // ========== 新增：提取“数字前的那一段”作为文件夹名 ==========
+        var uriSample = new Uri(request.FirstUrl);
+        var pathSegment = uriSample.Segments; // e.g., ["/images/", "pic_", "001.jpg"]
+        string folderName = "unknown";
+
+        // 找到数字所在 segment 的前一个 segment（去掉 /）
+        var numberMatch = Regex.Match(uriSample.AbsolutePath, @"\d+");
+        if (numberMatch.Success)
+        {
+            int digitStart = numberMatch.Index;
+            // 往前找最后一个 / 的位置
+            int lastSlash = uriSample.AbsolutePath.LastIndexOf('/', digitStart - 1);
+            if (lastSlash >= 0)
+            {
+                int prevSlash = uriSample.AbsolutePath.LastIndexOf('/', lastSlash - 1);
+                folderName = uriSample.AbsolutePath.Substring(prevSlash + 1, lastSlash - prevSlash);
+                folderName = folderName.TrimEnd('/'); // 防止多余 /
+            }
+        }
+
+        // 安全文件名（去掉非法字符）
+        folderName = string.Join("_", folderName.Split(Path.GetInvalidFileNameChars()));
+        if (string.IsNullOrEmpty(folderName)) folderName = "batch";
+
+        // 创建子目录：/app/downloads/{folderName}
+        var groupDir = Path.Combine(_downloadPath, folderName);
+        Directory.CreateDirectory(groupDir);
+        // ==========================================================
+
         var failedUrls = new ConcurrentBag<string>();
         var semaphore = new SemaphoreSlim(request.Concurrency);
         var tasks = new List<Task>();
@@ -98,7 +126,7 @@ public class DownloadController : ControllerBase
                 await semaphore.WaitAsync();
                 try
                 {
-                    var success = await TryDownloadSingle(url);
+                    var success = await TryDownloadSingle(url, groupDir); // 传入 groupDir
                     if (!success) failedUrls.Add(url);
                 }
                 finally
@@ -110,15 +138,15 @@ public class DownloadController : ControllerBase
 
         await Task.WhenAll(tasks);
 
-        // 3. 写 404 日志
-        var logPath = Path.Combine(_downloadPath, "download_404.txt");
+        // 3. 写 404 日志（放在组内）
+        var logPath = Path.Combine(groupDir, "download_404.txt");
         if (failedUrls.Count > 0)
         {
             await System.IO.File.WriteAllLinesAsync(logPath, failedUrls);
         }
         else if (System.IO.File.Exists(logPath))
         {
-            System.IO.File.Delete(logPath);   // 没有失败则删除旧日志
+            System.IO.File.Delete(logPath);
         }
 
         return Ok(new
@@ -127,7 +155,8 @@ public class DownloadController : ControllerBase
             Total = endNum - startNum + 1,
             Downloaded = endNum - startNum + 1 - failedUrls.Count,
             Failed = failedUrls.Count,
-            LogPath = failedUrls.Count > 0 ? logPath : null
+            GroupFolder = $"/downloads/{folderName}",  // 前端可访问路径
+            LogPath = failedUrls.Count > 0 ? $"/downloads/{folderName}/download_404.txt" : null
         });
     }
 
@@ -145,23 +174,23 @@ public class DownloadController : ControllerBase
     /// <summary>
     /// 尝试下载单个文件，成功返回 true，失败（404/异常）返回 false
     /// </summary>
-    private async Task<bool> TryDownloadSingle(string url)
+    private async Task<bool> TryDownloadSingle(string url, string targetDir)
     {
         try
         {
             var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromMinutes(5); // 大图可能慢一点
+            client.Timeout = TimeSpan.FromMinutes(5);
 
             var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             if (!response.IsSuccessStatusCode)
-                return false;   // 包括 404
+                return false;
 
-            // 提取文件名（保留原始扩展名）
+            // 从 URL 提取原始文件名（如 001.jpg）
             var fileName = Path.GetFileName(new Uri(url).AbsolutePath);
             if (string.IsNullOrEmpty(Path.GetExtension(fileName)))
                 fileName += ".dat";
 
-            var fullPath = Path.Combine(_downloadPath, fileName);
+            var fullPath = Path.Combine(targetDir, fileName);
             using var stream = await response.Content.ReadAsStreamAsync();
             using var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
             await stream.CopyToAsync(fs);

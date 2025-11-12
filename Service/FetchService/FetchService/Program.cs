@@ -13,6 +13,10 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
+// 关键：启用 wwwroot 静态文件
+app.UseStaticFiles();// <-- 新增
+app.UseRouting();
+
 // Swagger
 if (app.Environment.IsDevelopment())
 {
@@ -28,5 +32,15 @@ if (app.Environment.IsDevelopment())
 //var downloadPath = Path.Combine(AppContext.BaseDirectory, "download"); // ~\bin\Debug\net9.0\download
 //Directory.CreateDirectory(downloadPath);
 //Console.WriteLine($"创建文件夹: {downloadPath}");
+
+// 让 /downloads 能直接访问宿主机映射目录（用于下载 404 日志）
+app.MapGet("/downloads/{*path}", async (string path, HttpContext ctx) =>
+{
+    var filePath = Path.Combine("/app/downloads", path);
+    if (!System.IO.File.Exists(filePath)) return Results.NotFound();
+    return Results.File(filePath, "application/octet-stream");
+});
+// 可选：默认跳转到 WebView
+app.MapGet("/", () => Results.Redirect("/index.html"));
 
 app.Run();
