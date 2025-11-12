@@ -1,6 +1,6 @@
-@FetchService_HostAddress = http://localhost:5277
+﻿@FetchService_HostAddress = http://localhost:8080
 
-GET {{FetchService_HostAddress}}/weatherforecast/
+GET {{FetchService_HostAddress}}/swagger/
 Accept: application/json
 
 ###
