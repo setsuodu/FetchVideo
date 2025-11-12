@@ -1,20 +1,52 @@
-﻿using HtmlAgilityPack;
-using Newtonsoft.Json.Linq;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net.Http;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
+using HtmlAgilityPack;
 
 namespace FetchService.Controllers;
 
-public class BilibiliController
+[ApiController]
+[Route("api/[controller]")]
+public class BilibiliController : ControllerBase
 {
+    // GET: api/bilibili/active
+    [HttpGet("active")]
+    public IActionResult GetActive()
+    {
+        return Ok("Active products");
+    }
+
+    // GET: api/bilibili/search?name=apple
+    [HttpGet("search")]
+    public IActionResult Search([FromQuery] string name)
+    {
+        return Ok($"Searching: {name}");
+    }
+
+    // GET: api/bilibili/5
+    [HttpGet("{id}")]
+    public IActionResult GetById(int id)
+    {
+        return Ok($"Product {id}");
+    }
+
+    // GET: api/bilibili
+    [HttpGet]
+    public IActionResult GetAll()
+    {
+        return Ok(new[] { "Product1", "Product2" });
+    }
+
     // 视频下载 bvId 👉 cid/part 👉 url
-    public async Task GetBilibiliVideoAsync(string bvId)
+    [HttpGet("get_bili_video")]
+    public async Task<string> GetBilibiliVideoAsync(string bvId)
     {
         var httpClient = new HttpClient();
 
         // 1. 获取 cid
         string finalUrl = $"{Shared.BILI_PLAYER}pagelist?bvid={bvId}&jsonp=jsonp";
-        //Console.WriteLine($"URL是: {finalUrl}");
+        Console.WriteLine($"URL是: {finalUrl}");
         string pagelistJson = await httpClient.GetStringAsync(finalUrl);
         //Console.WriteLine($"返回值: {pagelistJson}");
         var jsonPage = JObject.Parse(pagelistJson);
@@ -62,6 +94,8 @@ public class BilibiliController
         // 调用
         Shared.MergeAudioVideo(videoFile, audioFile, outputFile);
         Console.WriteLine($"合并完成: {outputFile}");
+
+        return "合并完成";
     }
 
     // B站验证下载
@@ -130,6 +164,7 @@ public class BilibiliController
     }
 
     // 直播流
+    [HttpGet("get_bili_live")]
     public async Task GetM3U8(string room_id, string title)
     {
         string finalUrl = $"{Shared.BILI_ROOM}playUrl?cid={room_id}&platform=web";
@@ -156,7 +191,7 @@ public class BilibiliController
         ffmpeg.WaitForExit();
         */
 
-        ///*
+        /*
         using var http = new HttpClient();
         http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
         http.DefaultRequestHeaders.Add("Referer", $"https://live.bilibili.com/{room_id}");
@@ -165,7 +200,7 @@ public class BilibiliController
         response.EnsureSuccessStatusCode();
 
         await using var stream = await response.Content.ReadAsStreamAsync();
-        await using var file = File.Create("live_record.flv");
+        await using var file = System.IO.File.Create("live_record.flv");
 
         var buffer = new byte[81920];
         long totalRead = 0;
@@ -177,7 +212,7 @@ public class BilibiliController
             Console.Write($"\r已下载: {totalRead / 1024 / 1024.0:F2} MB");
         }
         Console.WriteLine("\n✅ 录制完成");
-        //*/
+        */
     }
     // 获取直播房间信息
     public async Task GetRoomInfo(string room_id)
@@ -191,7 +226,8 @@ public class BilibiliController
         var title = jsonObject["data"]["title"]; //直播间标题
     }
 
-    // 获取网页标题
+    // 获取B站直播标题
+    [HttpGet("title")]
     public async Task<string> GetTitleAsync(string url)
     {
         string title = "找不到 <title> 标签";

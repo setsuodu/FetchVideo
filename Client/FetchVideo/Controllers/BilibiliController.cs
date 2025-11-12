@@ -200,7 +200,7 @@ public class BilibiliController
         var title = jsonObject["data"]["title"]; //直播间标题
     }
 
-    // 获取网页标题
+    // 获取B站直播标题
     public async Task<string> GetTitleAsync(string url)
     {
         string title = "找不到 <title> 标签";

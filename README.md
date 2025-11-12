@@ -15,7 +15,13 @@ A Windows console application, to download a video you should follow these steps
 3. press 'enter' on your keyboard;
 4. check your desktop, .mp4 file is there;
 
-## Support:
+## Build
+
+```
+dotnet build -c Release
+```
+
+## Support
 1. Bilibili video
 	- https://www.bilibili.com/video/BV~
 2. Bilibili live

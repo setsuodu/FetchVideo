@@ -34,7 +34,8 @@ public class Shared
     public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
     {
         var ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
+        //ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
+        ffmpeg.StartInfo.FileName = "ffmpeg"; // 直接写命令名
         ffmpeg.StartInfo.Arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c copy \"{outputPath}\" -y";
         ffmpeg.StartInfo.UseShellExecute = false;
         ffmpeg.StartInfo.CreateNoWindow = true;
@@ -50,7 +51,8 @@ public class Shared
     public static void M3U8toMP4(string room_id, string m3u8Url, string outputPath)
     {
         var ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
+        //ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
+        ffmpeg.StartInfo.FileName = "ffmpeg"; // 直接写命令名
         ffmpeg.StartInfo.Arguments = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -c copy \"{outputPath}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         // -t 01:00:00"; // 录制1h自动停止
         ffmpeg.StartInfo.UseShellExecute = false;
