@@ -27,26 +27,42 @@ A Windows console application, to download a video you should follow these steps
 	- short video: 
 
 # Service
-构建
-```
+
 docker build -t fetch-service .
+docker run -d --name downloader -p 8080:8080  -v C:/users/33913/downloads:/app/downloads fetch-service
+
+## Docker Desktop for Windows
+```
+mkdir -p C:\downloads  ##-p : make sure folder exist
+
+docker run -d \
+  --name downloader \
+  -p 8080:8080 \
+  -v C:/users/33913/downloads:/app/downloads \  ## use C:/ the Host is Windows
+  fetch-service
 ```
 
-运行
+## Ubuntu / Synology / fnOS Common
 ```
-docker run -d --name downloader -p 8080:8080 -v /download:/app/downloads -e DOWNLOAD_PATH=/app/downloads fetch-service
-```
+mkdir -p /download  ##create Host folder
 
-停止旧容器&构建&运行
-```
-# 先停止并删除旧容器（避免端口冲突）
-docker rm -f downloader
-
-# 构建 + 运行（一条命令搞定）
-docker build -t fetch-service . && \
 docker run -d \
   --name downloader \
   -p 8080:8080 \
   -v /download:/app/downloads \
   fetch-service
 ```
+
+## MORE
+- VOLUME 是“声明意图”（好习惯）
+	- VOLUME ["/app/downloads"]
+	- 作用：
+		- 声明容器内的 /app/downloads 是一个“卷”（volume）目录。
+		- 告诉 Docker：这个目录里的数据应该持久化，不要随容器删除而丢失。
+		- 如果你没有手动映射这个目录，Docker 会自动创建一个匿名的 Docker 卷（anonymous volume），挂载到 /app/downloads。
+- -v 是“实际映射”（你能看到文件）
+	- 作用：
+		- 宿主机目录:容器内目录 ``-v /download:/app/downloads``
+- 效果：
+	- 位置路径宿主机/download/pic.jpg（C:/downloads/pic.jpg）
+	- 容器内/app/downloads/pic.jpg
