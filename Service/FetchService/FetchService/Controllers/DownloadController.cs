@@ -76,42 +76,18 @@ public class DownloadController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.FirstUrl) || string.IsNullOrWhiteSpace(request.LastUrl))
             return BadRequest("FirstUrl 和 LastUrl 必须提供");
 
-        // 1. 解析两端 URL，生成规则
-        var urlInfos = GenerateSequentialUrls(request.FirstUrl, request.LastUrl);
-        if (urlInfos == null)
+        // 1. 解析 URL 序列 + 提取文件夹名
+        var parseResult = GenerateSequentialUrlsWithFolder(request.FirstUrl, request.LastUrl);
+        if (parseResult == null)
             return BadRequest("无法解析连号规则：请确保两端 URL 只在数字部分不同，且数字长度一致");
 
-        var (basePrefix, baseSuffix, startNum, endNum, pad) = urlInfos.Value;
+        var (basePrefix, baseSuffix, startNum, endNum, pad, folderName) = parseResult.Value;
 
-        // ========== 新增：提取“数字前的那一段”作为文件夹名 ==========
-        var uriSample = new Uri(request.FirstUrl);
-        var pathSegment = uriSample.Segments; // e.g., ["/images/", "pic_", "001.jpg"]
-        string folderName = "unknown";
+        // 2. 创建子文件夹
+        var folderPath = Path.Combine(_downloadPath, folderName);
+        Directory.CreateDirectory(folderPath);
 
-        // 找到数字所在 segment 的前一个 segment（去掉 /）
-        var numberMatch = Regex.Match(uriSample.AbsolutePath, @"\d+");
-        if (numberMatch.Success)
-        {
-            int digitStart = numberMatch.Index;
-            // 往前找最后一个 / 的位置
-            int lastSlash = uriSample.AbsolutePath.LastIndexOf('/', digitStart - 1);
-            if (lastSlash >= 0)
-            {
-                int prevSlash = uriSample.AbsolutePath.LastIndexOf('/', lastSlash - 1);
-                folderName = uriSample.AbsolutePath.Substring(prevSlash + 1, lastSlash - prevSlash);
-                folderName = folderName.TrimEnd('/'); // 防止多余 /
-            }
-        }
-
-        // 安全文件名（去掉非法字符）
-        folderName = string.Join("_", folderName.Split(Path.GetInvalidFileNameChars()));
-        if (string.IsNullOrEmpty(folderName)) folderName = "batch";
-
-        // 创建子目录：/app/downloads/{folderName}
-        var groupDir = Path.Combine(_downloadPath, folderName);
-        Directory.CreateDirectory(groupDir);
-        // ==========================================================
-
+        // 3. 并发下载
         var failedUrls = new ConcurrentBag<string>();
         var semaphore = new SemaphoreSlim(request.Concurrency);
         var tasks = new List<Task>();
@@ -120,13 +96,15 @@ public class DownloadController : ControllerBase
         {
             var currentNumStr = i.ToString().PadLeft(pad, '0');
             var url = basePrefix + currentNumStr + baseSuffix;
+            var fileName = Path.GetFileName(new Uri(url).AbsolutePath);
+            var fullPath = Path.Combine(folderPath, fileName);  // 放入子文件夹
 
             tasks.Add(Task.Run(async () =>
             {
                 await semaphore.WaitAsync();
                 try
                 {
-                    var success = await TryDownloadSingle(url, groupDir); // 传入 groupDir
+                    var success = await TryDownloadSingle(url, fullPath);
                     if (!success) failedUrls.Add(url);
                 }
                 finally
@@ -138,8 +116,8 @@ public class DownloadController : ControllerBase
 
         await Task.WhenAll(tasks);
 
-        // 3. 写 404 日志（放在组内）
-        var logPath = Path.Combine(groupDir, "download_404.txt");
+        // 4. 写 404 日志（在根目录）
+        var logPath = Path.Combine(_downloadPath, "download_404.txt");
         if (failedUrls.Count > 0)
         {
             await System.IO.File.WriteAllLinesAsync(logPath, failedUrls);
@@ -155,8 +133,8 @@ public class DownloadController : ControllerBase
             Total = endNum - startNum + 1,
             Downloaded = endNum - startNum + 1 - failedUrls.Count,
             Failed = failedUrls.Count,
-            GroupFolder = $"/downloads/{folderName}",  // 前端可访问路径
-            LogPath = failedUrls.Count > 0 ? $"/downloads/{folderName}/download_404.txt" : null
+            Folder = folderPath,
+            LogPath = failedUrls.Count > 0 ? logPath : null
         });
     }
 
@@ -174,7 +152,7 @@ public class DownloadController : ControllerBase
     /// <summary>
     /// 尝试下载单个文件，成功返回 true，失败（404/异常）返回 false
     /// </summary>
-    private async Task<bool> TryDownloadSingle(string url, string targetDir)
+    private async Task<bool> TryDownloadSingle(string url, string fullPath)
     {
         try
         {
@@ -185,12 +163,6 @@ public class DownloadController : ControllerBase
             if (!response.IsSuccessStatusCode)
                 return false;
 
-            // 从 URL 提取原始文件名（如 001.jpg）
-            var fileName = Path.GetFileName(new Uri(url).AbsolutePath);
-            if (string.IsNullOrEmpty(Path.GetExtension(fileName)))
-                fileName += ".dat";
-
-            var fullPath = Path.Combine(targetDir, fileName);
             using var stream = await response.Content.ReadAsStreamAsync();
             using var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
             await stream.CopyToAsync(fs);
@@ -206,10 +178,11 @@ public class DownloadController : ControllerBase
     }
 
     /// <summary>
-    /// 解析两端 URL，生成连号规则
-    /// 返回 (prefix, suffix, start, end, padLength) 或 null
+    /// 解析连号 URL 并提取文件夹名
     /// </summary>
-    private (string prefix, string suffix, int start, int end, int pad)? GenerateSequentialUrls(string first, string last)
+    /// <returns>(prefix, suffix, start, end, pad, folderName)</returns>
+    private (string prefix, string suffix, int start, int end, int pad, string folderName)?
+        GenerateSequentialUrlsWithFolder(string first, string last)
     {
         var u1 = new Uri(first);
         var u2 = new Uri(last);
@@ -220,14 +193,11 @@ public class DownloadController : ControllerBase
         var path1 = u1.AbsolutePath;
         var path2 = u2.AbsolutePath;
 
-        // 找到第一个数字段与最后一个数字段
         var match1 = Regex.Matches(path1, @"\d+").Cast<Match>().ToList();
         var match2 = Regex.Matches(path2, @"\d+").Cast<Match>().ToList();
 
         if (match1.Count == 0 || match2.Count == 0) return null;
 
-        // 简单规则：两端只有 **一个** 数字段不同
-        // 更复杂情况（多段）可自行扩展
         int diffCount = 0, diffIdx = -1;
         for (int i = 0; i < Math.Min(match1.Count, match2.Count); i++)
         {
@@ -237,27 +207,57 @@ public class DownloadController : ControllerBase
                 diffIdx = i;
             }
         }
-        if (diffCount != 1) return null;   // 只能有一个数字段不同
+        if (diffCount != 1) return null;
 
         var startNum = int.Parse(match1[diffIdx].Value);
         var endNum = int.Parse(match2[diffIdx].Value);
-        if (startNum >= endNum) return null;   // 必须递增
+        if (startNum >= endNum) return null;
 
         var pad = match1[diffIdx].Value.Length;
 
-        // 前缀 = path1 从开头到数字前
         var prefixStart = match1[diffIdx].Index;
         var prefix = path1.Substring(0, prefixStart);
-
-        // 后缀 = path1 从数字后到结尾
         var suffixStart = match1[diffIdx].Index + match1[diffIdx].Length;
         var suffix = path1.Substring(suffixStart);
 
-        // 完整 URL 前缀（含查询参数）
         var baseUrl = $"{u1.Scheme}://{u1.Host}:{u1.Port}";
         var fullPrefix = baseUrl + prefix;
         var fullSuffix = suffix + (string.IsNullOrEmpty(u1.Query) ? "" : u1.Query);
 
-        return (fullPrefix, fullSuffix, startNum, endNum, pad);
+        // ========== 提取文件夹名 ==========
+        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(path1);
+        var folderName = ExtractFolderName(fileNameWithoutExt, u1);
+
+        return (fullPrefix, fullSuffix, startNum, endNum, pad, folderName);
+    }
+
+    /// <summary>
+    /// 从文件名中提取文件夹名
+    /// 规则：去掉数字 + 数字前的特殊字符
+    /// 若仅剩数字，则从 URL 路径左边取
+    /// </summary>
+    private string ExtractFolderName(string fileNameWithoutExt, Uri uri)
+    {
+        // 1. 去掉末尾的数字
+        var nameWithoutNumber = Regex.Replace(fileNameWithoutExt, @"\d+$", "");
+
+        // 2. 去掉数字前的特殊字符（_ - # . 等）
+        var cleanName = Regex.Replace(nameWithoutNumber, @"[_\-#\.]+$", "");
+
+        // 3. 如果为空（原文件名仅数字），从路径左边取
+        if (string.IsNullOrWhiteSpace(cleanName))
+        {
+            var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 2)
+                cleanName = segments[segments.Length - 2]; // 倒数第二段
+            else if (segments.Length == 1)
+                cleanName = segments[0];
+            else
+                cleanName = uri.Host.Split('.')[0]; // 取域名第一部分
+        }
+
+        // 清理非法字符
+        cleanName = string.Join("_", cleanName.Split(Path.GetInvalidFileNameChars()));
+        return string.IsNullOrWhiteSpace(cleanName) ? "unnamed" : cleanName;
     }
 }
