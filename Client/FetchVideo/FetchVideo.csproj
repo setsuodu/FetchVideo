@@ -11,10 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="fetch_video.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
+	<Content Include="fetch_video.ico" />
     <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="YoutubeExplode" Version="6.5.6" />
