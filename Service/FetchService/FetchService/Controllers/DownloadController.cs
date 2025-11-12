@@ -76,14 +76,14 @@ public class DownloadController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.FirstUrl) || string.IsNullOrWhiteSpace(request.LastUrl))
             return BadRequest("FirstUrl 和 LastUrl 必须提供");
 
-        // 1. 解析 URL 序列 + 提取文件夹名
-        var parseResult = GenerateSequentialUrlsWithFolder(request.FirstUrl, request.LastUrl);
+        // 1. 解析 URL 规则 + 提取基础文件名
+        var parseResult = ParseSequentialUrls(request.FirstUrl, request.LastUrl);
         if (parseResult == null)
             return BadRequest("无法解析连号规则：请确保两端 URL 只在数字部分不同，且数字长度一致");
 
         var (basePrefix, baseSuffix, startNum, endNum, pad, folderName) = parseResult.Value;
 
-        // 2. 创建子文件夹
+        // 2. 创建专用文件夹（宿主机映射目录下）
         var folderPath = Path.Combine(_downloadPath, folderName);
         Directory.CreateDirectory(folderPath);
 
@@ -96,15 +96,13 @@ public class DownloadController : ControllerBase
         {
             var currentNumStr = i.ToString().PadLeft(pad, '0');
             var url = basePrefix + currentNumStr + baseSuffix;
-            var fileName = Path.GetFileName(new Uri(url).AbsolutePath);
-            var fullPath = Path.Combine(folderPath, fileName);  // 放入子文件夹
 
             tasks.Add(Task.Run(async () =>
             {
                 await semaphore.WaitAsync();
                 try
                 {
-                    var success = await TryDownloadSingle(url, fullPath);
+                    var success = await TryDownloadSingleToFolder(url, folderPath);
                     if (!success) failedUrls.Add(url);
                 }
                 finally
@@ -116,8 +114,8 @@ public class DownloadController : ControllerBase
 
         await Task.WhenAll(tasks);
 
-        // 4. 写 404 日志（在根目录）
-        var logPath = Path.Combine(_downloadPath, "download_404.txt");
+        // 4. 写 404 日志（只在有失败时）
+        var logPath = Path.Combine(folderPath, "download_404.txt");
         if (failedUrls.Count > 0)
         {
             await System.IO.File.WriteAllLinesAsync(logPath, failedUrls);
@@ -133,8 +131,8 @@ public class DownloadController : ControllerBase
             Total = endNum - startNum + 1,
             Downloaded = endNum - startNum + 1 - failedUrls.Count,
             Failed = failedUrls.Count,
-            Folder = folderPath,
-            LogPath = failedUrls.Count > 0 ? logPath : null
+            Folder = folderName,
+            LogPath = failedUrls.Count > 0 ? $"/downloads/{folderName}/download_404.txt" : null
         });
     }
 
@@ -259,5 +257,97 @@ public class DownloadController : ControllerBase
         // 清理非法字符
         cleanName = string.Join("_", cleanName.Split(Path.GetInvalidFileNameChars()));
         return string.IsNullOrWhiteSpace(cleanName) ? "unnamed" : cleanName;
+    }
+
+    /// <summary>
+    /// 解析连号 URL 并生成：前缀、后缀、数字范围、填充位数、文件夹名
+    /// </summary>
+    private (string prefix, string suffix, int start, int end, int pad, string folderName)?
+        ParseSequentialUrls(string first, string last)
+    {
+        var u1 = new Uri(first);
+        var u2 = new Uri(last);
+
+        if (u1.Scheme != u2.Scheme || u1.Host != u2.Host || u1.Port != u2.Port)
+            return null;
+
+        var path1 = u1.AbsolutePath;
+        var path2 = u2.AbsolutePath;
+
+        var matches1 = Regex.Matches(path1, @"\d+").Cast<Match>().ToList();
+        var matches2 = Regex.Matches(path2, @"\d+").Cast<Match>().ToList();
+
+        if (matches1.Count == 0 || matches2.Count == 0) return null;
+
+        // 找出唯一不同的数字段
+        int diffIdx = -1;
+        for (int i = 0; i < Math.Min(matches1.Count, matches2.Count); i++)
+        {
+            if (matches1[i].Value != matches2[i].Value)
+            {
+                if (diffIdx >= 0) return null; // 多于一个差异
+                diffIdx = i;
+            }
+        }
+        if (diffIdx < 0) return null;
+
+        var startNum = int.Parse(matches1[diffIdx].Value);
+        var endNum = int.Parse(matches2[diffIdx].Value);
+        if (startNum >= endNum) return null;
+
+        var pad = matches1[diffIdx].Value.Length;
+        var digitStart = matches1[diffIdx].Index;
+        var digitEnd = digitStart + matches1[diffIdx].Length;
+
+        // 提取基础文件名（去掉数字 + 数字前的特殊字符）
+        var fileNamePart = path1.Substring(0, digitEnd);
+        var cleanName = Regex.Replace(fileNamePart, @"[._\-]*\d+$", ""); // 去掉 _001 前的特殊字符
+        cleanName = Path.GetFileNameWithoutExtension(cleanName);
+
+        // 如果仅剩数字 → 从路径左侧取一段
+        if (string.IsNullOrWhiteSpace(cleanName) || Regex.IsMatch(cleanName, @"^\d+$"))
+        {
+            var segments = u1.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            cleanName = segments.Length >= 2 ? segments[^2] : "batch"; // 倒数第二段
+        }
+
+        // 清理非法文件夹字符
+        cleanName = string.Join("_", cleanName.Split(Path.GetInvalidFileNameChars()));
+        if (string.IsNullOrWhiteSpace(cleanName)) cleanName = "download";
+
+        var prefix = $"{u1.Scheme}://{u1.Host}:{u1.Port}" + path1.Substring(0, digitStart);
+        var suffix = path1.Substring(digitEnd) + u1.Query;
+
+        return (prefix, suffix, startNum, endNum, pad, cleanName);
+    }
+
+    private async Task<bool> TryDownloadSingleToFolder(string url, string folderPath)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromMinutes(5);
+
+            var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode)
+                return false;
+
+            var fileName = Path.GetFileName(new Uri(url).AbsolutePath);
+            if (string.IsNullOrEmpty(Path.GetExtension(fileName)))
+                fileName += ".dat";
+
+            var fullPath = Path.Combine(folderPath, fileName);
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write);
+            await stream.CopyToAsync(fs);
+
+            _logger.LogInformation($"下载成功: {url} -> {fullPath}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, $"下载失败（跳过）: {url}");
+            return false;
+        }
     }
 }

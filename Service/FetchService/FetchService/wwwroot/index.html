@@ -123,13 +123,14 @@
           progressBar.textContent = '100%';
           status.innerHTML = `
             <strong>完成！</strong><br>
+            文件夹: <code>${data.Folder}</code><br>
             总数: ${data.Total}，成功: ${data.Downloaded}，失败: ${data.Failed}
-          `;
-          if (data.LogPath) {
-            logLink.href = data.LogPath.replace('/app/downloads', '/downloads');
+        `;
+        if (data.LogPath) {
+            logLink.href = data.LogPath;
+            logLink.textContent = `下载 404 日志 (${data.Folder}/download_404.txt)`;
             logLink.classList.remove('d-none');
-          }
-        }, Math.max(1500, total * 100)); // 粗略模拟
+        }
 
         log.textContent = `请求已提交，预计下载 ${total} 张图片...\n`;
       } catch (err) {
