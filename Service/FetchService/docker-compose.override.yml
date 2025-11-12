@@ -1,5 +1,0 @@
-services:
-  fetchservice:
-    environment:
-    ports:
-    volumes:
