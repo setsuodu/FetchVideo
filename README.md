@@ -28,8 +28,8 @@ A Windows console application, to download a video you should follow these steps
 
 # Service
 
-docker build -t fetch-service .
-docker run -d --name downloader -p 8080:8080  -v C:/users/33913/downloads:/app/downloads fetch-service
+- docker build -t fetch-service .
+- docker run -d --name downloader -p 8080:8080  -v C:/users/33913/downloads:/app/downloads fetch-service
 
 ## Docker Desktop for Windows
 ```
@@ -43,6 +43,11 @@ docker run -d \
 ```
 
 ## Ubuntu / Synology / fnOS Common
+
+- Ubuntu:
+- Synology:
+- fnOS: /vol1/1000/download
+
 ```
 mkdir -p /download  ##create Host folder
 
