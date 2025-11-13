@@ -5,6 +5,15 @@ namespace FetchService.Controllers;
 
 public class YoutubeController
 {
+    private readonly string _downloadPath;
+
+    // 从构造函数注入配置，变成本地只读（推荐写法！）
+    public YoutubeController(IConfiguration configuration)
+    {
+        // 如果配置中没找到，就用 "/app/downloads";
+        _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+    }
+
     // 创建进度回调
     Progress<double> progress = new Progress<double>(p =>
     {
@@ -14,7 +23,8 @@ public class YoutubeController
     public async Task GetYoutubeVideoAsync(string url)
     {
         string part = await GetVideoInfoAsync(url);
-        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string desktopPath = _downloadPath;
         string videoFile = Path.Combine(desktopPath, $"video.mp4");
         string audioFile = Path.Combine(desktopPath, $"audio.m4a");
         string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4");

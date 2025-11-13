@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>视频下载</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 2rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .nav a {
+            margin-right: 1rem;
+            font-weight: bold;
+        }
+
+        input[type=text] {
+            width: 300px;
+            padding: 0.5rem;
+        }
+
+        button {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .progress-container {
+            margin-top: 1rem;
+            height: 24px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: #2196F3;
+            width: 0;
+            transition: width .2s;
+            text-align: center;
+            color: white;
+            line-height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="javascript:switchPage('images')">图片下载</a>
+        <a href="javascript:switchPage('videos')">视频下载</a>
+    </div>
+
+    <div id="videos" class="page">
+        <h2>视频下载</h2>
+        <input type="text" id="fileName" placeholder="请输入文件名（含后缀）" />
+        <br />
+        <button id="downloadVideoBtn">下载视频</button>
+        <div class="progress-container">
+            <div id="videoProgress" class="progress">0%</div>
+        </div>
+    </div>
+
+    <div id="images" class="page hidden">
+        <!-- 图片页面内容在 images.html 中 -->
+    </div>
+
+    <script src="js/common.js"></script>
+    <script>
+        document.getElementById('downloadVideoBtn').onclick = async () => {
+            const fileName = document.getElementById('fileName').value.trim() || 'video.mp4';
+            runFakeProgress('videoProgress', 'downloadVideoBtn');
+
+            const response = await fetch('/api/Download/video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileName })
+            });
+
+            if (!response.ok) {
+                alert('下载失败');
+                return;
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        };
+    </script>
+</body>
+</html>

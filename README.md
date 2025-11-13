@@ -5,7 +5,7 @@
 [![zh](https://img.shields.io/badge/语言-中文-red.svg)](README.zh.md)
 
 # FetchVideo
-Docker Services &amp; CrossPlatfom App
+Docker Services & CrossPlatfom App
 
 # Client
 
@@ -34,8 +34,23 @@ dotnet build -c Release
 
 # Service
 
-- docker build -t fetch-service .
-- docker run -d --name downloader -p 8080:8080  -v C:/users/33913/downloads:/app/downloads fetch-service
+上下文构建
+```
+cd FetchVideo/Service/FetchService
+docker build -t fetch-service .
+```
+从项目根目录构建（推荐）：
+```
+docker build -f Service/FetchService/Dockerfile -t fetch-service .
+```
+构建后运行（Docker Desktop，映射C盘）
+```
+docker run -d --name downloader -p 8080:8080  -v C:/users/33913/downloads:/app/downloads fetch-service
+```
+（运行没问题）推送远程
+```
+
+```
 
 ## Docker Desktop for Windows
 ```
@@ -50,8 +65,9 @@ docker run -d \
 
 ## Ubuntu / Synology / fnOS Common
 
-- Ubuntu:
-- Synology:
+- Windows: c:\users\你的用户名\downloads
+- Ubuntu: ~/downloads
+- Synology: /volume1/download
 - fnOS: /vol1/1000/download
 
 ```

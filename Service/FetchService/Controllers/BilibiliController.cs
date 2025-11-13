@@ -1,8 +1,6 @@
-﻿using System.Diagnostics;
-using System.Net.Http;
+﻿using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using HtmlAgilityPack;
 
 namespace FetchService.Controllers;
 
@@ -10,6 +8,15 @@ namespace FetchService.Controllers;
 [Route("api/[controller]")]
 public class BilibiliController : ControllerBase
 {
+    private readonly string _downloadPath;
+
+    // 从构造函数注入配置，变成本地只读（推荐写法！）
+    public BilibiliController(IConfiguration configuration)
+    {
+        // 如果配置中没找到，就用 "/app/downloads";
+        _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+    }
+
     // GET: api/bilibili/active
     [HttpGet("active")]
     public IActionResult GetActive()
@@ -78,7 +85,10 @@ public class BilibiliController : ControllerBase
         var video = videoArray.OrderByDescending(v => (int)v["width"]).First();
         var audio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
 
-        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        // Windows VS 调试路径
+        //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        // Windows Docker Desktop 调试路径
+        string desktopPath = _downloadPath;
         string videoFile = Path.Combine(desktopPath, "video.m4s");
         string audioFile = Path.Combine(desktopPath, "audio.m4s");
         string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4");
@@ -176,9 +186,10 @@ public class BilibiliController : ControllerBase
         string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
         Console.WriteLine($"u3u8是: {m3u8Url}");
 
-        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string desktopPath = _downloadPath;
         string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
-        //Shared.M3U8toMP4(room_id, m3u8Url, outputFile);
+        Shared.M3U8toMP4(room_id, m3u8Url, outputFile);
         /*
         var psi = new ProcessStartInfo
         {
