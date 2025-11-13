@@ -64,7 +64,7 @@ export function initVideoDownloader() {
         logLink.classList.add('d-none');
 
         const videoUrl = encodeURIComponent(videoInput.value.trim());
-        const apiUrl = `http://localhost:8080/api/route/check?url=${videoUrl}`;
+        const apiUrl = `/api/route/check?url=${videoUrl}`;
 
         try {
             const responsePromise = fetch(apiUrl, {
@@ -150,7 +150,7 @@ export function initVideoDownloader() {
         submitBtn.textContent = '停止中...';
 
         try {
-            const stopResponse = await fetch(`http://localhost:8080/api/route/stop?taskId=${currentTaskId}`, {
+            const stopResponse = await fetch(`/api/route/stop?taskId=${currentTaskId}`, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json' }
             });

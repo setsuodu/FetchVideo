@@ -55,6 +55,7 @@ docker push setsuodu/fetch-service:latest
 部署机器上更新
 ```
 docker pull setsuodu/fetch-service:latest
+docker run -d --name downloader -p 8080:8080 -v /download:/app/downloads setsuodu/fetch-service:latest
 ```
 
 
