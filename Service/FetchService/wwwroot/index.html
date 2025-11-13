@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8" />
-    <title>连号图片下载器</title>
+    <title>下载工具</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -21,70 +21,118 @@
             height: 1.5rem;
         }
 
-        #log {
+        #log-image, #log-video {
             max-height: 200px;
             overflow-y: auto;
             font-family: monospace;
             font-size: 0.9rem;
+        }
+
+        /* 淡化 placeholder 文字 */
+        input::placeholder {
+            color: #aaa !important; /* 淡灰色，可改成 #bbb、#ccc 等 */
+            opacity: 1; /* 防止某些浏览器自动降低透明度 */
         }
     </style>
 </head>
 <body>
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">连号图片批量下载器</h4>
+            <h4 class="mb-0">下载工具</h4>
         </div>
         <div class="card-body">
-            <form id="downloadForm">
-                <div class="mb-3">
-                    <label class="form-label">第一张图片 URL</label>
-                    <input type="url" class="form-control" id="firstUrl" required
-                           placeholder="https://x.com/src/img_1.jpg" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">最后一张图片 URL</label>
-                    <input type="url" class="form-control" id="lastUrl" required
-                           placeholder="https://x.com/src/img_10.jpg" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">并发数（1~20）</label>
-                    <input type="number" class="form-control" id="concurrency" value="5" min="1" max="20" />
-                </div>
-                <button type="submit" class="btn btn-success w-100">开始下载</button>
-            </form>
+            <!-- 导航标签 -->
+            <ul class="nav nav-tabs mb-3" id="downloadTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="image-tab" data-bs-toggle="tab" data-bs-target="#image-content" type="button" role="tab" aria-controls="image-content" aria-selected="true">连号图片下载</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="video-tab" data-bs-toggle="tab" data-bs-target="#video-content" type="button" role="tab" aria-controls="video-content" aria-selected="false">视频下载</button>
+                </li>
+            </ul>
 
-            <hr />
+            <div class="tab-content" id="downloadTabContent">
+                <!-- 图片下载面板 -->
+                <div class="tab-pane fade show active" id="image-content" role="tabpanel" aria-labelledby="image-tab">
+                    <form id="imageDownloadForm">
+                        <div class="mb-3">
+                            <label class="form-label">第一张图片 URL</label>
+                            <input type="url" class="form-control" id="firstUrl" required
+                                   placeholder="https://x.com/src/img_1.jpg" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">最后一张图片 URL</label>
+                            <input type="url" class="form-control" id="lastUrl" required
+                                   placeholder="https://x.com/src/img_10.jpg" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">并发数（1~20）</label>
+                            <input type="number" class="form-control" id="concurrency" value="5" min="1" max="20" />
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">开始下载</button>
+                    </form>
 
-            <div id="result" class="d-none">
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar"
-                         style="width: 0%">0%</div>
+                    <hr />
+
+                    <div id="imageResult" class="d-none">
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" id="imageProgressBar"
+                                 style="width: 0%">0%</div>
+                        </div>
+                        <p id="imageStatus">准备中...</p>
+                        <pre id="log-image" class="bg-light p-3 border"></pre>
+                        <a id="imageLogLink" class="btn btn-sm btn-outline-secondary d-none" download>下载 404 日志</a>
+                    </div>
                 </div>
-                <p id="status">准备中...</p>
-                <pre id="log" class="bg-light p-3 border"></pre>
-                <a id="logLink" class="btn btn-sm btn-outline-secondary d-none" download>下载 404 日志</a>
+
+                <!-- 视频下载面板 -->
+                <div class="tab-pane fade" id="video-content" role="tabpanel" aria-labelledby="video-tab">
+                    <form id="videoDownloadForm">
+                        <div class="mb-3">
+                            <label class="form-label">视频 URL</label>
+                            <input type="url" class="form-control" id="videoUrl" required
+                                   placeholder="https://x.com/src/video.mp4" />
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">开始下载</button>
+                    </form>
+
+                    <hr />
+
+                    <div id="videoResult" class="d-none">
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" id="videoProgressBar"
+                                 style="width: 0%">0%</div>
+                        </div>
+                        <p id="videoStatus">准备中...</p>
+                        <pre id="log-video" class="bg-light p-3 border"></pre>
+                        <a id="videoLogLink" class="btn btn-sm btn-outline-secondary d-none" download>下载日志</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const form = document.getElementById('downloadForm');
-        const resultDiv = document.getElementById('result');
-        const progressBar = document.getElementById('progressBar');
-        const status = document.getElementById('status');
-        const log = document.getElementById('log');
-        const logLink = document.getElementById('logLink');
+        // 图片下载逻辑（原有）
+        const imageForm = document.getElementById('imageDownloadForm');
+        const imageResultDiv = document.getElementById('imageResult');
+        const imageProgressBar = document.getElementById('imageProgressBar');
+        const imageStatus = document.getElementById('imageStatus');
+        const imageLog = document.getElementById('log-image');
+        const imageLogLink = document.getElementById('imageLogLink');
 
-        form.addEventListener('submit', async (e) => {
+        imageForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // 1. 初始化 UI
-            resultDiv.classList.remove('d-none');
-            progressBar.style.width = '0%';
-            progressBar.textContent = '0%';
-            status.textContent = '正在解析 URL...';
-            log.textContent = '';
-            logLink.classList.add('d-none');
+            // 初始化 UI
+            imageResultDiv.classList.remove('d-none');
+            imageProgressBar.style.width = '0%';
+            imageProgressBar.textContent = '0%';
+            imageStatus.textContent = '正在解析 URL...';
+            imageLog.textContent = '';
+            imageLogLink.classList.add('d-none');
 
             const payload = {
                 FirstUrl: document.getElementById('firstUrl').value.trim(),
@@ -93,60 +141,141 @@
             };
 
             try {
-                // 2. 提交请求（异步，不等待）
+                // 提交请求
                 const responsePromise = fetch('/api/download/download-batch', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                // 3. 假进度：从 0% 走到 90%（缓慢动画）
+                // 假进度
                 let fakeProgress = 0;
                 const fakeInterval = setInterval(() => {
-                    fakeProgress += Math.random() * 8 + 2; // 每次跳 2~10%
+                    fakeProgress += Math.random() * 8 + 2;
                     if (fakeProgress >= 90) {
                         fakeProgress = 90;
                         clearInterval(fakeInterval);
                     }
-                    progressBar.style.width = fakeProgress + '%';
-                    progressBar.textContent = Math.round(fakeProgress) + '%';
+                    imageProgressBar.style.width = fakeProgress + '%';
+                    imageProgressBar.textContent = Math.round(fakeProgress) + '%';
                 }, 300);
 
-                // 4. 等待真实结果
+                // 等待结果
                 const response = await responsePromise;
                 const data = await response.json();
 
-                clearInterval(fakeInterval); // 停止假进度
+                clearInterval(fakeInterval);
 
                 if (!response.ok) {
                     throw new Error(data.message || data.title || '请求失败');
                 }
 
-                // 5. 瞬间跳到 100% + 显示结果
-                progressBar.style.width = '100%';
-                progressBar.textContent = '100%';
-                progressBar.classList.remove('progress-bar-animated');
+                // 完成
+                imageProgressBar.style.width = '100%';
+                imageProgressBar.textContent = '100%';
+                imageProgressBar.classList.remove('progress-bar-animated');
 
-                status.innerHTML = `
-            <strong class="text-success">下载完成！</strong><br>
-            文件夹: <code>${data.Folder || '—'}</code><br>
-            总数: ${data.Total}，成功: ${data.Downloaded}，失败: ${data.Failed}
-          `;
+                imageStatus.innerHTML = `
+                        <strong class="text-success">下载完成！</strong><br>
+                        文件夹: <code>${data.Folder || '—'}</code><br>
+                        总数: ${data.Total}，成功: ${data.Downloaded}，失败: ${data.Failed}
+                    `;
 
-                log.textContent = `预计下载 ${data.Total} 张图片，已全部处理完毕。`;
+                imageLog.textContent = `预计下载 ${data.Total} 张图片，已全部处理完毕。`;
 
                 if (data.LogPath) {
-                    logLink.href = data.LogPath;
-                    logLink.textContent = `下载 404 日志 (${data.Folder}/download_404.txt)`;
-                    logLink.classList.remove('d-none');
+                    imageLogLink.href = data.LogPath;
+                    imageLogLink.textContent = `下载 404 日志 (${data.Folder}/download_404.txt)`;
+                    imageLogLink.classList.remove('d-none');
                 }
 
             } catch (err) {
-                progressBar.style.width = '100%';
-                progressBar.textContent = '错误';
-                progressBar.classList.add('bg-danger');
-                status.innerHTML = `<span class="text-danger">错误: ${err.message}</span>`;
-                log.textContent = '';
+                imageProgressBar.style.width = '100%';
+                imageProgressBar.textContent = '错误';
+                imageProgressBar.classList.add('bg-danger');
+                imageStatus.innerHTML = `<span class="text-danger">错误: ${err.message}</span>`;
+                imageLog.textContent = '';
+            }
+        });
+
+        // 视频下载逻辑（类似图片，但简化）
+        const videoForm = document.getElementById('videoDownloadForm');
+        const videoResultDiv = document.getElementById('videoResult');
+        const videoProgressBar = document.getElementById('videoProgressBar');
+        const videoStatus = document.getElementById('videoStatus');
+        const videoLog = document.getElementById('log-video');
+        const videoLogLink = document.getElementById('videoLogLink');
+
+        videoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 初始化 UI
+            videoResultDiv.classList.remove('d-none');
+            videoProgressBar.style.width = '0%';
+            videoProgressBar.textContent = '0%';
+            videoStatus.textContent = '正在解析 URL...';
+            videoLog.textContent = '';
+            videoLogLink.classList.add('d-none');
+
+            const payload = {
+                VideoUrl: document.getElementById('videoUrl').value.trim()
+            };
+
+            try {
+                // 提交请求（假设API路径为 /api/download/download-video，根据实际调整）
+                const responsePromise = fetch('/api/download/download-video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                // 假进度
+                let fakeProgress = 0;
+                const fakeInterval = setInterval(() => {
+                    fakeProgress += Math.random() * 8 + 2;
+                    if (fakeProgress >= 90) {
+                        fakeProgress = 90;
+                        clearInterval(fakeInterval);
+                    }
+                    videoProgressBar.style.width = fakeProgress + '%';
+                    videoProgressBar.textContent = Math.round(fakeProgress) + '%';
+                }, 300);
+
+                // 等待结果
+                const response = await responsePromise;
+                const data = await response.json();
+
+                clearInterval(fakeInterval);
+
+                if (!response.ok) {
+                    throw new Error(data.message || data.title || '请求失败');
+                }
+
+                // 完成
+                videoProgressBar.style.width = '100%';
+                videoProgressBar.textContent = '100%';
+                videoProgressBar.classList.remove('progress-bar-animated');
+
+                videoStatus.innerHTML = `
+                        <strong class="text-success">下载完成！</strong><br>
+                        文件: <code>${data.FilePath || '—'}</code><br>
+                        状态: ${data.Status || '成功'}
+                    `;
+
+                videoLog.textContent = `视频下载已完成。`;
+
+                if (data.LogPath) {
+                    videoLogLink.href = data.LogPath;
+                    videoLogLink.textContent = `下载日志 (${data.FileName || 'download_log.txt'})`;
+                    videoLogLink.classList.remove('d-none');
+                }
+
+            } catch (err) {
+                videoProgressBar.style.width = '100%';
+                videoProgressBar.textContent = '错误';
+                videoProgressBar.classList.add('bg-danger');
+                videoStatus.innerHTML = `<span class="text-danger">错误: ${err.message}</span>`;
+                videoLog.textContent = '';
             }
         });
     </script>
