@@ -98,4 +98,15 @@ public class YoutubeController : ControllerBase
         Console.WriteLine($"描述: {video.Description}");
         return Shared.MakeFileNameSafe(video.Title);
     }
+
+    // missav
+    public async Task<FFmpegProcessInfo> GetM3U8(string m3u8)
+    {
+        string mergeCMD = $"-i \"{m3u8}\" -c copy \"{_downloadPath}.mp4\"";
+        var processInfo = _manager.StartFFmpeg(mergeCMD);
+        Console.WriteLine($"下载完成: {DateTime.Now}");
+        await processInfo.process.WaitForExitAsync();
+        processInfo.Command = "Convert";
+        return processInfo;
+    }
 }

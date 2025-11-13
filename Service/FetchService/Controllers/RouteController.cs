@@ -36,6 +36,7 @@ public class RouteController : ControllerBase //路由器
         // ①B站视频
         // ②B站直播
         // ③YouTube视频
+        // ④missav手动获取的 video.m3u8 / playlist.m3u8
         // missav访问时用油猴自动提交SQL，没有则记入本地文件
         if (url.Contains("bilibili.com/video/BV"))
         {
@@ -61,6 +62,11 @@ public class RouteController : ControllerBase //路由器
         {
             Console.WriteLine($"是 Youtube视频: ");
             result = await tube.GetYoutubeVideoAsync(url);
+        }
+        else if (url.Contains(".m3u8"))
+        {
+            Console.WriteLine($"是 m3u8视频: ");
+            result = await tube.GetM3U8(url);
         }
         else
         {
