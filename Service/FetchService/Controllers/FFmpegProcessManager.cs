@@ -27,8 +27,6 @@ public class FFmpegProcessManager
                 RedirectStandardInput = true,
                 UseShellExecute = false,
                 CreateNoWindow = false, // 打印到console
-                RedirectStandardError = true, // 可选：捕获错误日志
-                RedirectStandardOutput = true
             },
             EnableRaisingEvents = true
         };
@@ -43,6 +41,7 @@ public class FFmpegProcessManager
 
         process.Exited += (s, e) =>
         {
+            Console.WriteLine($"监听到 Exited");
             info.Status = process.ExitCode == 0 ? "Completed" : "Error";
             RemoveProcess(taskId);
         };
@@ -50,8 +49,9 @@ public class FFmpegProcessManager
         try
         {
             process.Start();
-            info.ProcessId = process.Id; // 记录系统 PID
+            info.process = process;
             _processes.TryAdd(taskId, (process, info));
+            Console.WriteLine($"info.process : {info.process != null}");
             return info;
         }
         catch (Exception ex)
@@ -120,5 +120,5 @@ public class FFmpegProcessInfo
     public DateTime StartTime { get; set; }
     public string Command { get; set; } = string.Empty;
     public string Status { get; set; } = "Running"; // Running, Stopped, Error
-    public int? ProcessId { get; set; } // 可选：系统 PID
+    public Process process { get; set; }
 }

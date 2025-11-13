@@ -1,9 +1,13 @@
-﻿using YoutubeExplode;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 
 namespace FetchService.Controllers;
 
-public class YoutubeController
+[ApiController]
+[Route("api/[controller]")]
+public class YoutubeController : ControllerBase
 {
     private readonly string _downloadPath;
     private readonly FFmpegProcessManager _manager;
@@ -22,7 +26,7 @@ public class YoutubeController
         Console.Write($"\r下载进度: {p:P1}"); // P1 = 百分比(一位小数)
     });
 
-    public async Task GetYoutubeVideoAsync(string url)
+    public async Task<FFmpegProcessInfo> GetYoutubeVideoAsync(string url)
     {
         string part = await GetVideoInfoAsync(url);
         //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -62,15 +66,17 @@ public class YoutubeController
             await youtube.Videos.Streams.DownloadAsync(audioStream, audioFile, progress);
             Console.WriteLine($"音频下载: {audioFile}");
 
-            // 用 FFmpeg 合并
-            //FFmpegProcessManager.MergeAudioVideo(videoFile, audioFile, outputFile);
-            //Console.WriteLine($"合并完成: {outputFile}");
+            // FFmpeg 合并
             string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
-            var process = _manager.StartFFmpeg(mergeCMD);
+            var processInfo = _manager.StartFFmpeg(mergeCMD);
             Console.WriteLine($"下载完成: {DateTime.Now}");
+            await processInfo.process.WaitForExitAsync();
             System.IO.File.Delete(videoFile);
             System.IO.File.Delete(audioFile);
+            processInfo.Command = "Merge";
+            return processInfo;
         }
+        return null;
     }
 
     private async Task<string> GetVideoInfoAsync(string url)

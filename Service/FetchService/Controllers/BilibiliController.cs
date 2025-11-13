@@ -21,7 +21,7 @@ public class BilibiliController : ControllerBase
 
     // 视频下载 bvId 👉 cid/part 👉 url
     [HttpGet("get_bili_video")]
-    public async Task<string> GetBilibiliVideoAsync(string bvId)
+    public async Task<FFmpegProcessInfo> GetBilibiliVideoAsync(string bvId)
     {
         var httpClient = new HttpClient();
 
@@ -75,18 +75,18 @@ public class BilibiliController : ControllerBase
         await DownloadBilibiliM4sAsync(audioUrl, referer, audioFile);
         Console.WriteLine($"音频下载: {audioFile}");
 
-        // 调用
-        //FFmpegProcessManager.MergeAudioVideo(videoFile, audioFile, outputFile);
-        //Console.WriteLine($"合并完成: {outputFile}");
+        // FFmpeg 合并
         string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
-        var process = _manager.StartFFmpeg(mergeCMD);
+        var processInfo = _manager.StartFFmpeg(mergeCMD);
         Console.WriteLine($"开始等待: {DateTime.Now}");
-        await process.WaitForExitAsync();
+        await processInfo.process.WaitForExitAsync();
         Console.WriteLine($"下载完成: {DateTime.Now}");
         System.IO.File.Delete(videoFile);
         System.IO.File.Delete(audioFile);
 
-        return "合并完成";
+        //return Ok(processInfo); // 返回封装对象
+        processInfo.Command = "Merge";
+        return processInfo;
     }
 
     // B站验证下载
@@ -156,7 +156,7 @@ public class BilibiliController : ControllerBase
 
     // 直播流
     [HttpGet("get_bili_live")]
-    public async Task GetM3U8(string room_id, string title)
+    public async Task<FFmpegProcessInfo> GetM3U8(string room_id, string title)
     {
         string finalUrl = $"{Shared.BILI_ROOM}playUrl?cid={room_id}&platform=web";
         //Console.WriteLine($"URL是: {finalUrl}");
@@ -167,13 +167,16 @@ public class BilibiliController : ControllerBase
         string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
         Console.WriteLine($"u3u8是: {m3u8Url}");
 
+        // FFmpeg 转码
         //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string desktopPath = _downloadPath;
         string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
-        //FFmpegProcessManager.ConvertM3U8toMP4(room_id, m3u8Url, outputFile);
         string convertCMD = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
-        var process = _manager.StartFFmpeg(convertCMD);
-        await process.WaitForExitAsync();
+        var processInfo = _manager.StartFFmpeg(convertCMD);
+        //return Ok(processInfo); // 返回封装对象
+        //await processInfo.process.WaitForExitAsync();
+        processInfo.Command = "Convert";
+        return processInfo;
     }
     // 获取直播房间信息
     public async Task GetRoomInfo(string room_id)

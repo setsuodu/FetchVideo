@@ -30,7 +30,7 @@ public class RouteController : ControllerBase //路由器
                 message = "请提供有效的视频 URL"
             });
         }
-
+        FFmpegProcessInfo result = null;
         Console.WriteLine($"检查是什么平台的视频: {url}");
 
         // ①B站视频
@@ -45,7 +45,7 @@ public class RouteController : ControllerBase //路由器
             Console.WriteLine($"是 Bilibili视频: bvId={bvId}");
 
             //await bili.GetUpInfo(bvId); // 获取Up信息，不需要
-            await bili.GetBilibiliVideoAsync(bvId); // 获取视频
+            result = await bili.GetBilibiliVideoAsync(bvId); // 获取视频
         }
         else if (url.Contains("live.bilibili"))
         {
@@ -55,18 +55,12 @@ public class RouteController : ControllerBase //路由器
             Console.WriteLine($"是 Bilibili直播: 房间: {roomId}");
             string title = await bili.GetTitleAsync(url);
             Console.WriteLine($"直播标题: {title}");
-            await bili.GetM3U8(roomId, title);
+            result = await bili.GetM3U8(roomId, title);
         }
         else if (url.Contains("youtu"))
         {
-            //string fullUrl = "https://www.youtube.com/watch?v=ij89E9qABho"; // 标准地址
-            //string sUrl = "https://youtu.be/ij89E9qABho"; // 短地址
-            //string shortUrl = "https://www.youtube.com/shorts/fOlW2f38PFE"; // Short地址（含标题日文）
-            //string longUrl = "https://www.youtube.com/watch?v=CvDpSRuGsjY"; // 标准地址2（测试）
-            // 获取视频标题
             Console.WriteLine($"是 Youtube视频: ");
-
-            await tube.GetYoutubeVideoAsync(url);
+            result = await tube.GetYoutubeVideoAsync(url);
         }
         else
         {
@@ -82,13 +76,13 @@ public class RouteController : ControllerBase //路由器
 
         var response = new
         {
-            file = Path.GetFileName("result.FilePath"),
+            file = result.TaskId,
             filePath = "result.FilePath",
             size = "result.FileSize",
             status = "success",
-            downloadUrl = "result.DownloadUrl",   // 可选：提供前端直接下载
+            downloadUrl = result.Command,   // 可选：提供前端直接下载
             logPath = "result.LogPath",           // 可选：下载日志
-            fileName = Path.GetFileName("result.FilePath")
+            fileName = Path.GetFileName("result.FilePath"),
         };
         return Ok(response);
     }
