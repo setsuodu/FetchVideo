@@ -12,6 +12,38 @@ export function initVideoDownloader() {
     let currentTaskId = null; // 记录当前录制任务 ID
     let isRecording = false;
 
+
+    ///////////////////
+    /* 时钟功能start */
+    let timer = null;    // 保存 setInterval 的 id
+    let seconds = 0;     // 记录经过的秒数
+    function formatTime(sec) {
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        return `${m}:${s}`;
+    }
+    function startTimer() {
+        if (timer) return; // 防止重复开始
+        timer = setInterval(() => {
+            seconds++;
+            progressBar.textContent = formatTime(seconds);
+        }, 1000);
+    }
+    // 停止时钟
+    function stopTimer() {
+        clearInterval(timer);
+        timer = null;
+    }
+    // 重置时钟
+    function resetTimer() {
+        stopTimer();
+        seconds = 0;
+        progressBar.textContent = '00:00';
+    }
+    /* 时钟功能end */
+    /////////////////
+
+
     // 锁定表单
     const lockForm = () => {
         submitBtn.disabled = true;
@@ -45,12 +77,15 @@ export function initVideoDownloader() {
         currentTaskId = null;
     };
 
+    // 按下按钮
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         // 如果正在录制，点击即为“停止”
         if (isRecording && currentTaskId) {
+            stopTimer();
             await stopRecording();
+            resetTimer();
             return;
         }
 
@@ -83,8 +118,7 @@ export function initVideoDownloader() {
 
             const response = await responsePromise;
             const data = await response.json();
-            console.log('收到响应');
-            console.log(data);
+            console.log(`收到响应${data}`);
             clearInterval(fakeInterval);
 
             if (!response.ok) throw new Error(data.message || data.error || '请求失败');
@@ -98,10 +132,11 @@ export function initVideoDownloader() {
             const isLiveRecording = data.downloadUrl == "Convert";
 
             if (isLiveRecording) {
-                // 提取 taskId
-                currentTaskId = data.file;
-                setStopButton();
-                unlockForm();
+                currentTaskId = data.file; // 提取 taskId
+                setStopButton(); // 显示`停止录制`
+                unlockForm(); // 激活可点击
+                resetTimer();  // 每次提交都从 00:00 开始
+                startTimer();
 
                 status.innerHTML = `
                     <strong class="text-warning">录制中...</strong><br>

@@ -28,9 +28,9 @@ dotnet build -c Release
 	- https://b23.tv/uKettYB
 	- https://live.bilibili.com/room_id
 3. Youtube video
-	- basic: 
-	- short url: 
-	- short video: 
+	- full url: https://www.youtube.com/watch?v=TsWzmbvGIsY
+	- short url: https://youtu.be/TsWzmbvGIsY
+	- Shorts: https://www.youtube.com/shorts/jVbkzaKBSFM
 
 # Service
 

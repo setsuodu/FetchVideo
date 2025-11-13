@@ -49,3 +49,6 @@ setsuodu/fetch-service   latest    1827b502d82e   11 minutes ago  245MB
 
 
 http://localhost:8080/stop?taskId=97c78bcb-ca77-469e-afd2-b90466c56a61
+
+1. missav
+2. 时钟
