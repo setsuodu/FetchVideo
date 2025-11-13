@@ -94,15 +94,22 @@ public class RouteController : ControllerBase //路由器
     }
 
     // 停止 API：接收任务 ID
-    //[HttpPost("stop/{taskId}")]
     [HttpGet("stop")]
     public async Task<IActionResult> Stop(string taskId)
     {
         var success = await _manager.StopFFmpeg(taskId);
         if (success)
         {
-            return Ok("FFmpeg 进程已停止");
+            return Ok(new { message = "FFmpeg 已停止", taskId });
         }
-        return NotFound("进程不存在或已停止");
+        return NotFound(new { message = "任务不存在或已结束", taskId });
+    }
+
+    // 可选：获取运行中的任务
+    [HttpGet("running")]
+    public IActionResult GetRunning()
+    {
+        var tasks = _manager.GetRunningTasks();
+        return Ok(tasks);
     }
 }
