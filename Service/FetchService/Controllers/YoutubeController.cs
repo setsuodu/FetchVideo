@@ -54,6 +54,13 @@ public class YoutubeController : ControllerBase
         {
             await youtube.Videos.Streams.DownloadAsync(muxed, outputFile, progress); // 不分轨的
             Console.WriteLine($"不分轨的: {outputFile}");
+            var processInfo = new FFmpegProcessInfo
+            {
+                Command = "Normal",
+                StartTime = DateTime.Now,
+                Status = "Completed"
+            };
+            return processInfo;
         }
         else
         {
@@ -76,7 +83,6 @@ public class YoutubeController : ControllerBase
             processInfo.Command = "Merge";
             return processInfo;
         }
-        return null;
     }
 
     private async Task<string> GetVideoInfoAsync(string url)

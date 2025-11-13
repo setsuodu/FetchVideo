@@ -86,20 +86,6 @@ docker run -d \
   setsuodu/fetch-service:latest
 ```
 
-## MORE
-- VOLUME 是“声明意图”（好习惯）
-	- VOLUME ["/app/downloads"]
-	- 作用：
-		- 声明容器内的 /app/downloads 是一个“卷”（volume）目录。
-		- 告诉 Docker：这个目录里的数据应该持久化，不要随容器删除而丢失。
-		- 如果你没有手动映射这个目录，Docker 会自动创建一个匿名的 Docker 卷（anonymous volume），挂载到 /app/downloads。
-- -v 是“实际映射”（你能看到文件）
-	- 作用：
-		- 宿主机目录:容器内目录 ``-v /download:/app/downloads``
-- 效果：
-	- 位置路径宿主机/download/pic.jpg（C:/downloads/pic.jpg）
-	- 容器内/app/downloads/pic.jpg
-
 ## Push DockerHub
 
 1. create a new repository on hub.docker.com, named "setsuodu/fetch-service"
