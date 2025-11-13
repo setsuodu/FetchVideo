@@ -1,4 +1,6 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+﻿using FetchService.Controllers;
+
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers()
@@ -10,6 +12,7 @@ builder.Services.AddControllers()
 builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(); // 添加服务必须在 app build 之前
+builder.Services.AddSingleton<FFmpegProcessManager>();
 
 var app = builder.Build();
 

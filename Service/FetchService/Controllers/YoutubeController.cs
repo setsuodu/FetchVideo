@@ -6,12 +6,14 @@ namespace FetchService.Controllers;
 public class YoutubeController
 {
     private readonly string _downloadPath;
+    private readonly FFmpegProcessManager _manager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
-    public YoutubeController(IConfiguration configuration)
+    public YoutubeController(IConfiguration configuration, FFmpegProcessManager manager)
     {
         // 如果配置中没找到，就用 "/app/downloads";
         _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+        _manager = manager;
     }
 
     // 创建进度回调
@@ -61,8 +63,13 @@ public class YoutubeController
             Console.WriteLine($"音频下载: {audioFile}");
 
             // 用 FFmpeg 合并
-            Shared.MergeAudioVideo(videoFile, audioFile, outputFile);
-            Console.WriteLine($"合并完成: {outputFile}");
+            //FFmpegProcessManager.MergeAudioVideo(videoFile, audioFile, outputFile);
+            //Console.WriteLine($"合并完成: {outputFile}");
+            string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
+            var process = _manager.StartFFmpeg(mergeCMD);
+            Console.WriteLine($"下载完成: {DateTime.Now}");
+            System.IO.File.Delete(videoFile);
+            System.IO.File.Delete(audioFile);
         }
     }
 
@@ -77,9 +84,6 @@ public class YoutubeController
         Console.WriteLine($"时长: {video.Duration}");
         Console.WriteLine($"封面: {video.Thumbnails[0].Url}");
         Console.WriteLine($"描述: {video.Description}");
-
-        //part = video.Title;
-        //Console.WriteLine($"保存文件名: {part}");
         return Shared.MakeFileNameSafe(video.Title);
     }
 }

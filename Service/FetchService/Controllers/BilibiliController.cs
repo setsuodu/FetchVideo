@@ -9,40 +9,14 @@ namespace FetchService.Controllers;
 public class BilibiliController : ControllerBase
 {
     private readonly string _downloadPath;
+    private readonly FFmpegProcessManager _manager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
-    public BilibiliController(IConfiguration configuration)
+    public BilibiliController(IConfiguration configuration, FFmpegProcessManager manager)
     {
         // 如果配置中没找到，就用 "/app/downloads";
         _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
-    }
-
-    // GET: api/bilibili/active
-    [HttpGet("active")]
-    public IActionResult GetActive()
-    {
-        return Ok("Active products");
-    }
-
-    // GET: api/bilibili/search?name=apple
-    [HttpGet("search")]
-    public IActionResult Search([FromQuery] string name)
-    {
-        return Ok($"Searching: {name}");
-    }
-
-    // GET: api/bilibili/5
-    [HttpGet("{id}")]
-    public IActionResult GetById(int id)
-    {
-        return Ok($"Product {id}");
-    }
-
-    // GET: api/bilibili
-    [HttpGet]
-    public IActionResult GetAll()
-    {
-        return Ok(new[] { "Product1", "Product2" });
+        _manager = manager;
     }
 
     // 视频下载 bvId 👉 cid/part 👉 url
@@ -102,8 +76,15 @@ public class BilibiliController : ControllerBase
         Console.WriteLine($"音频下载: {audioFile}");
 
         // 调用
-        Shared.MergeAudioVideo(videoFile, audioFile, outputFile);
-        Console.WriteLine($"合并完成: {outputFile}");
+        //FFmpegProcessManager.MergeAudioVideo(videoFile, audioFile, outputFile);
+        //Console.WriteLine($"合并完成: {outputFile}");
+        string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
+        var process = _manager.StartFFmpeg(mergeCMD);
+        Console.WriteLine($"开始等待: {DateTime.Now}");
+        await process.WaitForExitAsync();
+        Console.WriteLine($"下载完成: {DateTime.Now}");
+        System.IO.File.Delete(videoFile);
+        System.IO.File.Delete(audioFile);
 
         return "合并完成";
     }
@@ -189,41 +170,10 @@ public class BilibiliController : ControllerBase
         //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string desktopPath = _downloadPath;
         string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
-        Shared.M3U8toMP4(room_id, m3u8Url, outputFile);
-        /*
-        var psi = new ProcessStartInfo
-        {
-            FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe", // ffmpeg.exe 路径
-            Arguments = $"-headers \"Referer: https://live.bilibili.com/{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -c copy \"live_record.mp4\" -y",
-            UseShellExecute = false,
-            CreateNoWindow = false, //关键①，true不执行
-        };
-        var ffmpeg = Process.Start(psi);
-        ffmpeg.WaitForExit();
-        */
-
-        /*
-        using var http = new HttpClient();
-        http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
-        http.DefaultRequestHeaders.Add("Referer", $"https://live.bilibili.com/{room_id}");
-
-        using var response = await http.GetAsync(m3u8Url, HttpCompletionOption.ResponseHeadersRead);
-        response.EnsureSuccessStatusCode();
-
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        await using var file = System.IO.File.Create("live_record.flv");
-
-        var buffer = new byte[81920];
-        long totalRead = 0;
-        int read;
-        while ((read = await stream.ReadAsync(buffer)) > 0)
-        {
-            await file.WriteAsync(buffer.AsMemory(0, read));
-            totalRead += read;
-            Console.Write($"\r已下载: {totalRead / 1024 / 1024.0:F2} MB");
-        }
-        Console.WriteLine("\n✅ 录制完成");
-        */
+        //FFmpegProcessManager.ConvertM3U8toMP4(room_id, m3u8Url, outputFile);
+        string convertCMD = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
+        var process = _manager.StartFFmpeg(convertCMD);
+        await process.WaitForExitAsync();
     }
     // 获取直播房间信息
     public async Task GetRoomInfo(string room_id)

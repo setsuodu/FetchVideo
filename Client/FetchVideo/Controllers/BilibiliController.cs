@@ -153,40 +153,6 @@ public class BilibiliController
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
         Shared.M3U8toMP4(room_id, m3u8Url, outputFile);
-        /*
-        var psi = new ProcessStartInfo
-        {
-            FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe", // ffmpeg.exe 路径
-            Arguments = $"-headers \"Referer: https://live.bilibili.com/{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{u3u8}\" -c copy \"live_record.mp4\" -y",
-            UseShellExecute = false,
-            CreateNoWindow = false, //关键①，true不执行
-        };
-        var ffmpeg = Process.Start(psi);
-        ffmpeg.WaitForExit();
-        */
-
-        /*
-        using var http = new HttpClient();
-        http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
-        http.DefaultRequestHeaders.Add("Referer", "https://live.bilibili.com/房间号");
-
-        using var response = await http.GetAsync(u3u8, HttpCompletionOption.ResponseHeadersRead);
-        response.EnsureSuccessStatusCode();
-
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        await using var file = File.Create("live_record.flv");
-
-        var buffer = new byte[81920];
-        long totalRead = 0;
-        int read;
-        while ((read = await stream.ReadAsync(buffer)) > 0)
-        {
-            await file.WriteAsync(buffer.AsMemory(0, read));
-            totalRead += read;
-            Console.Write($"\r已下载: {totalRead / 1024 / 1024.0:F2} MB");
-        }
-        Console.WriteLine("\n✅ 录制完成");
-        */
     }
     // 获取直播房间信息
     public async Task GetRoomInfo(string room_id)

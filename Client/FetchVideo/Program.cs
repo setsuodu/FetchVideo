@@ -17,7 +17,7 @@ if (string.IsNullOrWhiteSpace(url))
 }
 
 // 2. 开始下载
-var route = new Router();
+var route = new RouteController();
 route.Check(url);
 
 //Console.WriteLine("\n按任意键退出...");

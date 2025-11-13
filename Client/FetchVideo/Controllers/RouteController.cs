@@ -1,6 +1,6 @@
 ﻿namespace FetchVideo.Controllers;
 
-public class Router //路由器
+public class RouteController //路由器
 {
     public async void Check(string url)
     {

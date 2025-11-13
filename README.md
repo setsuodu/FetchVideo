@@ -49,8 +49,14 @@ docker run -d --name downloader -p 8080:8080  -v C:/users/33913/downloads:/app/d
 ```
 （运行没问题）推送远程
 ```
-
+docker tag fetch-service setsuodu/fetch-service:latest
+docker push setsuodu/fetch-service:latest
 ```
+部署机器上更新
+```
+docker pull setsuodu/fetch-service:latest
+```
+
 
 ## Docker Desktop for Windows
 ```
@@ -77,7 +83,7 @@ docker run -d \
   --name downloader \
   -p 8080:8080 \
   -v /download:/app/downloads \
-  fetch-service
+  setsuodu/fetch-service:latest
 ```
 
 ## MORE

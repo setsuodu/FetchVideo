@@ -6,17 +6,17 @@ namespace FetchService.Controllers;
 [Route("api/[controller]")]
 public class RouteController : ControllerBase //路由器
 {
-    private readonly string _downloadPath;
     private readonly BilibiliController bili;
     private readonly YoutubeController tube;
+    private readonly FFmpegProcessManager _manager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
-    public RouteController(IConfiguration configuration)
+    public RouteController(IConfiguration configuration, FFmpegProcessManager manager)
     {
         // 如果配置中没找到，就用 "/app/downloads";
-        _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
-        bili = new BilibiliController(configuration);
-        tube = new YoutubeController(configuration);
+        bili = new BilibiliController(configuration, manager);
+        tube = new YoutubeController(configuration, manager);
+        _manager = manager;
     }
 
     [HttpGet("check")]
@@ -91,5 +91,18 @@ public class RouteController : ControllerBase //路由器
             fileName = Path.GetFileName("result.FilePath")
         };
         return Ok(response);
+    }
+
+    // 停止 API：接收任务 ID
+    //[HttpPost("stop/{taskId}")]
+    [HttpGet("stop")]
+    public async Task<IActionResult> Stop(string taskId)
+    {
+        var success = await _manager.StopFFmpeg(taskId);
+        if (success)
+        {
+            return Ok("FFmpeg 进程已停止");
+        }
+        return NotFound("进程不存在或已停止");
     }
 }
