@@ -126,7 +126,7 @@ export function initVideoDownloader() {
             // —— 成功响应处理 ——
             progressBar.style.width = '100%';
             progressBar.textContent = '100%';
-            progressBar.classList.remove('progress-bar-animated');
+            progressBar.classList.remove('progress-bar-animated'); 
 
             // 判断是否为【直播录制任务】
             const isLiveRecording = data.downloadUrl == "Convert";
@@ -137,6 +137,7 @@ export function initVideoDownloader() {
                 unlockForm(); // 激活可点击
                 resetTimer();  // 每次提交都从 00:00 开始
                 startTimer();
+                progressBar.classList.add('progress-bar-animated');
 
                 status.innerHTML = `
                     <strong class="text-warning">录制中...</strong><br>
@@ -166,7 +167,7 @@ export function initVideoDownloader() {
         } catch (err) {
             progressBar.style.width = '100%';
             progressBar.textContent = '错误';
-            progressBar.classList.add('bg-danger');
+            progressBar.classList.add('bg-danger'); // 红色动画
             status.innerHTML = `<span class="text-danger">错误: ${err.message}</span>`;
             log.textContent = '请检查 URL 或服务状态。';
             setStartButton(); // 错误也恢复按钮
