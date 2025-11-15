@@ -9,13 +9,23 @@ RUN apk add --no-cache ffmpeg
 https://yourdoll.jp/wp-content/uploads/2025/06/mmd213-00.jpg
 
 三、测试视频
+（视频）
 https://www.bilibili.com/video/BV16p1QBtEsR  31:00
 https://www.bilibili.com/video/BV1jYkyBoEoo  01:00
+https://m.bilibili.com/video/BV1RSpszvE8h
+https://b23.tv/fC5i764
+（直播）
 https://live.bilibili.com/1848767744
-
+https://live.bilibili.com/h5/1848767744
+https://b23.tv/gWcSTNw
+（视频）
 https://www.youtube.com/watch?v=TsWzmbvGIsY  06:34
 https://youtu.be/TsWzmbvGIsY
 https://www.youtube.com/shorts/jVbkzaKBSFM
+
+四、curl 短链 → 长链
+curl -i https://b23.tv/gWcSTNw
+Location: https://live.bilibili.com/1864385910?。。。。。。
 
 
 image:latest更新

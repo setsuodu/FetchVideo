@@ -33,6 +33,13 @@ public class RouteController : ControllerBase //路由器
         FFmpegProcessInfo result = null;
         Console.WriteLine($"检查是什么平台的视频: {url}");
 
+        // 短链👉长链
+        if (url.Contains("b23.tv"))
+        {
+            url = await Shared.Curl_I(url);
+            Console.WriteLine($"转长链👉{url}");
+        }
+
         // ①B站视频
         // ②B站直播
         // ③YouTube视频
@@ -40,17 +47,12 @@ public class RouteController : ControllerBase //路由器
         // missav访问时用油猴自动提交SQL，没有则记入本地文件
         if (url.Contains("bilibili.com/video/BV"))
         {
-            // https://www.bilibili.com/video/BV1ysySBsExt/
-            // 获取视频标题
-            string bvId = Shared.GetBvId(url);
+            string bvId = Shared.GetBvId(url); // 获取视频标题
             Console.WriteLine($"是 Bilibili视频: bvId={bvId}");
-
-            //await bili.GetUpInfo(bvId); // 获取Up信息，不需要
             result = await bili.GetBilibiliVideoAsync(bvId); // 获取视频
         }
         else if (url.Contains("live.bilibili"))
         {
-            // https://live.bilibili.com/1792597682
             // Up主信息 + 当前时间戳
             string roomId = Shared.GetRoomId(url);
             Console.WriteLine($"是 Bilibili直播: 房间: {roomId}");

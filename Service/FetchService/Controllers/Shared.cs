@@ -45,4 +45,64 @@ public class Shared
         }
         return name;
     }
+
+
+    // 短链👉长链
+    public static async Task<string> Curl_I(string shortUrl)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 ...");
+
+        // 1. 构造请求对象
+        var request = new HttpRequestMessage(HttpMethod.Head, shortUrl);
+        // 2. 发送（等价于 curl -I）
+        var response = await client.SendAsync(request);
+        var location = response.Headers.Location?.ToString() ?? response.RequestMessage.RequestUri.ToString();
+
+        location = CleanUrl(location);
+
+        if (location.Contains("bilibili.com/video") || location.Contains("/av") || location.Contains("/BV"))
+            return $"B站视频: {location}";
+        if (location.Contains("live.bilibili.com"))
+            return $"B站直播: {location}";
+        if (location.Contains("youtube.com/watch"))
+            return $"YouTube视频: {location}";
+
+        return $"未知: {location}";
+    }
+
+    // 裁掉 "/h5" 和 "?后面多余的"
+    public static string CleanUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return url;
+
+        Uri uri;
+        try
+        {
+            uri = new Uri(url);
+        }
+        catch
+        {
+            return url; // 非法 URL 原样返回
+        }
+
+        // 1. 处理 /h5：裁掉 /h5 及之后部分
+        string path = uri.AbsolutePath;
+        int h5Index = path.IndexOf("/h5", StringComparison.OrdinalIgnoreCase);
+        if (h5Index >= 0)
+        {
+            path = path.Substring(0, h5Index); // 裁掉 /h5 及之后
+        }
+
+        // 2. 保留一个 ?，去掉所有查询参数
+        string baseUrl = uri.Scheme + "://" + uri.Authority + path;
+
+        // 如果原始 URL 有 ?，保留一个 ?（但不带参数）
+        if (url.Contains('?'))
+        {
+            baseUrl += "?";
+        }
+
+        return baseUrl;
+    }
 }
