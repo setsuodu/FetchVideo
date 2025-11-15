@@ -23,6 +23,7 @@ dotnet build -c Release
 
 ## Support
 1. Bilibili video
+	- https://b23.tv/fC5i764
 	- https://www.bilibili.com/video/BV~
 2. Bilibili live
 	- https://b23.tv/uKettYB
