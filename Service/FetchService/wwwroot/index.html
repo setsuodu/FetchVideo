@@ -63,11 +63,17 @@
                     <form id="imageDownloadForm">
                         <div class="mb-3">
                             <label class="form-label">第一张图片 URL</label>
-                            <input type="url" class="form-control" id="firstUrl" required placeholder="https://x.com/src/img_1.jpg" />
+                            <div class="input-group">
+                                <input type="url" class="form-control" id="firstUrl" required placeholder="https://x.com/src/img_1.jpg" />
+                                <button type="button" class="btn btn-danger d-none" id="clearFirstBtn">×</button>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">最后一张图片 URL</label>
-                            <input type="url" class="form-control" id="lastUrl" required placeholder="https://x.com/src/img_10.jpg" />
+                            <div class="input-group">
+                                <input type="url" class="form-control" id="lastUrl" required placeholder="https://x.com/src/img_10.jpg" />
+                                <button type="button" class="btn btn-danger d-none" id="clearLastBtn">×</button>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">并发数（1~20）<span class="text-muted ms-1">默认 5</span></label>
@@ -93,13 +99,14 @@
                     <form id="videoDownloadForm">
                         <div class="mb-3">
                             <label class="form-label">视频 URL</label>
-                            <input type="url" class="form-control" id="videoUrl" required placeholder="https://x.com/src/video.mp4" />
+                            <div class="input-group">
+                                <input type="url" class="form-control" id="videoUrl" required placeholder="https://x.com/src/video.mp4">
+                                <button type="button" class="btn btn-danger d-none" id="clearBtn">×</button>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-success w-100">开始下载</button>
                     </form>
-
                     <hr />
-
                     <div id="videoResult" class="d-none">
                         <div class="progress mb-3">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" id="videoProgressBar" style="width: 0%">0%</div>

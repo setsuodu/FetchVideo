@@ -8,6 +8,7 @@ export function initVideoDownloader() {
     const status = document.getElementById('videoStatus');
     const log = document.getElementById('log-video');
     const logLink = document.getElementById('videoLogLink');
+    const clearBtn = document.getElementById('clearBtn');
 
     let currentTaskId = null; // 记录当前录制任务 ID
     let isRecording = false;
@@ -220,4 +221,20 @@ export function initVideoDownloader() {
             progressBar.textContent = '—';
         }
     }
+
+    // Show/hide button based on input value
+    videoInput.addEventListener('input', function () {
+        if (videoInput.value.length > 0) {
+            clearBtn.classList.remove('d-none');
+        } else {
+            clearBtn.classList.add('d-none');
+        }
+    });
+
+    // Clear input on button click
+    clearBtn.addEventListener('click', function () {
+        videoInput.value = '';
+        clearBtn.classList.add('d-none');
+        videoInput.focus(); // Optional: refocus on input
+    });
 }

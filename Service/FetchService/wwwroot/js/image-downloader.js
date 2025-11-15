@@ -6,6 +6,10 @@ export function initImageDownloader() {
     const status = document.getElementById('imageStatus');
     const log = document.getElementById('log-image');
     const logLink = document.getElementById('imageLogLink');
+    const firstInput = document.getElementById('firstUrl');
+    const lastInput = document.getElementById('lastUrl');
+    const clearFirst = document.getElementById('clearFirstBtn');
+    const clearLast = document.getElementById('clearLastBtn');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -18,8 +22,10 @@ export function initImageDownloader() {
         logLink.classList.add('d-none');
 
         const payload = {
-            FirstUrl: document.getElementById('firstUrl').value.trim(),
-            LastUrl: document.getElementById('lastUrl').value.trim(),
+            //FirstUrl: document.getElementById('firstUrl').value.trim(),
+            //LastUrl: document.getElementById('lastUrl').value.trim(),
+            FirstUrl: firstInput.value.trim(),
+            LastUrl: lastInput.value.trim(),
             Concurrency: parseInt(document.getElementById('concurrency').value) || 5
         };
 
@@ -68,5 +74,33 @@ export function initImageDownloader() {
             status.innerHTML = `<span class="text-danger">错误: ${err.message}</span>`;
             log.textContent = '';
         }
+    });
+
+
+    // Show/hide button based on input value
+    firstInput.addEventListener('input', function () {
+        if (firstInput.value.length > 0) {
+            clearFirst.classList.remove('d-none');
+        } else {
+            clearFirst.classList.add('d-none');
+        }
+    });
+    lastInput.addEventListener('input', function () {
+        if (lastInput.value.length > 0) {
+            clearLast.classList.remove('d-none');
+        } else {
+            clearLast.classList.add('d-none');
+        }
+    });
+    // Clear input on button click
+    clearFirst.addEventListener('click', function () {
+        firstInput.value = '';
+        clearFirst.classList.add('d-none');
+        firstInput.focus(); // Optional: refocus on input
+    });
+    clearLast.addEventListener('click', function () {
+        lastInput.value = '';
+        clearLast.classList.add('d-none');
+        lastInput.focus(); // Optional: refocus on input
     });
 }
