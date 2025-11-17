@@ -3,7 +3,7 @@ export function initVideoDownloader() {
     const form = document.getElementById('videoDownloadForm');
     const submitBtn = form.querySelector('button[type="submit"]');
     const videoInput = document.getElementById('videoUrl');
-    const videoLengh = document.getElementById('recordLength');
+    //const videoLengh = document.getElementById('recordLength');
     const DEFAULT_LENGTH = 10; // 定义默认值常量（placeholder只作提示，没有值）
     const resultDiv = document.getElementById('videoResult');
     const progressBar = document.getElementById('videoProgressBar');
@@ -16,6 +16,7 @@ export function initVideoDownloader() {
     let isRecording = false;
 
     //console.log(`录制时长: ${getRecordLength()}`);
+    let recordLength = 10;
     function getRecordLength() {
         const inputElement = document.getElementById('recordLength');
 
@@ -58,9 +59,38 @@ export function initVideoDownloader() {
     }
     function startTimer() {
         if (timer) return; // 防止重复开始
+        let recordLengthSec = recordLength * 60;
         timer = setInterval(() => {
             seconds++;
             progressBar.textContent = formatTime(seconds);
+
+            // 计时超过预设时间，UI停止
+            if (seconds > recordLengthSec) {
+                console.log(`计时器到了: ${seconds}`);
+                if (isRecording && currentTaskId) {
+                    console.log(`计时器满足条件，重置 taskId=${currentTaskId}`);
+                    stopTimer();
+                    //await stopRecording(); //后台自己会停，不用发请求
+                    // 执行 try{ } 中的重置流程
+                    status.innerHTML = `
+                        <strong class="text-info">已停止录制</strong><br>
+                        任务 ID: <code>${currentTaskId}</code><br>
+                        文件已保存
+                    `;
+                    log.textContent = `录制已终止，文件已保存。`;
+                    //if (stopData.filePath || stopData.downloadUrl) {
+                    //    logLink.href = stopData.filePath || stopData.downloadUrl;
+                    //    logLink.textContent = `下载录制文件`;
+                    //    logLink.classList.remove('d-none');
+                    //}
+                    // 执行 finally{ } 中的重置流程
+                    setStartButton();
+                    unlockForm();
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '—';
+                    resetTimer();
+                }
+            }
         }, 1000);
     }
     // 停止时钟
@@ -114,8 +144,6 @@ export function initVideoDownloader() {
     // 按下按钮
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        let lengthNum = getRecordLength();
-        //console.log(`录制时长: ${getRecordLength()}`);
 
         // 如果正在录制，点击即为“停止”
         if (isRecording && currentTaskId) {
@@ -135,7 +163,10 @@ export function initVideoDownloader() {
         logLink.classList.add('d-none');
 
         const videoUrl = encodeURIComponent(videoInput.value.trim());
-        const apiUrl = `/api/route/check?url=${videoUrl}&len=${lengthNum}`;
+        //const lengthNum = getRecordLength();
+        recordLength = getRecordLength();
+        console.log(`录制时长: ${recordLength} min`);
+        const apiUrl = `/api/route/check?url=${videoUrl}&length=${recordLength}`;
 
         try {
             const responsePromise = fetch(apiUrl, {
@@ -154,7 +185,8 @@ export function initVideoDownloader() {
 
             const response = await responsePromise;
             const data = await response.json();
-            console.log(`收到响应: ${data}`);
+            console.log(`收到响应: ${data}👈无法展开`);
+            console.log(data);
             clearInterval(fakeInterval);
 
             if (!response.ok) throw new Error(data.message || data.error || '请求失败');
@@ -168,7 +200,7 @@ export function initVideoDownloader() {
             const isLiveRecording = data.downloadUrl == "Convert";
 
             if (isLiveRecording) {
-                console.log(`录制时长: ${getRecordLength()}`);
+                //console.log(`录制时长: ${getRecordLength()}`);
                 currentTaskId = data.file; // 提取 taskId
                 setStopButton(); // 显示`停止录制`
                 unlockForm(); // 激活可点击
