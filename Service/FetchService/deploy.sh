@@ -1,7 +1,8 @@
 ﻿#!/bin/bash
 # deploy.sh - 一键构建 + 运行
 
-cd FetchVideo/Service/FetchService
+echo "上下文..."
+cd FetchService
 
 echo "构建镜像..."
 docker build -t fetch-service .

@@ -35,28 +35,37 @@ dotnet build -c Release
 
 # Service
 
-上下文构建
+💻上下文构建
 ```
 cd FetchVideo/Service/FetchService
 docker build -t fetch-service .
 ```
-从项目根目录构建（推荐）：
+⚙️从项目根目录构建（推荐）：
 ```
 docker build -f Service/FetchService/Dockerfile -t fetch-service .
 ```
-构建后运行（Docker Desktop，映射C盘）
+⚙️构建后运行（Docker Desktop，映射C盘）
 ```
 docker run -d --name downloader -p 8080:8080  -v C:/users/33913/downloads:/app/downloads fetch-service
 ```
-（运行没问题）推送远程
+💻（运行没问题）推送远程
 ```
 docker tag fetch-service setsuodu/fetch-service:latest
 docker push setsuodu/fetch-service:latest
 ```
-部署机器上更新
+🐳部署机器上更新
 ```
 docker pull setsuodu/fetch-service:latest
 docker run -d --name downloader -p 8080:8080 -v /vol1/1000/download:/app/downloads setsuodu/fetch-service:latest
+```
+🐳删除旧的镜像，出现<none>是latest标签被取代了
+```
+docker ps
+docker stop <Container_ID>
+docker rm <Container_ID>
+
+docker images -a
+docker rmi <Image_ID>
 ```
 
 
