@@ -3,6 +3,8 @@ export function initVideoDownloader() {
     const form = document.getElementById('videoDownloadForm');
     const submitBtn = form.querySelector('button[type="submit"]');
     const videoInput = document.getElementById('videoUrl');
+    const videoLengh = document.getElementById('recordLength');
+    const DEFAULT_LENGTH = 10; // 定义默认值常量（placeholder只作提示，没有值）
     const resultDiv = document.getElementById('videoResult');
     const progressBar = document.getElementById('videoProgressBar');
     const status = document.getElementById('videoStatus');
@@ -13,6 +15,37 @@ export function initVideoDownloader() {
     let currentTaskId = null; // 记录当前录制任务 ID
     let isRecording = false;
 
+    //console.log(`录制时长: ${getRecordLength()}`);
+    function getRecordLength() {
+        const inputElement = document.getElementById('recordLength');
+
+        // 1. 使用 .value 获取输入的值 (返回字符串)
+        const inputValue = inputElement.value;
+
+        let finalLength;
+
+        if (inputValue === "" || inputValue === null) {
+            // 2. 如果值是空字符串 (用户未输入)
+            finalLength = DEFAULT_LENGTH;
+            console.log(`输入为空，使用默认值: ${finalLength}`);
+
+        } else {
+            // 3. 如果用户输入了值，则将其转换为数字。
+            // 使用 Number() 或 parseFloat() 来处理数字类型的转换。
+            finalLength = Number(inputValue);
+
+            // 可选：如果用户输入了非数字内容 (虽然 type="number" 限制了，但仍可能出现)，
+            // 或者用户删除了所有内容导致值为 0 等，这里可以添加额外的 NaN 检查：
+            if (isNaN(finalLength)) {
+                console.warn("输入值无效，回退到默认值。");
+                finalLength = DEFAULT_LENGTH;
+            }
+        }
+
+        console.log(`最终长度为: ${finalLength} (类型: ${typeof finalLength})`);
+
+        return finalLength;
+    }
 
     ///////////////////
     /* 时钟功能start */
@@ -81,6 +114,8 @@ export function initVideoDownloader() {
     // 按下按钮
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        let lengthNum = getRecordLength();
+        //console.log(`录制时长: ${getRecordLength()}`);
 
         // 如果正在录制，点击即为“停止”
         if (isRecording && currentTaskId) {
@@ -100,7 +135,7 @@ export function initVideoDownloader() {
         logLink.classList.add('d-none');
 
         const videoUrl = encodeURIComponent(videoInput.value.trim());
-        const apiUrl = `/api/route/check?url=${videoUrl}`;
+        const apiUrl = `/api/route/check?url=${videoUrl}&len=${lengthNum}`;
 
         try {
             const responsePromise = fetch(apiUrl, {
@@ -119,7 +154,7 @@ export function initVideoDownloader() {
 
             const response = await responsePromise;
             const data = await response.json();
-            console.log(`收到响应${data}`);
+            console.log(`收到响应: ${data}`);
             clearInterval(fakeInterval);
 
             if (!response.ok) throw new Error(data.message || data.error || '请求失败');
@@ -133,6 +168,7 @@ export function initVideoDownloader() {
             const isLiveRecording = data.downloadUrl == "Convert";
 
             if (isLiveRecording) {
+                console.log(`录制时长: ${getRecordLength()}`);
                 currentTaskId = data.file; // 提取 taskId
                 setStopButton(); // 显示`停止录制`
                 unlockForm(); // 激活可点击

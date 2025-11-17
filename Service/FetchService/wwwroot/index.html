@@ -39,6 +39,24 @@
             opacity: 0.6;
             cursor: not-allowed;
         }
+
+
+        .input-group-float {
+            /* 可选：设置宽度以便看到效果 */
+            width: 100%;
+            margin-bottom: 10px;
+            /* 或者使用 overflow: auto/hidden; 来清除浮动 */
+        }
+        .input-and-unit-right-float {
+            /* 将包含输入框和“分钟”的容器浮动到右侧 */
+            float: right;
+            /* 确保它们紧密排列 */
+            display: inline-block;
+        }
+        #recordLength {
+            width: 60px; /* 您可以根据需要更改这个像素值 */
+            box-sizing: border-box; /* 推荐：确保 padding 和 border 不会增加元素总宽度 */
+        }
     </style>
 </head>
 <body>
@@ -98,14 +116,21 @@
                 <div class="tab-pane fade" id="video-content" role="tabpanel">
                     <form id="videoDownloadForm">
                         <div class="mb-3">
-                            <label class="form-label">视频 URL</label>
+                            <div class="input-group-float">
+                                <label class="form-label">视频 URL</label>
+                                <div class="input-and-unit-right-float">
+                                    <input type="number" id="recordLength" required placeholder="10">
+                                    <label class="form-label">分钟</label>
+                                </div>
+                                <div style="clear: both;"></div>
+                            </div>
                             <div class="input-group">
                                 <input type="url" class="form-control" id="videoUrl" required placeholder="https://x.com/src/video.mp4">
                                 <button type="button" class="btn btn-danger d-none" id="clearBtn">×</button>
                             </div>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100">开始下载</button>
-                    </form>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">开始下载</button>
+</form>
                     <hr />
                     <div id="videoResult" class="d-none">
                         <div class="progress mb-3">

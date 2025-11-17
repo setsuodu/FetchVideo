@@ -156,9 +156,9 @@ public class BilibiliController : ControllerBase
 
     // 直播流
     [HttpGet("get_bili_live")]
-    public async Task<FFmpegProcessInfo> GetM3U8(string room_id, string title)
+    public async Task<FFmpegProcessInfo> GetM3U8(string room_id, string title, int minute)
     {
-        int length = 600; // 默认10分钟
+        int second = minute * 60;
         string finalUrl = $"{Shared.BILI_ROOM}playUrl?cid={room_id}&platform=web";
         //Console.WriteLine($"URL是: {finalUrl}");
         var httpClient = new HttpClient();
@@ -171,7 +171,7 @@ public class BilibiliController : ControllerBase
         // FFmpeg 转码
         string desktopPath = _downloadPath;
         string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
-        string convertCMD = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {length} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
+        string convertCMD = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         var processInfo = _manager.StartFFmpeg(convertCMD);
         //return Ok(processInfo); // 返回封装对象
         //await processInfo.process.WaitForExitAsync();

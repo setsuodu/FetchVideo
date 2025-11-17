@@ -20,7 +20,7 @@ public class RouteController : ControllerBase //路由器
     }
 
     [HttpGet("check")]
-    public async Task<IActionResult> Check([FromQuery] string url)
+    public async Task<IActionResult> Check([FromQuery] string url, [FromQuery] int? length)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
@@ -58,7 +58,8 @@ public class RouteController : ControllerBase //路由器
             Console.WriteLine($"是 Bilibili直播: 房间: {roomId}");
             string title = await bili.GetTitleAsync(url);
             Console.WriteLine($"直播标题: {title}");
-            result = await bili.GetM3U8(roomId, title);
+            int minute = length ?? 10; //默认十分钟
+            result = await bili.GetM3U8(roomId, title, minute);
         }
         else if (url.Contains("youtu"))
         {
