@@ -60,15 +60,16 @@ public class Shared
         var location = response.Headers.Location?.ToString() ?? response.RequestMessage.RequestUri.ToString();
 
         location = CleanUrl(location);
+        location = location.Replace("/h5/", "/");
+        return location;
 
-        if (location.Contains("bilibili.com/video") || location.Contains("/av") || location.Contains("/BV"))
-            return $"B站视频: {location}";
-        if (location.Contains("live.bilibili.com"))
-            return $"B站直播: {location}";
-        if (location.Contains("youtube.com/watch"))
-            return $"YouTube视频: {location}";
-
-        return $"未知: {location}";
+        //if (location.Contains("bilibili.com/video") || location.Contains("/av") || location.Contains("/BV"))
+        //    return $"B站视频: {location}";
+        //if (location.Contains("live.bilibili.com"))
+        //    return $"B站直播: {location}";
+        //if (location.Contains("youtube.com/watch"))
+        //    return $"YouTube视频: {location}";
+        //return $"未知: {location}";
     }
 
     // 裁掉 "/h5" 和 "?后面多余的"

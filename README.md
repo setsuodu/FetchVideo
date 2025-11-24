@@ -26,7 +26,7 @@ dotnet build -c Release
 	- https://b23.tv/fC5i764
 	- https://www.bilibili.com/video/BV~
 2. Bilibili live
-	- https://b23.tv/uKettYB
+	- https://b23.tv/uKettYB（手机分享生成。浏览器带手机标签，会产生/h5/）
 	- https://live.bilibili.com/room_id
 3. Youtube video
 	- full url: https://www.youtube.com/watch?v=TsWzmbvGIsY
