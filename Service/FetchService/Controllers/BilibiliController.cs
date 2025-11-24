@@ -1,6 +1,7 @@
 ﻿using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using System.Security.Cryptography;
 
 namespace FetchService.Controllers;
 
@@ -23,6 +24,10 @@ public class BilibiliController : ControllerBase
     [HttpGet("get_bili_video")]
     public async Task<FFmpegProcessInfo> GetBilibiliVideoAsync(string bvId)
     {
+        // 获取 UP 名字
+        string up_name = await GetUpInfo(bvId);
+
+
         var httpClient = new HttpClient();
 
         // 1. 获取 cid
@@ -65,7 +70,7 @@ public class BilibiliController : ControllerBase
         string desktopPath = _downloadPath;
         string videoFile = Path.Combine(desktopPath, "video.m4s");
         string audioFile = Path.Combine(desktopPath, "audio.m4s");
-        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4");
+        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : $"【{up_name}】{part}")}.mp4");
 
         string referer = $"{Shared.BILI_VIDEO}{bvId}";
         //await DownloadFileAsync(videoUrl, videoFile); //403 Forbidden
@@ -129,7 +134,8 @@ public class BilibiliController : ControllerBase
 
 
     // bvId 查询 Up 主信息
-    public async Task GetUpInfo(string bvId)
+    [HttpGet("upinfo")]
+    public async Task<string> GetUpInfo(string bvId)
     {
         string finalUrl = $"{Shared.BILI_INTERFACE}view?bvid={bvId}";
         var httpClient = new HttpClient();
@@ -140,6 +146,7 @@ public class BilibiliController : ControllerBase
         var name = jsonObject["data"]["owner"]["name"]; //B站用户名
         var face = jsonObject["data"]["owner"]["face"]; //头像
         Console.WriteLine($"Up主: {name} : {mid}");
+        return name.ToString();
     }
     // uid 查询 Up 主信息
     public async Task GetUpInfoByUid(string uid)
