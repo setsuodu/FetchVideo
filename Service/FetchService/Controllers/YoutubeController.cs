@@ -28,12 +28,12 @@ public class YoutubeController : ControllerBase
 
     public async Task<FFmpegProcessInfo> GetYoutubeVideoAsync(string url)
     {
-        string part = await GetVideoInfoAsync(url);
+        string title = await GetVideoInfoAsync(url);
         //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string desktopPath = _downloadPath;
         string videoFile = Path.Combine(desktopPath, $"video.mp4");
         string audioFile = Path.Combine(desktopPath, $"audio.m4a");
-        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4");
+        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(title) ? "output" : title)}.mp4");
         Console.WriteLine($"outputFile是: {outputFile}");
 
         var youtube = new YoutubeClient();

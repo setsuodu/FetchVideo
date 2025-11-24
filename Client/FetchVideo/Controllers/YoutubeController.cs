@@ -13,11 +13,11 @@ public class YoutubeController
 
     public async Task GetYoutubeVideoAsync(string url)
     {
-        string part = await GetVideoInfoAsync(url);
+        string title = await GetVideoInfoAsync(url);
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string videoFile = Path.Combine(desktopPath, $"video.mp4");
         string audioFile = Path.Combine(desktopPath, $"audio.m4a");
-        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : part)}.mp4");
+        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(title) ? "output" : title)}.mp4");
         Console.WriteLine($"outputFile是: {outputFile}");
 
         var youtube = new YoutubeClient();
@@ -67,9 +67,6 @@ public class YoutubeController
         Console.WriteLine($"时长: {video.Duration}");
         Console.WriteLine($"封面: {video.Thumbnails[0].Url}");
         Console.WriteLine($"描述: {video.Description}");
-
-        //part = video.Title;
-        //Console.WriteLine($"保存文件名: {part}");
         return Shared.MakeFileNameSafe(video.Title);
     }
 }

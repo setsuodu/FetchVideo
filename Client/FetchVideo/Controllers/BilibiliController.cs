@@ -7,7 +7,7 @@ namespace FetchVideo.Controllers;
 
 public class BilibiliController
 {
-    // 视频下载 bvId 👉 cid/part 👉 url
+    // 视频下载 bvId 👉 cid/title 👉 url
     public async Task GetBilibiliVideoAsync(string bvId)
     {
         // 获取 UP 名字
@@ -23,8 +23,8 @@ public class BilibiliController
         var jsonPage = JObject.Parse(pagelistJson);
         string cid = jsonPage["data"]?[0]?["cid"]?.ToString();
         Console.WriteLine($"cid是: {cid}");
-        string part = Shared.MakeFileNameSafe(jsonPage["data"]?[0]?["part"]?.ToString());
-        Console.WriteLine($"视频标题是: {part}");
+        string title = Shared.MakeFileNameSafe(jsonPage["data"]?[0]?["title"]?.ToString());
+        Console.WriteLine($"视频标题是: {title}");
 
 
         // 2. 获取视频 URL
@@ -52,7 +52,7 @@ public class BilibiliController
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string videoFile = Path.Combine(desktopPath, "video.m4s");
         string audioFile = Path.Combine(desktopPath, "audio.m4s");
-        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(part) ? "output" : $"【{up_name}】{part}")}.mp4");
+        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(title) ? "output" : $"【{up_name}】{title}")}.mp4");
 
         string referer = $"{Shared.BILI_VIDEO}{bvId}";
         //await DownloadFileAsync(videoUrl, videoFile); //403 Forbidden

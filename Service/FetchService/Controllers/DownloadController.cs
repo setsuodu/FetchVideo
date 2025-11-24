@@ -188,8 +188,8 @@ public class DownloadController : ControllerBase
         var digitEnd = digitStart + matches1[diffIdx].Length;
 
         // 提取基础文件名（去掉数字 + 数字前的特殊字符）
-        var fileNamePart = path1.Substring(0, digitEnd);
-        var cleanName = Regex.Replace(fileNamePart, @"[._\-]*\d+$", ""); // 去掉 _001 前的特殊字符
+        var fileNameTitle = path1.Substring(0, digitEnd);
+        var cleanName = Regex.Replace(fileNameTitle, @"[._\-]*\d+$", ""); // 去掉 _001 前的特殊字符
         cleanName = Path.GetFileNameWithoutExtension(cleanName);
 
         // 如果仅剩数字 → 从路径左侧取一段
