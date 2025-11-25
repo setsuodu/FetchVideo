@@ -16,7 +16,6 @@ public class RouteController //路由器
             Console.WriteLine($"是 Bilibili视频: bvId={bvId}");
 
             var bili = new BilibiliController();
-            //await bili.GetUpInfo(bvId); // 获取Up信息，不需要
             await bili.GetBilibiliVideoAsync(bvId); // 获取视频
         }
         else if (url.Contains("live.bilibili"))

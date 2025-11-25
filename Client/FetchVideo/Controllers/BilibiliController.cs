@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Net.Http;
+using FetchVideo.Models;
 
 namespace FetchVideo.Controllers;
 
@@ -10,24 +11,15 @@ public class BilibiliController
     // 视频下载 bvId 👉 cid/title 👉 url
     public async Task GetBilibiliVideoAsync(string bvId)
     {
-        // 获取 UP 名字
-        string up_name = await GetUpInfo(bvId);
-
-        var httpClient = new HttpClient();
+        // 获取视频信息
+        var videoView = await GetUpInfo(bvId);
 
         // 1. 获取 cid
-        string finalUrl = $"{Shared.BILI_PLAYER}pagelist?bvid={bvId}&jsonp=jsonp";
-        //Console.WriteLine($"URL是: {finalUrl}");
-        string pagelistJson = await httpClient.GetStringAsync(finalUrl);
-        //Console.WriteLine($"返回值: {pagelistJson}");
-        var jsonPage = JObject.Parse(pagelistJson);
-        string cid = jsonPage["data"]?[0]?["cid"]?.ToString();
-        Console.WriteLine($"cid是: {cid}");
-        string title = Shared.MakeFileNameSafe(jsonPage["data"]?[0]?["title"]?.ToString());
-        Console.WriteLine($"视频标题是: {title}");
+        string cid = videoView.cid;
 
 
         // 2. 获取视频 URL
+        var httpClient = new HttpClient();
         var apiUrl = $"{Shared.BILI_PLAYER}playurl?bvid={bvId}&cid={cid}&qn=80&fnval=16";
         var playUrlJson = await httpClient.GetStringAsync(apiUrl);
         //Console.WriteLine($"返回值: {playUrlJson}");
@@ -52,7 +44,7 @@ public class BilibiliController
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string videoFile = Path.Combine(desktopPath, "video.m4s");
         string audioFile = Path.Combine(desktopPath, "audio.m4s");
-        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(title) ? "output" : $"【{up_name}】{title}")}.mp4");
+        string outputFile = Path.Combine(desktopPath, $"【{videoView.owner.name}】{videoView.title}.mp4");
 
         string referer = $"{Shared.BILI_VIDEO}{bvId}";
         //await DownloadFileAsync(videoUrl, videoFile); //403 Forbidden
@@ -107,30 +99,26 @@ public class BilibiliController
 
 
     // bvId 查询 Up 主信息
-    public async Task<string> GetUpInfo(string bvId)
+    public async Task<VideoView> GetUpInfo(string bvId)
     {
         string finalUrl = $"{Shared.BILI_INTERFACE}view?bvid={bvId}";
         var httpClient = new HttpClient();
         string json = await httpClient.GetStringAsync(finalUrl);
         //Console.WriteLine($"返回值: {json}");
         var jsonObject = JObject.Parse(json);
-        var mid = jsonObject["data"]["owner"]["mid"]; //B站Uid
-        var name = jsonObject["data"]["owner"]["name"]; //B站用户名
-        var face = jsonObject["data"]["owner"]["face"]; //头像
-        Console.WriteLine($"Up主: {name} : {mid}");
-        return name.ToString();
-    }
-    // uid 查询 Up 主信息
-    public async Task GetUpInfoByUid(string uid)
-    {
-        string finalUrl = $"{Shared.BILI_SPACE}acc/info?mid={uid}";
-        var httpClient = new HttpClient();
-        string json = await httpClient.GetStringAsync(finalUrl);
-        //Console.WriteLine($"返回值: {json}");
-        var jsonObject = JObject.Parse(json);
-        var name = jsonObject["data"]["name"]; //B站用户名
-        var face = jsonObject["data"]["face"]; //头像
-        Console.WriteLine($"Up主: {name} : {uid}");
+        VideoView view = new VideoView
+        {
+            owner = new Owner
+            {
+                mid = jsonObject["data"]["owner"]["mid"].ToString(), //B站Uid
+                name = jsonObject["data"]["owner"]["name"].ToString(), //B站用户名
+                face = jsonObject["data"]["owner"]["face"].ToString(), //头像
+            },
+            title = jsonObject["data"]["title"].ToString(),
+            cid = jsonObject["data"]["cid"].ToString()
+        };
+        Console.WriteLine($"up-name={view.owner.name}, title={view.cid}, cid={view.cid}");
+        return view;
     }
 
     // 直播流
