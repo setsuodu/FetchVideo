@@ -35,4 +35,4 @@ EXPOSE 8080
 
 # 容器内 /app/downloads 映射到宿主机 /download
 VOLUME ["/app/downloads"]
-ENTRYPOINT ["dotnet", "FetchService.dll"]
+ENTRYPOINT ["dotnet", "FetchVideo.Service.dll"]
