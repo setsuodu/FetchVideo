@@ -31,8 +31,6 @@ public class Shared
         return roomId;
     }
 
-    // Windows文件名不允许文件名含（\ / : * ? " < > |）
-    // 替换为 下划线 _
     public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
     {
         var ffmpeg = new Process();
@@ -76,4 +74,5 @@ public class Shared
         }
         return name;
     }
+
 }
