@@ -35,14 +35,9 @@ dotnet build -c Release
 
 # Service
 
-💻上下文构建
+💻从项目根目录构建（推荐）：
 ```
-cd FetchVideo/Service/FetchService
-docker build -t fetch-service .
-```
-⚙️从项目根目录构建（推荐）：
-```
-docker build -f Service/FetchService/Dockerfile -t fetch-service .
+docker build -f Service/Service/Dockerfile -t fetch-service .
 ```
 ⚙️构建后运行（Docker Desktop，映射C盘）
 ```

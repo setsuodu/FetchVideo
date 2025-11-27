@@ -36,7 +36,7 @@ if (app.Environment.IsDevelopment())
 // Windows      | C:/Users/YourName/Downloads/
 // Linux/Docker | ~/download
 // Synolog      | /volume1/downloads
-// fnOS         | /data/download
+// fnOS         | /vol1/download
 //var downloadPath = Path.Combine(AppContext.BaseDirectory, "download"); // ~\bin\Debug\net9.0\download
 //Directory.CreateDirectory(downloadPath);
 //Console.WriteLine($"创建文件夹: {downloadPath}");
@@ -49,6 +49,6 @@ app.MapGet("/downloads/{*path}", async (string path, HttpContext ctx) =>
     return Results.File(filePath, "application/octet-stream");
 });
 // 可选：默认跳转到 WebView
-app.MapGet("/", () => Results.Redirect("/index.html"));
+app.MapGet("/", () => Results.Redirect("/index.html")); //重定向
 
 app.Run();

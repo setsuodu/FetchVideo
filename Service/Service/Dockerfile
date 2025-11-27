@@ -1,8 +1,27 @@
 ﻿# 阶段1: 构建
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
-COPY . .
+#COPY . .
+#RUN dotnet restore
+
+
+# 1. 复制所有必需的项目文件夹和解决方案文件
+# 路径相对于项目根目录 (即构建上下文)
+COPY Shared/ Shared/ 
+COPY Service/ Service/ 
+# 注意：我们不需要复制 Client/ 目录，因为它不是 Service 的依赖。
+
+# 2. 还原依赖项
+# 将工作目录切换到包含 .sln 文件的目录
+# 这确保了 dotnet restore 能正确解析所有项目间的相对路径
+WORKDIR /src/Service 
 RUN dotnet restore
+
+# 3. 编译和发布主项目
+# 将工作目录切换到主项目文件所在的目录
+WORKDIR /src/Service/Service
+
+
 RUN dotnet publish -c Release -o /app/publish
 
 # 阶段2: 运行
