@@ -1,4 +1,6 @@
 ﻿using FetchVideo.Controllers;
+using FetchVideo.Models;
+using FetchVideo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,26 @@ builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(); // 添加服务必须在 app build 之前
 builder.Services.AddSingleton<FFmpegProcessManager>();
+
+// 直接把 clock.json 内容绑定到 ClockConfig，强制读运行目录下的文件
+builder.Services.Configure<ClockConfig>(config =>
+{
+    var path = Path.Combine(AppContext.BaseDirectory, "clock.json");
+    if (File.Exists(path))
+    {
+        var json = File.ReadAllText(path);
+        var temp = System.Text.Json.JsonSerializer.Deserialize<ClockConfig>(json);
+        config.TriggerTimes = temp?.TriggerTimes ?? new() { "00:00", "12:00" };
+        Console.WriteLine($"【成功加载】clock.json 已读取，时间点：{string.Join(", ", config.TriggerTimes)}");
+    }
+    else
+    {
+        config.TriggerTimes = new() { "00:00", "12:00" };
+        Console.WriteLine("【警告】未找到 clock.json，使用默认时间 00:00, 12:00");
+    }
+});
+// 加上热更新监听（这才是王道）
+builder.Services.AddHostedService<DailyTriggerService>();
 
 var app = builder.Build();
 

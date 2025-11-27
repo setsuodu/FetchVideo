@@ -19,6 +19,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\FetchVideo.Shared.csproj" />
+	<None Update="clock.json">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
   </ItemGroup>
 
 </Project>
