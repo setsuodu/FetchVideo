@@ -17,4 +17,8 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\FetchVideo.Shared\FetchVideo.Shared.csproj" />
+  </ItemGroup>
+
 </Project>
