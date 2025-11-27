@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace FetchVideo.Utils;
 
@@ -31,34 +30,6 @@ public class Shared
         return roomId;
     }
 
-    public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
-    {
-        var ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
-        ffmpeg.StartInfo.Arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c copy \"{outputPath}\" -y";
-        ffmpeg.StartInfo.UseShellExecute = false;
-        ffmpeg.StartInfo.CreateNoWindow = true;
-        ffmpeg.Start();
-        ffmpeg.WaitForExit();
-
-        // 只有当 FFmpeg 进程退出后，代码才会执行到这里
-        //删除源视频的代码 // <-- 这里的代码
-        File.Delete(videoPath);
-        File.Delete(audioPath);
-    }
-
-    public static void M3U8toMP4(string room_id, string m3u8Url, string outputPath)
-    {
-        var ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
-        ffmpeg.StartInfo.Arguments = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -c copy \"{outputPath}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
-        // -t 01:00:00"; // 录制1h自动停止
-        ffmpeg.StartInfo.UseShellExecute = false;
-        ffmpeg.StartInfo.CreateNoWindow = false; //关键①，true不执行
-        ffmpeg.Start();
-        ffmpeg.WaitForExit();
-    }
-
     // Windows文件名不允许文件名含（\ / : * ? " < > |）
     // 替换为 下划线 _
     public static string MakeFileNameSafe(string name)
@@ -75,4 +46,56 @@ public class Shared
         return name;
     }
 
+
+    // 短链👉长链
+    public static async Task<string> Curl_I(string shortUrl)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 ...");
+
+        // 1. 构造请求对象
+        var request = new HttpRequestMessage(HttpMethod.Head, shortUrl);
+        // 2. 发送（等价于 curl -I）
+        var response = await client.SendAsync(request);
+        var location = response.Headers.Location?.ToString() ?? response.RequestMessage.RequestUri.ToString();
+
+        location = CleanUrl(location);
+        location = location.Replace("/h5/", "/");
+        return location;
+    }
+
+    // 裁掉 "/h5" 和 "?后面多余的"
+    public static string CleanUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return url;
+
+        Uri uri;
+        try
+        {
+            uri = new Uri(url);
+        }
+        catch
+        {
+            return url; // 非法 URL 原样返回
+        }
+
+        // 1. 处理 /h5：裁掉 /h5 及之后部分
+        string path = uri.AbsolutePath;
+        int h5Index = path.IndexOf("/h5", StringComparison.OrdinalIgnoreCase);
+        if (h5Index >= 0)
+        {
+            path = path.Substring(0, h5Index); // 裁掉 /h5 及之后
+        }
+
+        // 2. 保留一个 ?，去掉所有查询参数
+        string baseUrl = uri.Scheme + "://" + uri.Authority + path;
+
+        // 如果原始 URL 有 ?，保留一个 ?（但不带参数）
+        if (url.Contains('?'))
+        {
+            baseUrl += "?";
+        }
+
+        return baseUrl;
+    }
 }
