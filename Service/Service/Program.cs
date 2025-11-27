@@ -19,6 +19,9 @@ builder.Services.AddSingleton<FFmpegProcessManager>();
 builder.Services.AddSingleton<DailyTriggerService>();  // 单例！关键！
 builder.Services.AddHostedService(provider => provider.GetRequiredService<DailyTriggerService>());
 
+builder.Services.AddScoped<BilibiliController>();
+builder.Services.AddScoped<RouteController>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
