@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36623.8
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FetchVideo.Service", "Service\FetchVideo.Service.csproj", "{0CEAC023-5B5F-4578-9A70-3E3E9C6268DC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FetchVideo.Client", "Client\FetchVideo.Client.csproj", "{586B0F79-7D6B-4738-AB25-B3FA49B2F5EE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FetchVideo.Shared", "..\Shared\FetchVideo.Shared.csproj", "{70066436-0A9F-DBA3-489E-98BB1E1ACE68}"
 EndProject
@@ -13,10 +13,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0CEAC023-5B5F-4578-9A70-3E3E9C6268DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0CEAC023-5B5F-4578-9A70-3E3E9C6268DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0CEAC023-5B5F-4578-9A70-3E3E9C6268DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0CEAC023-5B5F-4578-9A70-3E3E9C6268DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{586B0F79-7D6B-4738-AB25-B3FA49B2F5EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{586B0F79-7D6B-4738-AB25-B3FA49B2F5EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{586B0F79-7D6B-4738-AB25-B3FA49B2F5EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{586B0F79-7D6B-4738-AB25-B3FA49B2F5EE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{70066436-0A9F-DBA3-489E-98BB1E1ACE68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{70066436-0A9F-DBA3-489E-98BB1E1ACE68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70066436-0A9F-DBA3-489E-98BB1E1ACE68}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -26,6 +26,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {4A7BF9F2-2DC4-43E3-8750-CCE98427CB83}
+		SolutionGuid = {7CCF7386-EC32-4836-B66A-4D96ABDE125B}
 	EndGlobalSection
 EndGlobal
