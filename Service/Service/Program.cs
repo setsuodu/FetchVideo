@@ -1,5 +1,4 @@
 ﻿using FetchVideo.Controllers;
-using FetchVideo.Models;
 using FetchVideo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,25 +15,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(); // 添加服务必须在 app build 之前
 builder.Services.AddSingleton<FFmpegProcessManager>();
 
-// 直接把 clock.json 内容绑定到 ClockConfig，强制读运行目录下的文件
-builder.Services.Configure<ClockConfig>(config =>
-{
-    var path = Path.Combine(AppContext.BaseDirectory, "clock.json");
-    if (File.Exists(path))
-    {
-        var json = File.ReadAllText(path);
-        var temp = System.Text.Json.JsonSerializer.Deserialize<ClockConfig>(json);
-        config.TriggerTimes = temp?.TriggerTimes ?? new() { "00:00", "12:00" };
-        Console.WriteLine($"【成功加载】clock.json 已读取，时间点：{string.Join(", ", config.TriggerTimes)}");
-    }
-    else
-    {
-        config.TriggerTimes = new() { "00:00", "12:00" };
-        Console.WriteLine("【警告】未找到 clock.json，使用默认时间 00:00, 12:00");
-    }
-});
-// 加上热更新监听（这才是王道）
-builder.Services.AddHostedService<DailyTriggerService>();
+// 在 builder.Services 区域加入这行
+builder.Services.AddSingleton<DailyTriggerService>();  // 单例！关键！
+builder.Services.AddHostedService(provider => provider.GetRequiredService<DailyTriggerService>());
 
 var app = builder.Build();
 
@@ -69,6 +52,37 @@ app.MapGet("/downloads/{*path}", async (string path, HttpContext ctx) =>
     var filePath = Path.Combine("/app/downloads", path);
     if (!System.IO.File.Exists(filePath)) return Results.NotFound();
     return Results.File(filePath, "application/octet-stream");
+});
+// 在 app.MapControllers(); 之前加一个 API
+app.MapPost("/api/schedule/update", (List<string> times, DailyTriggerService service) =>
+{
+    service.UpdateTriggerTimes(times);
+    return Results.Ok(new
+    {
+        message = "定时时间已更新",
+        current = service.GetCurrentTriggerTimes()
+    });
+});
+// GET：查看当前定时时间
+app.MapGet("/api/schedule/current", (DailyTriggerService service) =>
+{
+    var times = service.GetCurrentTriggerTimes();
+    return Results.Ok(new
+    {
+        currentTimes = times,
+        count = times.Count,
+        nextPossibleTriggers = times.Select(t =>
+        {
+            if (TimeSpan.TryParseExact(t, new[] { "H:m:s", "HH:mm:ss", "H:m", "HH:mm", "HH:mm:ss.fff", "H:m:s.fff" },
+                System.Globalization.CultureInfo.InvariantCulture, out var ts))
+            {
+                var next = DateTime.Today.Add(ts);
+                if (next <= DateTime.Now) next = next.AddDays(1);
+                return new { time = t, nextRun = next.ToString("yyyy-MM-dd HH:mm:ss") };
+            }
+            return null;
+        }).Where(x => x != null)
+    });
 });
 // 可选：默认跳转到 WebView
 app.MapGet("/", () => Results.Redirect("/index.html")); //重定向

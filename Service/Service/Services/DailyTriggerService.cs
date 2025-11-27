@@ -1,84 +1,101 @@
-﻿using Microsoft.Extensions.Options;
-using FetchVideo.Models;
-
-namespace FetchVideo.Services;
+﻿namespace FetchVideo.Services;
 
 public class DailyTriggerService : BackgroundService
 {
     private readonly ILogger<DailyTriggerService> _logger;
-    private ClockConfig _config;
+    private volatile List<string> _triggerTimes = new() { "00:00", "12:00", "16:24" };
+    private CancellationTokenSource _cts = new();   // 每次都要重新 new
 
-    public DailyTriggerService(
-        ILogger<DailyTriggerService> logger,
-        IOptionsMonitor<ClockConfig> optionsMonitor)
+    public DailyTriggerService(ILogger<DailyTriggerService> logger)
     {
         _logger = logger;
-        _config = optionsMonitor.CurrentValue;
-
-        // 热更新监听
-        optionsMonitor.OnChange(newConfig =>
-        {
-            _logger.LogWarning("clock.json 已热更新！！新时间：{0}", string.Join(", ", newConfig.TriggerTimes));
-            _config = newConfig;
-        });
-
-        // 启动时也打印一次
-        _logger.LogWarning("启动时读取的时间：{0}", string.Join(", ", _config.TriggerTimes));
-        _logger.LogWarning("实时修改这个文件 → {0}", Path.Combine(AppContext.BaseDirectory, "clock.json"));
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public IReadOnlyList<string> GetCurrentTriggerTimes() => _triggerTimes.AsReadOnly();
+
+    public void UpdateTriggerTimes(List<string> newTimes)
     {
-        _logger.LogWarning("定时服务启动成功！实时修改 → {0}",
-            Path.Combine(AppContext.BaseDirectory, "clock.json"));
+        if (newTimes == null || !newTimes.Any()) return;
 
-        // 启动时也触发一次热更新日志（让你知道活着）
-        _logger.LogInformation("当前触发时间：{0}", string.Join(", ", _config.TriggerTimes));
-
-        while (!stoppingToken.IsCancellationRequested)
+        lock (this)
         {
-            var now = DateTime.Now;
-            var today = now.Date;
-            DateTime? nearest = null;
-
-            // 每次循环都重新读取最新配置 → 热更新实时生效！
-            foreach (var t in _config.TriggerTimes ?? Enumerable.Empty<string>())
+            var validTimes = new List<string>();
+            foreach (var t in newTimes)
             {
-                if (TimeSpan.TryParse(t, out var time))
+                if (TimeSpan.TryParse(t.Trim(), out _))   // ← 改成 TryParse，万能！
                 {
-                    var candidate = today.Add(time);
-                    if (candidate <= now)
-                        candidate = candidate.AddDays(1);
-
-                    if (nearest == null || candidate < nearest)
-                        nearest = candidate;
+                    validTimes.Add(t.Trim());
+                }
+                else
+                {
+                    _logger.LogWarning("忽略无效时间格式：{0}", t);
                 }
             }
 
-            if (nearest.HasValue)
-            {
-                var delay = nearest.Value - DateTime.Now;
-                _logger.LogInformation("下一次触发 → {0}（等待 {1:c}）",
-                    nearest.Value.ToString("yyyy-MM-dd HH:mm:ss"), delay);
+            _triggerTimes = validTimes;
+            _logger.LogWarning("定时时间已更新 → {0}", string.Join(", ", _triggerTimes));
 
-                if (delay > TimeSpan.Zero)
-                    await Task.Delay(delay, stoppingToken);
-
-                if (stoppingToken.IsCancellationRequested) break;
-
-                _logger.LogWarning("时间到！执行定时任务 → {0}", DateTime.Now.ToString("HH:mm:ss"));
-                await TriggerApiAsync();
-            }
-            else
-            {
-                await Task.Delay(5000, stoppingToken); // 配置全错，缓一缓
-            }
+            _cts.Cancel();
+            _cts.Dispose();
+            _cts = new CancellationTokenSource();
         }
     }
 
-    private async Task TriggerApiAsync()
+    private (DateTime nextRun, TimeSpan delay) CalculateNextRun()
     {
-        Console.WriteLine("【Action】触发了事件！！！");
-        await Task.CompletedTask;
+        var now = DateTime.Now;
+        var today = now.Date;
+        var times = _triggerTimes.ToList();
+
+        DateTime? nearest = null;
+        TimeSpan? shortest = null;
+
+        foreach (var t in times)
+        {
+            if (TimeSpan.TryParse(t.Trim(), out var ts))   // ← 同样改成 TryParse
+            {
+                var candidate = today.Add(ts);
+                if (candidate <= now) candidate = candidate.AddDays(1);
+                var d = candidate - now;
+
+                if (shortest == null || d < shortest.Value)
+                {
+                    shortest = d;
+                    nearest = candidate;
+                }
+            }
+        }
+
+        return (nearest ?? now.AddMinutes(1), shortest ?? TimeSpan.FromMinutes(1));
+    }
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var (nextRun, delay) = CalculateNextRun();
+
+            if (delay > TimeSpan.Zero)
+            {
+                _logger.LogInformation("下次触发：{0}（等待 {1:h\\:mm\\:ss}）",
+                    nextRun.ToString("yyyy-MM-dd HH:mm:ss"), delay);
+
+                try
+                {
+                    await Task.Delay(delay, _cts.Token);
+                }
+                catch (TaskCanceledException)
+                {
+                    _logger.LogInformation("时间被修改，重新计算……");
+                    continue;   // 直接进入下一轮循环
+                }
+
+                _logger.LogWarning("【Action】定时任务触发了！！！");
+                Console.WriteLine("【Action】触发了事件！！！");
+            }
+            else
+            {
+                await Task.Delay(1000, stoppingToken);
+            }
+        }
     }
 }
