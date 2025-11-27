@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using FetchService.Models;
-using Newtonsoft.Json;
 
 namespace FetchService.Controllers;
 
@@ -29,22 +28,11 @@ public class BilibiliController : ControllerBase
         var videoView = await GetUpInfo(bvId);
 
         // 1. 获取 cid
-        //string finalUrl = $"{Shared.BILI_PLAYER}pagelist?bvid={bvId}&jsonp=jsonp";
-        //Console.WriteLine($"URL是: {finalUrl}");
-        //string pagelistJson = await httpClient.GetStringAsync(finalUrl);
-        //Console.WriteLine($"返回值: {pagelistJson}");
-        //var jsonPage = JObject.Parse(pagelistJson);
-        //string cid = jsonPage["data"]?[0]?["cid"]?.ToString();
-        //Console.WriteLine($"cid是: {cid}");
-        // part 结果有误
-        //string part = Shared.MakeFileNameSafe(jsonPage["data"]?[0]?["part"]?.ToString());
-        //Console.WriteLine($"视频标题是: {part}");
         string cid = videoView.cid;
 
 
-        var httpClient = new HttpClient();
-
         // 2. 获取视频 URL
+        var httpClient = new HttpClient();
         var apiUrl = $"{Shared.BILI_PLAYER}playurl?bvid={bvId}&cid={cid}&qn=80&fnval=16";
         var playUrlJson = await httpClient.GetStringAsync(apiUrl);
         //Console.WriteLine($"返回值: {playUrlJson}");
@@ -93,7 +81,6 @@ public class BilibiliController : ControllerBase
         processInfo.Command = "Merge";
         return processInfo;
     }
-
     // B站验证下载
     async Task DownloadBilibiliM4sAsync(string url, string referer, string outputPath)
     {
@@ -184,15 +171,24 @@ public class BilibiliController : ControllerBase
         return processInfo;
     }
     // 获取直播房间信息
-    public async Task GetRoomInfo(string room_id)
+    [HttpGet("get_bili_roominfo")]
+    public async Task<RoomInfo> GetRoomInfo(string room_id)
     {
         string finalUrl = $"{Shared.BILI_ROOM}get_info?room_id={room_id}";
         var httpClient = new HttpClient();
         string roomJson = await httpClient.GetStringAsync(finalUrl);
         Console.WriteLine(roomJson);
         var jsonObject = JObject.Parse(roomJson);
-        var uid = jsonObject["data"]["uid"]; //直播间Up主
-        var title = jsonObject["data"]["title"]; //直播间标题
+        var info = new RoomInfo
+        {
+            uid = jsonObject["data"]["uid"].ToObject<double>(), //直播间Up主
+            live_status = jsonObject["data"]["live_status"].ToObject<byte>(), //是否开播
+            title = jsonObject["data"]["title"].ToString(), //直播间标题
+            user_cover = jsonObject["data"]["user_cover"].ToString(),
+            parent_area_name = jsonObject["data"]["parent_area_name"].ToString(),
+            area_name = jsonObject["data"]["area_name"].ToString(),
+        };
+        return info;
     }
 
     // 获取B站直播标题
