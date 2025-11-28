@@ -210,3 +210,9 @@ FakesAssemblies/
 GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
+
+# SQLite 临时文件 — 永久忽略！
+app.db-shm
+app.db-wal
+*.db-shm
+*.db-wal

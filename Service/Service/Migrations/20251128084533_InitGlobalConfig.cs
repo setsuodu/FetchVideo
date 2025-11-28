@@ -11,7 +11,7 @@ namespace FetchVideo.Service.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "ScheduledItems",
+                name: "ScheduleConfigs",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -21,12 +21,12 @@ namespace FetchVideo.Service.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ScheduledItems", x => x.Id);
+                    table.PrimaryKey("PK_ScheduleConfigs", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ScheduledItems_Key",
-                table: "ScheduledItems",
+                name: "IX_ScheduleConfigs_Key",
+                table: "ScheduleConfigs",
                 column: "Key",
                 unique: true);
         }
@@ -35,7 +35,7 @@ namespace FetchVideo.Service.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ScheduledItems");
+                name: "ScheduleConfigs");
         }
     }
 }

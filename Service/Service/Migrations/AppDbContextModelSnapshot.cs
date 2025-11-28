@@ -35,7 +35,7 @@ namespace FetchVideo.Service.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("ScheduledItems");
+                    b.ToTable("ScheduleConfigs");
                 });
 #pragma warning restore 612, 618
         }

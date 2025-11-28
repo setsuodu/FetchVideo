@@ -8,7 +8,7 @@ public class DailyTriggerService : BackgroundService
     private readonly ILogger<DailyTriggerService> _logger;
     // 🌟 核心修改 1: 注入 IServiceScopeFactory
     private readonly IServiceScopeFactory _scopeFactory;
-    private volatile List<string> _triggerTimes = new() { "08:00", "12:00", "18:00", "22:00" };
+    private volatile List<string> _triggerTimes = ScheduleConfigService.DefaultTimes;
     private CancellationTokenSource _cts = new();   // 每次都要重新 new
 
     public DailyTriggerService(ILogger<DailyTriggerService> logger,

@@ -1,7 +1,7 @@
 ﻿using FetchVideo;
-using FetchVideo.Controllers;
 using FetchVideo.Data;
 using FetchVideo.Services;
+using FetchVideo.Controllers;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

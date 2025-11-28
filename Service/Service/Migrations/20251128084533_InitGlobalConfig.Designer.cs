@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FetchVideo.Service.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251128081014_InitGlobalConfig")]
+    [Migration("20251128084533_InitGlobalConfig")]
     partial class InitGlobalConfig
     {
         /// <inheritdoc />
@@ -38,7 +38,7 @@ namespace FetchVideo.Service.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("ScheduledItems");
+                    b.ToTable("ScheduleConfigs");
                 });
 #pragma warning restore 612, 618
         }
