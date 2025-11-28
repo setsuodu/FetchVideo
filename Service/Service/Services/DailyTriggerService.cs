@@ -133,14 +133,29 @@ public class DailyTriggerService : BackgroundService
         {
             "https://live.bilibili.com/1239314", //setsuodu（未开播）
             "https://live.bilibili.com/31734361", //小利萝（未开播）
-            "https://live.bilibili.com/936822", //瑟宝瑟宝（轮播？）
-            "https://live.bilibili.com/1728867738", //至尊强者小知恩
-            "https://live.bilibili.com/1792597682", //羊莓杨莓
-            "https://live.bilibili.com/1868871042", //开心螺蛳粉宝宝
             "https://live.bilibili.com/1948312359", //aeri酱咩
-            "https://live.bilibili.com/1712256876", //yy的小歪
+            "https://live.bilibili.com/936822", //瑟宝瑟宝（轮播？）
+            "https://live.bilibili.com/1842861593", //软水妮
+            "https://live.bilibili.com/1792597682", //羊莓杨莓
             "https://live.bilibili.com/1772923624", //你别芭乐我_
-            "https://live.bilibili.com/32443468", //小鱼要饿死了
+            "https://live.bilibili.com/1728867738", //至尊强者小知恩
+            "https://live.bilibili.com/1868871042", //开心螺蛳粉宝宝
+            "https://live.bilibili.com/1804469695", //枳月味奶片
+            "https://live.bilibili.com/1779344403", //憨憨打不服
+            "https://live.bilibili.com/1986467930", //钟意大堡包
+            "https://live.bilibili.com/1842356567", //香脆小海苔
+            "https://live.bilibili.com/1725923601", //空空学妹-Sub
+            "https://live.bilibili.com/1712256876", //yy的小歪
+            "https://live.bilibili.com/1747118475", //星梨梨S
+            "https://live.bilibili.com/1724212928", //小四桃子
+            "https://live.bilibili.com/1868870262", //小福包iu_
+            "https://live.bilibili.com/4533196", //路人饼饼ovo
+            "https://live.bilibili.com/1984186978", //甜奈-好运常伴
+            "https://live.bilibili.com/1729389539", //小蜜疯_璀璨
+            "https://live.bilibili.com/1904551806", //牛角包去睡了
+            "https://live.bilibili.com/1898932569", //冻泥不是冰的
+            "https://live.bilibili.com/11368496", //呀思思 【T170】
+			"https://live.bilibili.com/32443468", //小鱼要饿死了
         };
 
 
