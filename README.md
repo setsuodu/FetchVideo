@@ -21,7 +21,7 @@ A Windows console application, to download a video you should follow these steps
 dotnet build -c Release
 ```
 
-## Support
+## Test
 1. Bilibili video
 	- https://b23.tv/fC5i764
 	- https://www.bilibili.com/video/BV~
@@ -33,7 +33,7 @@ dotnet build -c Release
 	- short url: https://youtu.be/TsWzmbvGIsY
 	- Shorts: https://www.youtube.com/shorts/jVbkzaKBSFM
 
-# Service
+# Deploy
 
 💻从项目根目录构建（推荐）：
 ```

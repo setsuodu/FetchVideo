@@ -140,6 +140,7 @@ public class DailyTriggerService : BackgroundService
             "https://live.bilibili.com/1948312359", //aeri酱咩
             "https://live.bilibili.com/1712256876", //yy的小歪
             "https://live.bilibili.com/1772923624", //你别芭乐我_
+            "https://live.bilibili.com/32443468", //小鱼要饿死了
         };
 
 
