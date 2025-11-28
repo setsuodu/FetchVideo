@@ -1,8 +1,8 @@
-﻿using HtmlAgilityPack;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
+﻿using Microsoft.AspNetCore.Mvc;
 using FetchVideo.Models;
 using FetchVideo.Utils;
+using HtmlAgilityPack;
+using Newtonsoft.Json.Linq;
 
 namespace FetchVideo.Controllers;
 
@@ -221,5 +221,14 @@ public class BilibiliController : ControllerBase
             //Console.WriteLine("标题：" + title);
             return $"{title}_{timestamp}";
         }
+    }
+
+    
+    // 打印容器当前运行的下载任务
+    [HttpGet("running_tasks")]
+    public ActionResult<List<FFmpegTaskDto>> GetRunningTasks()
+    {
+        var running = _manager.GetRunningTasks();
+        return Ok(running);
     }
 }
