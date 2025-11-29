@@ -73,6 +73,9 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="video-tab" data-bs-toggle="tab" data-bs-target="#video-content" type="button" role="tab">视频下载</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-content" type="button" role="tab">后台状态</button>
+                </li>
             </ul>
 
             <div class="tab-content" id="downloadTabContent">
@@ -128,9 +131,9 @@
                                 <input type="url" class="form-control" id="videoUrl" required placeholder="https://x.com/src/video.mp4">
                                 <button type="button" class="btn btn-danger d-none" id="clearBtn">×</button>
                             </div>
-                            </div>
-                            <button type="submit" class="btn btn-success w-100">开始下载</button>
-</form>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">开始下载</button>
+                    </form>
                     <hr />
                     <div id="videoResult" class="d-none">
                         <div class="progress mb-3">
@@ -140,6 +143,19 @@
                         <pre id="log-video" class="bg-light p-3 border"></pre>
                         <a id="videoLogLink" class="btn btn-sm btn-outline-secondary d-none" download>下载日志</a>
                     </div>
+                </div>
+
+                <!-- 后台状态 -->
+                <div class="tab-pane fade" id="dashboard-content" role="tabpanel">
+                    <form id="scheduleForm">
+                        <div class="mb-3">
+                            <div class="input-group-float">
+                                <label class="form-label" id="scheduleText">当前计划</label>
+                            </div>
+                            <input type="text" class="form-control" id="scheduleJson" required placeholder="输入时间 json">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100" id="schedulePost">提交</button>
+                    </form>
                 </div>
             </div>
         </div>
