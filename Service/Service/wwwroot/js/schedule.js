@@ -1,36 +1,38 @@
 ﻿// schedule.js
 export function initScheduleManager() {
-    const API_GET = 'http://localhost:8080/api/schedule/current';
-    const API_POST = 'http://localhost:8080/api/schedule/update';
+    const API_GET = '/api/schedule/current';
+    const API_POST = '/api/schedule/update';
 
     const scheduleForm = document.getElementById('scheduleForm');
     const scheduleJsonInput = document.getElementById('scheduleJson');
-    const scheduleTextLabel = document.querySelector('#scheduleText'); // 当前计划 显示的 label
+    const scheduleTextLabel = document.querySelector('#scheduleText');
 
     if (!scheduleForm || !scheduleJsonInput || !scheduleTextLabel) {
         console.warn('Schedule 模块未找到对应元素，跳过初始化');
         return;
     }
 
+    let hasFetched = false; // 标记是否已经请求过，避免重复请求
+
     /**
-     * GET 当前计划
+     * GET 当前计划并更新显示
      */
     async function fetchCurrentSchedule() {
-        console.log('GET 当前计划');
-        return;
+        console.log('GET 当前计划并更新显示');
         try {
             const response = await fetch(API_GET, {
                 method: 'GET',
-                credentials: 'include', // 如果后端用了 session/cookie 认证的话需要带上
-                headers: {
-                    'Accept': 'application/json',
-                },
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' },
             });
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-            const data = await response.json(); // 期望返回 ["00:00", "04:00",...]
-            updateDisplayAndInput(data);
+            const data = await response.json();
+            //console.log(data);
+            //console.log(data['currentTimes']);
+            updateDisplayAndInput(data['currentTimes']);
+            hasFetched = true;
         } catch (err) {
             console.error('获取当前计划失败:', err);
             scheduleTextLabel.textContent = '当前计划：获取失败';
@@ -38,42 +40,11 @@ export function initScheduleManager() {
     }
 
     /**
-     * POST 更新计划
-     */
-    async function updateSchedule(timesArray) {
-        console.log('POST 更新计划');
-        return;
-        try {
-            const response = await fetch(API_POST, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(timesArray),
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`更新失败: ${response.status} ${text}`);
-            }
-
-            const data = await response.json();
-            updateDisplayAndInput(data); // 成功后用返回的数据刷新显示
-            alert('计划更新成功！');
-        } catch (err) {
-            console.error('更新计划失败:', err);
-            alert('更新失败：' + err.message);
-        }
-    }
-
-    /**
-     * 同时更新 label 显示 和 input 框内容
+     * 更新 label 和 input
      */
     function updateDisplayAndInput(timesArray) {
         if (Array.isArray(timesArray) && timesArray.length > 0) {
-            const displayText = timesArray.join('，');
-            scheduleTextLabel.textContent = `当前计划：${displayText}`;
+            scheduleTextLabel.textContent = `当前计划：${timesArray.join('，')}`;
             scheduleJsonInput.value = JSON.stringify(timesArray);
         } else {
             scheduleTextLabel.textContent = '当前计划：暂无';
@@ -82,39 +53,65 @@ export function initScheduleManager() {
     }
 
     /**
-     * 表单提交事件
+     * POST 更新计划（保持不变）
      */
+    async function updateSchedule(timesArray) {
+        try {
+            const response = await fetch(API_POST, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(timesArray),
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`更新失败: ${response.status} ${text}`);
+                console.log('更新失败');
+                return;
+            }
+            const data = await response.json();
+            updateDisplayAndInput(data['current']);
+            //alert('计划更新成功！');
+        } catch (err) {
+            console.error('更新计划失败:', err);
+            alert('更新失败：' + err.message);
+        }
+    }
+
+    // 表单提交
     scheduleForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
         let inputValue = scheduleJsonInput.value.trim();
-
-        if (!inputValue) {
-            alert('请输入时间数组');
-            return;
-        }
+        if (!inputValue) return alert('请输入时间数组');
 
         let timesArray;
         try {
-            // 支持直接粘贴 ["00:00","04:00"] 或 ["00:00", "04:00"] 两种格式
             timesArray = JSON.parse(inputValue);
             if (!Array.isArray(timesArray)) throw new Error();
-        } catch (err) {
-            alert('请输入正确的 JSON 数组格式，例如：["00:00", "04:00", "10:00"]');
-            return;
-        }
-
-        // 简单校验时间格式（可选）
-        const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
-        const valid = timesArray.every(t => typeof t === 'string' && timeRegex.test(t));
-        if (!valid) {
-            if (!confirm('检测到有非标准时间格式，仍然提交？')) return;
+        } catch {
+            return alert('请输入正确的 JSON 数组格式，例如：["00:00", "04:00"]');
         }
 
         updateSchedule(timesArray);
     });
 
-    // 页面加载完立即获取一次
-    fetchCurrentSchedule();
-    console.log('页面加载完立即获取一次:');
+    // 关键：监听 Bootstrap Tab 切换事件
+    const dashboardTab = document.querySelector('a[data-bs-target="#dashboard-content"], a[href="#dashboard-content"]');
+    // 兼容两种常见写法：data-bs-target 或 href
+
+    if (dashboardTab) {
+        dashboardTab.addEventListener('shown.bs.tab', () => {
+            // 每次切到 dashboard Tab 都刷新一次（即使已经请求过，也拿最新）
+            fetchCurrentSchedule();
+        });
+
+        // 可选：第一次手动点开时如果还没请求过，也请求一次
+        // 如果你希望第一次进入页面就显示（即使没点 Tab），可以加下面这行：
+        // if (dashboardTab.parentElement.classList.contains('active')) fetchCurrentSchedule();
+    } else {
+        console.warn('未找到 dashboard 的 Tab 按钮，降级为页面加载时请求一次');
+        fetchCurrentSchedule(); // 降级方案
+    }
 }
