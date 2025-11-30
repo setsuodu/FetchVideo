@@ -1,5 +1,6 @@
 ﻿// schedule.js
 export function initScheduleManager() {
+    const API_PROCESS = '/api/bilibili/running_tasks';
     const API_GET = '/api/schedule/current';
     const API_POST = '/api/schedule/update';
 
@@ -13,6 +14,27 @@ export function initScheduleManager() {
     }
 
     let hasFetched = false; // 标记是否已经请求过，避免重复请求
+
+    /**
+     * GET 当前任务数
+     */
+    async function fetchCurrentProcess() {
+        try {
+            const response = await fetch(API_PROCESS, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' },
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            console.log(`并发任务 = ${data.lengh}个`);
+            console.log(data);
+        } catch (err) {
+            console.error('当前任务数失败:', err);
+        }
+    }
 
     /**
      * GET 当前计划并更新显示
@@ -105,6 +127,7 @@ export function initScheduleManager() {
         dashboardTab.addEventListener('shown.bs.tab', () => {
             // 每次切到 dashboard Tab 都刷新一次（即使已经请求过，也拿最新）
             fetchCurrentSchedule();
+            fetchCurrentProcess();
         });
 
         // 可选：第一次手动点开时如果还没请求过，也请求一次
@@ -113,5 +136,6 @@ export function initScheduleManager() {
     } else {
         console.warn('未找到 dashboard 的 Tab 按钮，降级为页面加载时请求一次');
         fetchCurrentSchedule(); // 降级方案
+        fetchCurrentProcess();
     }
 }
