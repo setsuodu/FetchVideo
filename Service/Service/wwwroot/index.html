@@ -57,6 +57,10 @@
             width: 60px; /* 您可以根据需要更改这个像素值 */
             box-sizing: border-box; /* 推荐：确保 padding 和 border 不会增加元素总宽度 */
         }
+        /* 支持换行 */
+        #processText {
+            white-space: pre-line; /* 或者 pre-wrap / pre */
+        }
     </style>
 </head>
 <body>
@@ -157,6 +161,8 @@
                             <input type="text" class="form-control" id="scheduleJson" required placeholder="输入时间 json">
                         </div>
                         <button type="submit" class="btn btn-success w-100" id="schedulePost">提交</button>
+                        <div><label class="form-label">当前任务</label></div>
+                        <div><label class="form-label" id="processText">[]</label></div>
                     </form>
                 </div>
             </div>

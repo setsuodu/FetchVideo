@@ -7,8 +7,9 @@ export function initScheduleManager() {
     const scheduleForm = document.getElementById('scheduleForm');
     const scheduleJsonInput = document.getElementById('scheduleJson');
     const scheduleTextLabel = document.querySelector('#scheduleText');
+    const processTextLabel = document.querySelector('#processText');
 
-    if (!scheduleForm || !scheduleJsonInput || !scheduleTextLabel) {
+    if (!scheduleForm || !scheduleJsonInput || !scheduleTextLabel || !processTextLabel) {
         console.warn('Schedule 模块未找到对应元素，跳过初始化');
         return;
     }
@@ -28,9 +29,34 @@ export function initScheduleManager() {
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-            const data = await response.json();
-            console.log(`并发任务 = ${data.lengh}个`);
+            const data = await response.json(); // 这里 data 就是你上面那个数组
             console.log(data);
+
+            // 例如取第一个任务的 TaskId
+            if (data.length > 0) {
+                console.log('当前运行中的任务ID:', data[0].TaskId);
+                console.log('状态:', data[0].Status);
+            }
+
+            //let text = '';
+            let text = `序号 \t状态 \t主播 \t开始时间 \n`;
+            //text += `────┼──────┼──────────────────┼─────────\n`;
+            data.forEach((task, index) => {
+                console.log(`在遍历：${index}`);
+                const up_name = task.UpName;
+                const time = task.StartTimeDisplay;
+
+                // 根据状态加颜色标记（只是文本标记，textarea不认HTML）
+                const statusMark = task.Status === 'Running' ? 'RUNNING' :
+                    task.Status === 'Completed' ? 'COMPLETED' :
+                        task.Status === 'Failed' ? 'FAILED' : task.Status;
+
+                text += `${String(index + 1).padStart(3)} │ ${statusMark} │ ${up_name} │ ${time}\n`;
+            });
+            //console.log('👇text👇');
+            //console.log(text);
+            processTextLabel.textContent = text;
+
         } catch (err) {
             console.error('当前任务数失败:', err);
         }

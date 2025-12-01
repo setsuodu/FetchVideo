@@ -56,6 +56,7 @@ public class YoutubeController : ControllerBase
             Console.WriteLine($"不分轨的: {outputFile}");
             var processInfo = new FFmpegProcessInfo
             {
+                UpName = title,
                 Command = "Normal",
                 StartTime = DateTime.Now,
                 Status = "Completed"
@@ -75,7 +76,7 @@ public class YoutubeController : ControllerBase
 
             // FFmpeg 合并
             string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
-            var processInfo = _manager.StartFFmpeg(mergeCMD);
+            var processInfo = _manager.StartFFmpeg(mergeCMD, title);
             Console.WriteLine($"下载完成: {DateTime.Now}");
             await processInfo.process.WaitForExitAsync();
             System.IO.File.Delete(videoFile);
@@ -103,7 +104,7 @@ public class YoutubeController : ControllerBase
     public async Task<FFmpegProcessInfo> GetM3U8(string m3u8)
     {
         string mergeCMD = $"-i \"{m3u8}\" -c copy \"{_downloadPath}.mp4\"";
-        var processInfo = _manager.StartFFmpeg(mergeCMD);
+        var processInfo = _manager.StartFFmpeg(mergeCMD, "missav");
         Console.WriteLine($"下载完成: {DateTime.Now}");
         await processInfo.process.WaitForExitAsync();
         processInfo.Command = "Convert";

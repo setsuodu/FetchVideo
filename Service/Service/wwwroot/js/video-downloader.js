@@ -124,7 +124,7 @@ export function initVideoDownloader() {
 
     // 设置按钮为“停止录制”（红色）
     const setStopButton = () => {
-        console.log('停止录制');
+        //console.log('停止录制');
         submitBtn.textContent = '停止录制';
         submitBtn.classList.remove('btn-success');
         submitBtn.classList.add('btn-danger');

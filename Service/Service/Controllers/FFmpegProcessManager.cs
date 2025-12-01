@@ -10,10 +10,12 @@ public class FFmpegProcessManager
         = new();
 
     // 启动 FFmpeg 并返回任务 ID
-    public FFmpegProcessInfo StartFFmpeg(string command)
+    public FFmpegProcessInfo StartFFmpeg(string command, string up_time)
     {
+        string up_name = up_time.Split('_')[0]; //去掉时间字串
+
         var taskId = Guid.NewGuid().ToString();
-        Console.WriteLine($"ffmpeg任务: {taskId}");
+        Console.WriteLine($"ffmpeg任务: {taskId}, up: {up_name}");
         var startTime = DateTime.UtcNow;
         var process = new Process
         {
@@ -31,6 +33,7 @@ public class FFmpegProcessManager
         var info = new FFmpegProcessInfo
         {
             TaskId = taskId,
+            UpName = up_name ?? "主播",
             StartTime = startTime,
             Command = command,
             Status = "Running"
@@ -102,13 +105,6 @@ public class FFmpegProcessManager
     }
 
     // 可选：获取运行中的任务列表
-    //public List<FFmpegProcessInfo> GetRunningTasks()
-    //{
-    //    return _processes.Values
-    //        .Where(x => !x.Process.HasExited)
-    //        .Select(x => x.Info)
-    //        .ToList();
-    //}
     public List<FFmpegTaskDto> GetRunningTasks()
     {
         var running = _processes.Values
@@ -116,6 +112,7 @@ public class FFmpegProcessManager
         .Select(x => new FFmpegTaskDto
         {
             TaskId = x.Info.TaskId,
+            UpName = x.Info.UpName,
             StartTime = x.Info.StartTime,
             Command = x.Info.Command,
             Status = "Running",
@@ -133,6 +130,7 @@ public class FFmpegProcessManager
 public class FFmpegProcessInfo
 {
     public string TaskId { get; set; } = string.Empty;
+    public string UpName { get; set; } = string.Empty; // 主播名
     public DateTime StartTime { get; set; }
     public string Command { get; set; } = string.Empty;
     public string Status { get; set; } = "Running"; // Running / Stopped / Error
@@ -141,6 +139,8 @@ public class FFmpegProcessInfo
 public class FFmpegTaskDto
 {
     public string TaskId { get; set; } = string.Empty;
+
+    public string UpName { get; set; } = string.Empty;
 
     public DateTime StartTime { get; set; }          // 开始时间
     public string StartTimeDisplay => StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");

@@ -71,7 +71,7 @@ public class BilibiliController : ControllerBase
 
         // FFmpeg 合并
         string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
-        var processInfo = _manager.StartFFmpeg(mergeCMD);
+        var processInfo = _manager.StartFFmpeg(mergeCMD, videoView.owner.name);
         Console.WriteLine($"开始等待: {DateTime.Now}");
         await processInfo.process.WaitForExitAsync();
         Console.WriteLine($"下载完成: {DateTime.Now}");
@@ -165,9 +165,8 @@ public class BilibiliController : ControllerBase
         string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
         string convertCMD = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         Console.WriteLine($"FFmpeg命令是: {convertCMD}");
-        var processInfo = _manager.StartFFmpeg(convertCMD);
-        //return Ok(processInfo); // 返回封装对象
-        //await processInfo.process.WaitForExitAsync();
+        Console.WriteLine($"标题是: {title}");
+        var processInfo = _manager.StartFFmpeg(convertCMD, title);
         processInfo.Command = "Convert";
         return processInfo;
     }
@@ -218,8 +217,10 @@ public class BilibiliController : ControllerBase
             if (titleNode != null)
                 title = titleNode.InnerText.Trim();
 
+            string title_result = Shared.GetMiddleText(title);
+
             //Console.WriteLine("标题：" + title);
-            return $"{title}_{timestamp}";
+            return $"{title_result}_{timestamp}";
         }
     }
 
