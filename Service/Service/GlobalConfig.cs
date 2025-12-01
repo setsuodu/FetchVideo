@@ -14,7 +14,7 @@ public static class GlobalConfig
         get
         {
             if (_app?.Services == null)
-                return ScheduleConfigService.DefaultTimes; // 启动前用默认值
+                return ScheduleConfigService.GetHostTimes(); // 启动前用默认值
 
             using var scope = _app.Services.CreateScope();
             var svc = scope.ServiceProvider.GetRequiredService<ScheduleConfigService>();

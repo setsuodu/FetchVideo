@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace FetchVideo.Utils;
 
@@ -103,5 +104,56 @@ public class Shared
         }
 
         return baseUrl;
+    }
+
+    public static string[] ConvertUtc8ConfigToLocal(params string[] utc8Times)
+    {
+        if (utc8Times == null) throw new ArgumentNullException(nameof(utc8Times));
+
+        var localList = new List<string>();
+        TimeZoneInfo localZone = TimeZoneInfo.Local;
+        TimeZoneInfo utc8Zone = GetUtc8TimeZone();
+
+        //Console.WriteLine($"宿主机时区：{Shared.GetUtcOffsetString(localZone)}");
+        var offset = localZone.BaseUtcOffset;
+        string sign = offset >= TimeSpan.Zero ? "+" : "-";
+        string offsetStr = $"{sign}{Math.Abs(offset.Hours):D2}:{offset.Minutes:D2}";
+        Console.WriteLine($"宿主机时区：{offsetStr}");
+
+        foreach (var timeStr in utc8Times)
+        {
+            // 重点：用 HH 而不是 hh
+            if (!TimeSpan.TryParseExact(timeStr.Trim(), @"HH\:mm", CultureInfo.InvariantCulture, out TimeSpan ts))
+            {
+                // 可选：也支持不带冒号的写法如 0800, 1830
+                if (!TimeSpan.TryParseExact(timeStr.Trim(), @"HHmm", CultureInfo.InvariantCulture, out ts))
+                {
+                    localList.Add(timeStr); // 解析失败原样返回
+                    continue;
+                }
+            }
+
+            // 构造今天任意日期 + 这个时间点（作为 UTC+8 时间）
+            DateTime utc8Time = DateTime.Today + ts;
+
+            // 转换为 UTC → 再转成本地时间
+            DateTime utc = TimeZoneInfo.ConvertTimeToUtc(utc8Time, utc8Zone);
+            DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(utc, localZone);
+
+            localList.Add(localTime.ToString(@"HH\:mm"));
+        }
+
+        return localList.ToArray();
+    }
+    // 更健壮的 UTC+8 时区获取
+    private static TimeZoneInfo GetUtc8TimeZone()
+    {
+        try { return TimeZoneInfo.FindSystemTimeZoneById("China Standard Time"); }
+        catch { }
+        try { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai"); }
+        catch { }
+
+        // 兜底：手动创建 UTC+8（无夏令时）
+        return TimeZoneInfo.CreateCustomTimeZone("UTC+8", TimeSpan.FromHours(8), "UTC+8", "UTC+8");
     }
 }

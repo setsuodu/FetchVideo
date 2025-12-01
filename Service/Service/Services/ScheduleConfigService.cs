@@ -1,6 +1,7 @@
 ﻿// Services/ScheduleConfigService.cs
 using FetchVideo.Data;
 using FetchVideo.Models;
+using FetchVideo.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace FetchVideo.Services;
@@ -11,7 +12,15 @@ public class ScheduleConfigService
 
     // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
     // 改成 public！！！不然外面拿不到
-    public static readonly List<string> DefaultTimes = new() { "08:00", "12:00", "18:00", "22:00" }; //UTC+8，Docker是UTC时间
+    // 这里配的是北京时间UTC-8（阅读友好设计）
+    // 宿主机跑的时间不一定：Docker是UTC-0，UNIX是UTC-8或其他，使之兼容
+    private static readonly List<string> DefaultTimes = new() { "08:00", "12:00", "18:00", "22:00" }; //UTC+8，Docker是UTC时间
+    public static List<string> GetHostTimes()
+    {
+        // 先读取宿主机时区
+        // 把配置的UTC-8时间，转成宿主机格式
+        return Shared.ConvertUtc8ConfigToLocal(DefaultTimes.ToArray()).ToList();
+    }
     // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 
     public ScheduleConfigService(AppDbContext db) => _db = db;
@@ -25,7 +34,7 @@ public class ScheduleConfigService
 
         return entity?.TriggerTimes?.Any() == true
             ? entity.TriggerTimes
-            : DefaultTimes;
+            : GetHostTimes();
     }
 
     public async Task SaveAsync(List<string> times)

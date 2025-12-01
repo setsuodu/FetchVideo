@@ -8,7 +8,7 @@ public class DailyTriggerService : BackgroundService
     private readonly ILogger<DailyTriggerService> _logger;
     // 🌟 核心修改 1: 注入 IServiceScopeFactory
     private readonly IServiceScopeFactory _scopeFactory;
-    private volatile List<string> _triggerTimes = ScheduleConfigService.DefaultTimes;
+    private volatile List<string> _triggerTimes = ScheduleConfigService.GetHostTimes();
     private CancellationTokenSource _cts = new();   // 每次都要重新 new
 
     public DailyTriggerService(ILogger<DailyTriggerService> logger,
@@ -156,6 +156,12 @@ public class DailyTriggerService : BackgroundService
             "https://live.bilibili.com/1898932569", //冻泥不是冰的
             "https://live.bilibili.com/11368496", //呀思思 【T170】
 			"https://live.bilibili.com/32443468", //小鱼要饿死了
+			"https://live.bilibili.com/1909460797", //婉婉十一月减肥版
+            "https://live.bilibili.com/21156534", //濛雨清波
+            "https://live.bilibili.com/1840178918", //Umi今天也发财
+            "https://live.bilibili.com/30950163", //草莓果酱呐
+            "https://live.bilibili.com/1814375548", //来份鱼酱耶
+            "https://live.bilibili.com/1849823023", //池_渔
         };
 
 

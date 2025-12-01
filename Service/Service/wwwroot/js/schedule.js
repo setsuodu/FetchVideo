@@ -38,7 +38,6 @@ export function initScheduleManager() {
                 console.log('状态:', data[0].Status);
             }
 
-            //let text = '';
             let text = `序号 \t状态 \t主播 \t开始时间 \n`;
             //text += `────┼──────┼──────────────────┼─────────\n`;
             data.forEach((task, index) => {
@@ -53,8 +52,6 @@ export function initScheduleManager() {
 
                 text += `${String(index + 1).padStart(3)} │ ${statusMark} │ ${up_name} │ ${time}\n`;
             });
-            //console.log('👇text👇');
-            //console.log(text);
             processTextLabel.textContent = text;
 
         } catch (err) {
