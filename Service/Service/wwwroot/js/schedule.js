@@ -1,6 +1,7 @@
 ﻿// schedule.js
 export function initScheduleManager() {
     const API_PROCESS = '/api/bilibili/running_tasks';
+    const API_STOP = '/api/bilibili/stop_tasks';
     const API_GET = '/api/schedule/current';
     const API_POST = '/api/schedule/update';
 
@@ -8,6 +9,9 @@ export function initScheduleManager() {
     const scheduleJsonInput = document.getElementById('scheduleJson');
     const scheduleTextLabel = document.querySelector('#scheduleText');
     const processTextLabel = document.querySelector('#processText');
+    const processStopBtn = document.getElementById('processStop');
+
+
 
     if (!scheduleForm || !scheduleJsonInput || !scheduleTextLabel || !processTextLabel) {
         console.warn('Schedule 模块未找到对应元素，跳过初始化');
@@ -141,6 +145,43 @@ export function initScheduleManager() {
 
         updateSchedule(timesArray);
     });
+
+    /**
+     * POST 停止所有任务
+     */
+    async function stopTasks(user) {
+        try {
+            const response = await fetch(API_STOP, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(user),
+            });
+
+            if (!response.ok) {
+                console.log('停止失败');
+                return;
+            }
+            const data = await response.json();
+            console.log('👇停止成功👇');
+            console.log(data);
+            //alert('任务停止成功！');
+        } catch (err) {
+            console.error('更新计划失败:', err);
+        }
+    }
+
+    processStopBtn.addEventListener('click', function (e) {
+        // 阻止表单默认提交行为（因为按钮是 type="submit"）
+        e.preventDefault();
+
+        console.log('已点击【停止所有】按钮');
+        alert('停止所有任务的逻辑在这里执行');
+
+        // 在这里写你真正的“停止所有”逻辑
+        //stopAllProcesses(); //POST
+    });
+
 
     // 关键：监听 Bootstrap Tab 切换事件
     const dashboardTab = document.querySelector('a[data-bs-target="#dashboard-content"], a[href="#dashboard-content"]');

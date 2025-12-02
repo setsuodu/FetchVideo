@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace FetchVideo.Controllers;
 
@@ -123,6 +124,19 @@ public class FFmpegProcessManager
         .OrderByDescending(x => x.StartTime)
         .ToList();
         return running;
+    }
+    public async Task StopTasks()
+    {
+        foreach (var process in _processes)
+        {
+            var taskId = process.Value.Info.TaskId;
+            var success = await StopFFmpeg(taskId);
+            if (success)
+            {
+                // 已停止
+                RemoveProcess(taskId);
+            }
+        }
     }
 }
 

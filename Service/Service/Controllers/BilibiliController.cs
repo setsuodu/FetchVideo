@@ -3,6 +3,7 @@ using FetchVideo.Models;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
 namespace FetchVideo.Controllers;
 
@@ -231,5 +232,16 @@ public class BilibiliController : ControllerBase
     {
         var running = _manager.GetRunningTasks();
         return Ok(running);
+    }
+
+    // 提交JSON {"user":"admin"}
+    [HttpPost("stop_tasks")]
+    public async Task<ActionResult<List<FFmpegTaskDto>>> StopRunningTasks([FromBody] StopRequest stopUser)
+    {
+        var running = _manager.GetRunningTasks();
+        Console.WriteLine($"{stopUser.User} 要求停止, 当前任务{running.Count}个");
+
+        await _manager.StopTasks();
+        return Ok(running); //[] 👉 0个任务，成功
     }
 }
