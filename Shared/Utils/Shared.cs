@@ -49,9 +49,11 @@ public class Shared
     }
 
     // "又长大了是时候夺回属于我的一切了 - 沐汐BB - 哔哩哔哩直播，二次元弹幕直播平台"
+    // 比封面可爱一点点 - -阿少少Ash - 哔哩哔哩直播，二次元弹幕直播平台
     public static string GetMiddleText(string input)
     {
-        var match = Regex.Match(input, @"-\s*(.*?)\s*-");
+        Console.WriteLine($"GetMiddleText: {input}");
+        var match = Regex.Match(input, @" - \s*(.*?)\s* - ");
         return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 
