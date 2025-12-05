@@ -267,8 +267,7 @@ public class BilibiliController : ControllerBase
     // 使用 Playwright 模仿浏览器行为获取 html
     // ❌Playwright放服务器太重了，直接 +200MB，编译5分钟❌
     // ❌B站对Linux反爬更严格，建议功能移到客户端❌
-    [HttpGet("upload_video")]
-    public async Task<List<string>> GetHTML(string uid)
+    public async Task<string> GetHTML(string url)
     {
         // 自动安装浏览器（第一次运行会下载 Chromium，后面就不会了）
         using var playwright = await Playwright.CreateAsync();
@@ -303,10 +302,6 @@ public class BilibiliController : ControllerBase
         ");
         var page = await browser.NewPageAsync();
 
-        // 替换成你要抓的 UP 主 UID
-        //string uid = "502793565";  // 示例：某个 UP 主
-        string url = $"https://space.bilibili.com/{uid}/upload/video";
-
         await page.GotoAsync(url);
 
         // 等待页面主要内容加载完成（推荐用 NetworkIdle，比固定延时更可靠）
@@ -332,6 +327,18 @@ public class BilibiliController : ControllerBase
         //Console.WriteLine("按任意键退出...");
         //Console.ReadKey();
 
+        return html;
+    }
+    [HttpGet("upload_video")]
+    public async Task<List<string>> GetUploadVideo(string uid)
+    {
+        // 替换成你要抓的 UP 主 UID
+        //string uid = "502793565";  // 示例：某个 UP 主
+        string url = $"https://space.bilibili.com/{uid}/upload/video";
+
+        // 获取完整的渲染后 HTML
+        string html = await GetHTML(url);
+
         // 用 HtmlAgilityPack 解析 HTML
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
@@ -353,7 +360,42 @@ public class BilibiliController : ControllerBase
     [HttpGet("upload_test")]
     public async Task<string> TestAsync(string uid)
     {
+        await Task.CompletedTask;
         return "API 测试正常";
+    }
+
+    [HttpGet("favlist")]
+    public async Task<List<string>> GetFavList(string uid)
+    {
+        // 一般就用一个，写死即可
+        //默认：https://space.bilibili.com/3546649320229192/favlist?fid=3108098292&ftype=create
+        //下载：https://space.bilibili.com/3546649320229192/favlist?fid=3573957792&ftype=create
+
+        // 找 <a class="bili-cover-card" href="...BV...">
+
+        // 替换成你要抓的 UP 主 UID
+        //string uid = "502793565";  // 示例：某个 UP 主
+        string url = $"https://space.bilibili.com/{uid}/favlist?fid=3573957792&ftype=create";
+
+        // 获取完整的渲染后 HTML
+        string html = await GetHTML(url);
+
+        // 用 HtmlAgilityPack 解析 HTML
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var videoNodes = doc.DocumentNode.SelectNodes("//a[@class='bili-cover-card']");
+        Console.WriteLine($"收藏了有{videoNodes.Count}个视频");
+
+        List<string> videoList = new List<string>();
+        foreach (var video in videoNodes)
+        {
+            string href = video.GetAttributeValue("href", "");
+            string bvId = Shared.GetBvId(href);
+            Console.WriteLine($"{href}👉{bvId}");
+            videoList.Add(bvId);
+        }
+        return videoList;
     }
 
     // 打印容器当前运行的下载任务
