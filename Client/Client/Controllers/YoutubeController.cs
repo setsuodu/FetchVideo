@@ -1,6 +1,7 @@
-﻿using YoutubeExplode;
+﻿using FetchVideo.Utils;
+using System.Text.RegularExpressions;
+using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
-using FetchVideo.Utils;
 
 namespace FetchVideo.Controllers;
 
@@ -61,6 +62,8 @@ public class YoutubeController
     {
         var youtube = new YoutubeClient();
         var video = await youtube.Videos.GetAsync(url);
+        // 取反：中文、字母、数字、空格，以外移除
+        string title = Regex.Replace(video.Title, @"[^\u4e00-\u9fa5a-zA-Z0-9\s]", "");
         Console.WriteLine($"标题: {video.Title}");
         Console.WriteLine($"作者: {video.Author.ChannelTitle}");
         Console.WriteLine($"频道ID: {video.Author.ChannelId}");
@@ -68,6 +71,7 @@ public class YoutubeController
         Console.WriteLine($"时长: {video.Duration}");
         Console.WriteLine($"封面: {video.Thumbnails[0].Url}");
         Console.WriteLine($"描述: {video.Description}");
-        return Shared.MakeFileNameSafe(video.Title);
+        //return Shared.MakeFileNameSafe(title);
+        return title;
     }
 }
