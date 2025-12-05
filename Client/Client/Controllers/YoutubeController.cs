@@ -1,5 +1,4 @@
-﻿using FetchVideo.Utils;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 
@@ -7,16 +6,28 @@ namespace FetchVideo.Controllers;
 
 public class YoutubeController
 {
+    private readonly string _downloadPath;
+    private readonly FFmpegProcessManager _manager;
+
+    // 从构造函数注入配置，变成本地只读（推荐写法！）
+    //public YoutubeController(IConfiguration configuration, FFmpegProcessManager manager)
+    //{
+    //    // 如果配置中没找到，就用 "/app/downloads";
+    //    _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+    //    _manager = manager;
+    //}
+
     // 创建进度回调
     Progress<double> progress = new Progress<double>(p =>
     {
         Console.Write($"\r下载进度: {p:P1}"); // P1 = 百分比(一位小数)
     });
 
-    public async Task GetYoutubeVideoAsync(string url)
+    public async Task<FFmpegProcessInfo> GetYoutubeVideoAsync(string url)
     {
         string title = await GetVideoInfoAsync(url);
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        //string desktopPath = _downloadPath;
         string videoFile = Path.Combine(desktopPath, $"video.mp4");
         string audioFile = Path.Combine(desktopPath, $"audio.m4a");
         string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(title) ? "output" : title)}.mp4");
@@ -40,6 +51,14 @@ public class YoutubeController
         {
             await youtube.Videos.Streams.DownloadAsync(muxed, outputFile, progress); // 不分轨的
             Console.WriteLine($"不分轨的: {outputFile}");
+            var processInfo = new FFmpegProcessInfo
+            {
+                UpName = title,
+                Command = "Normal",
+                StartTime = DateTime.Now,
+                Status = "Completed"
+            };
+            return processInfo;
         }
         else
         {
@@ -52,9 +71,15 @@ public class YoutubeController
             await youtube.Videos.Streams.DownloadAsync(audioStream, audioFile, progress);
             Console.WriteLine($"音频下载: {audioFile}");
 
-            // 用 FFmpeg 合并
-            Shared.MergeAudioVideo(videoFile, audioFile, outputFile);
-            Console.WriteLine($"合并完成: {outputFile}");
+            // FFmpeg 合并
+            string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
+            var processInfo = _manager.StartFFmpeg(mergeCMD, title);
+            Console.WriteLine($"下载完成: {DateTime.Now}");
+            await processInfo.process.WaitForExitAsync();
+            System.IO.File.Delete(videoFile);
+            System.IO.File.Delete(audioFile);
+            processInfo.Command = "Merge";
+            return processInfo;
         }
     }
 
@@ -64,7 +89,7 @@ public class YoutubeController
         var video = await youtube.Videos.GetAsync(url);
         // 取反：中文、字母、数字、空格，以外移除
         string title = Regex.Replace(video.Title, @"[^\u4e00-\u9fa5a-zA-Z0-9\s]", "");
-        Console.WriteLine($"标题: {video.Title}");
+        Console.WriteLine($"标题: {title}");
         Console.WriteLine($"作者: {video.Author.ChannelTitle}");
         Console.WriteLine($"频道ID: {video.Author.ChannelId}");
         Console.WriteLine($"发布时间: {video.UploadDate}");
@@ -73,5 +98,16 @@ public class YoutubeController
         Console.WriteLine($"描述: {video.Description}");
         //return Shared.MakeFileNameSafe(title);
         return title;
+    }
+
+    // missav
+    public async Task<FFmpegProcessInfo> GetM3U8(string m3u8)
+    {
+        string mergeCMD = $"-i \"{m3u8}\" -c copy \"{_downloadPath}.mp4\"";
+        var processInfo = _manager.StartFFmpeg(mergeCMD, "missav");
+        Console.WriteLine($"下载完成: {DateTime.Now}");
+        await processInfo.process.WaitForExitAsync();
+        processInfo.Command = "Convert";
+        return processInfo;
     }
 }
