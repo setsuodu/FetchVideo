@@ -267,7 +267,7 @@ public class BilibiliController : ControllerBase
     }
     // 使用 Playwright 模仿浏览器行为获取 html
     [HttpGet("upload_video")]
-    public async Task GetHTML(string uid)
+    public async Task<List<string>> GetHTML(string uid)
     {
         // 自动安装浏览器（第一次运行会下载 Chromium，后面就不会了）
         using var playwright = await Playwright.CreateAsync();
@@ -338,11 +338,15 @@ public class BilibiliController : ControllerBase
         var videoNodes = doc.DocumentNode.SelectNodes("//a[@class='bili-cover-card']");
         Console.WriteLine($"UP有{videoNodes.Count}个视频");
 
+        List<string> videoList = new List<string>();
         foreach (var video in videoNodes)
         {
             string href = video.GetAttributeValue("href", "");
-            Console.WriteLine(href);
+            string bvId = Shared.GetBvId(href);
+            Console.WriteLine($"{href}👉{bvId}");
+            videoList.Add(bvId);
         }
+        return videoList;
     }
 
     // 打印容器当前运行的下载任务
