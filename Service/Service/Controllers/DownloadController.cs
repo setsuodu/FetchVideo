@@ -1,4 +1,5 @@
-﻿using FetchVideo.Models;
+﻿/* 图片下载 ServerOnly */
+using FetchVideo.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;

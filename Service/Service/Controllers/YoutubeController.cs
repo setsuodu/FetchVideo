@@ -1,5 +1,4 @@
-﻿using FetchVideo.Utils;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
