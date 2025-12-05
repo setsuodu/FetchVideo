@@ -228,8 +228,7 @@ public class BilibiliController : ControllerBase
         }
     }
 
-    // 分析B站个人主页视频列表
-    //[HttpGet("upload_video")]
+    // 分析B站个人主页视频列表（严查，好几分钟才敢用一次）
     public async Task<List<string>> GetUploadVideosAsync(long mid, int page = 1, int pageSize = 50)
     {
         using var client = new HttpClient();
@@ -266,6 +265,8 @@ public class BilibiliController : ControllerBase
         return videoList;
     }
     // 使用 Playwright 模仿浏览器行为获取 html
+    // ❌Playwright放服务器太重了，直接 +200MB，编译5分钟❌
+    // ❌B站对Linux反爬更严格，建议功能移到客户端❌
     [HttpGet("upload_video")]
     public async Task<List<string>> GetHTML(string uid)
     {
@@ -347,6 +348,12 @@ public class BilibiliController : ControllerBase
             videoList.Add(bvId);
         }
         return videoList;
+    }
+
+    [HttpGet("upload_test")]
+    public async Task<string> TestAsync(string uid)
+    {
+        return "API 测试正常";
     }
 
     // 打印容器当前运行的下载任务
