@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FetchVideo.Models;
+﻿using FetchVideo.Models;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
+using Microsoft.AspNetCore.Components.RenderTree;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Playwright;
 using Newtonsoft.Json.Linq;
-using System.Threading.Tasks;
+using System.Text.Json;
+using static System.Net.WebRequestMethods;
 
 namespace FetchVideo.Controllers;
 
@@ -193,6 +196,8 @@ public class BilibiliController : ControllerBase
     }
 
     // 获取B站直播标题
+    // ❌仅适用直播，视频，个人主页无法获取完整html❌
+    // 无头浏览器 MicroSoft.Playwright
     [HttpGet("title")]
     public async Task<string> GetTitleAsync(string url)
     {
@@ -225,7 +230,46 @@ public class BilibiliController : ControllerBase
         }
     }
 
-    
+    // 分析B站个人主页视频列表
+    [HttpGet("upload_video")]
+    public async Task<List<string>> GetUploadVideosAsync(long mid, int page = 1, int pageSize = 50)
+    {
+        using var client = new HttpClient();
+        // 模拟浏览器，避免部分风控
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+        string referer = $"https://space.bilibili.com/{mid}";
+        client.DefaultRequestHeaders.Add("Referer", referer);
+
+
+        var url = $"{Shared.BILI_SPACE}arc/search?mid={mid}&pn={page}&ps={pageSize}&order=pubdate&jsonp=jsonp";
+        var json = await client.GetStringAsync(url);
+        Console.WriteLine("👇json👇");
+        Console.WriteLine(json);
+
+        // 用 System.Text.Json 解析（或 Json.NET）
+        var doc = JsonDocument.Parse(json);
+        var vlist = doc.RootElement
+            .GetProperty("data")
+            .GetProperty("list")
+            .GetProperty("vlist");
+
+        List<string> videoList = new List<string> ();
+        foreach (var video in vlist.EnumerateArray())
+        {
+            string title = video.GetProperty("title").GetString();
+            string bvId = video.GetProperty("bvid").GetString();
+            videoList.Add(bvId);
+
+            Console.WriteLine($"标题: {title}");
+            Console.WriteLine($"BV: {bvId}");
+            //Console.WriteLine($"播放: {video.GetProperty("play").GetInt32()}");
+            Console.WriteLine("---");
+        }
+        return videoList;
+    }
+
+
+
     // 打印容器当前运行的下载任务
     [HttpGet("running_tasks")]
     public ActionResult<List<FFmpegTaskDto>> GetRunningTasks()
