@@ -229,7 +229,7 @@ public class BilibiliController : ControllerBase
     }
 
     // 分析B站个人主页视频列表（严查，好几分钟才敢用一次）
-    public async Task<List<string>> GetUploadVideosAsync(long mid, int page = 1, int pageSize = 50)
+    public async Task<List<string>> GetUploadVideosAsync(long mid, int page = 1, int pageSize = 20)
     {
         using var client = new HttpClient();
         // 模拟浏览器，避免部分风控
@@ -360,8 +360,96 @@ public class BilibiliController : ControllerBase
     [HttpGet("upload_test")]
     public async Task<string> TestAsync(string uid)
     {
-        await Task.CompletedTask;
-        return "API 测试正常";
+        // 获取收藏夹列表
+        string url = $"https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={uid}";
+        var resp = await RequestAsync(url);
+        Console.WriteLine(resp);
+        return resp;
+    }
+    private static readonly HttpClient client = new HttpClient();
+    // ←←← 这里填你的 SESSDATA（必须登录有效）
+    private const string SessData = "f0ce3d2c%2C1780465626%2C7172e%2Ac2CjBGS5AJwPcfnaaVc8XogrSvBMwv_ARSaHY0GVUqDuByTCC9RpyOO_86Ks4WuQE1whASVl9Zb2JMVDlPMVBNTEkxdnhhdUJlajFMTkpCeWU2aVV0Z21PVnR2TDVkWlMyY2c2V20yaE1sSTQ4d3o1MzlhZzJaOElMMmVpejN1OVpKbTBmU1B5RHpnIIEC";
+    // 你的 mid（用户ID），可通过 https://api.bilibili.com/x/space/myinfo 获取
+    private static long MyMid = 3546649320229192;   // ←←← 改成自己的 mid
+    // 统一请求方法（自动加 Cookie 和常见 Header）
+    static DateTime UnixTimestampToDateTime(long timestamp)
+        => DateTimeOffset.FromUnixTimeSeconds(timestamp).ToLocalTime().DateTime;
+    static async Task<string> RequestAsync(string url)
+    {
+        client.DefaultRequestHeaders.Remove("Cookie");
+        client.DefaultRequestHeaders.Add("Cookie", $"SESSDATA={SessData}");
+        client.DefaultRequestHeaders.Remove("User-Agent");
+        client.DefaultRequestHeaders.Add("User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+
+        var resp = await client.GetAsync(url);
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadAsStringAsync();
+    }
+    // 获取指定收藏夹的所有视频
+    static async Task<List<string>> GetVideosInFolderAsync(long mediaId)
+    {
+        int pn = 1;
+        int ps = 20; // ←←← 这里改成 20（最大值）
+        bool hasMore = true;
+        //string json = null; //调试打印用
+        List<string> videoList = new List<string>();
+
+        int index = 0;
+        while (hasMore)
+        {
+            string url = $"https://api.bilibili.com/x/v3/fav/resource/list" +
+                         $"?media_id={mediaId}&pn={pn}&ps={ps}&platform=web";
+
+            var resp = await RequestAsync(url);
+            var result = JsonSerializer.Deserialize<BiliFavResourceResponse>(resp, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            //json = resp;
+            //Console.WriteLine("打印json");
+            //Console.WriteLine(json);
+            //Console.WriteLine("打印是否翻页");
+            //Console.WriteLine(result?.Data.has_more);
+
+
+            if (result?.Code != 0)
+            {
+                Console.WriteLine($"获取视频失败: {result?.Message}");
+                break;
+            }
+
+            if (result.Data?.Medias == null || result.Data.Medias.Count == 0)
+            {
+                Console.WriteLine("该收藏夹暂无视频");
+                break;
+            }
+
+            foreach (var v in result.Data.Medias)
+            {
+                index++;
+                videoList.Add(v.Bvid);
+
+                Console.WriteLine($"No.{index}");
+                Console.WriteLine($"标题: {v.Title}");
+                Console.WriteLine($"BV号: BV{v.Bvid}");
+                Console.WriteLine($"链接: https://www.bilibili.com/video/BV{v.Bvid}");
+                //Console.WriteLine($"封面: {v.Cover}");
+                //Console.WriteLine($"播放量: {v.CntInfo.Play}   收藏时间: {UnixTimestampToDateTime(v.FavTime):yyyy-MM-dd HH:mm}");
+                Console.WriteLine(new string('-', 20));
+            }
+
+            // 判断是否有下一页
+            hasMore = result.Data.has_more;  // ←←← 这个字段就是翻页标志
+            Console.WriteLine($"判断翻页.{hasMore}");
+            if (hasMore)
+            {
+                Console.WriteLine($"已加载第 {pn} 页，还有更多...（共约 {result.Data.Info.MediaCount} 个视频）\n");
+            }
+
+            pn++;                     // 翻到下一页
+            await Task.Delay(600);    // 防风控，建议 500~1000ms
+        }
+
+        //return json;
+        return videoList;
     }
 
     [HttpGet("favlist")]
@@ -375,8 +463,9 @@ public class BilibiliController : ControllerBase
 
         // 替换成你要抓的 UP 主 UID
         //string uid = "502793565";  // 示例：某个 UP 主
-        string url = $"https://space.bilibili.com/{uid}/favlist?fid=3573957792&ftype=create";
+        //string url = $"https://space.bilibili.com/{uid}/favlist?fid=3573957792&ftype=create";
 
+        /*
         // 获取完整的渲染后 HTML
         string html = await GetHTML(url);
 
@@ -396,6 +485,10 @@ public class BilibiliController : ControllerBase
             videoList.Add(bvId);
         }
         return videoList;
+        */
+
+        // 获取收藏家内视频列表
+        return await GetVideosInFolderAsync(3573957792);
     }
 
     // 打印容器当前运行的下载任务
