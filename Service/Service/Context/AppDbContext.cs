@@ -7,10 +7,8 @@ namespace FetchVideo.Data;
 // 一个csproj →对应→ 一个数据库 →对应→ 一个 DbContext
 public class AppDbContext : DbContext
 {
-    // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
     // 全局唯一配置表（永远只有一条记录）
     public DbSet<ScheduleConfig> ScheduleConfigs => Set<ScheduleConfig>();
-    // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
     public DbSet<LinkItem> LinkItems { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }

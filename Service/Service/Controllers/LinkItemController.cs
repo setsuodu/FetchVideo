@@ -19,13 +19,14 @@ public class LinkItemController : ControllerBase
 
     // GET: api/LinkItem/get_rooms
     [HttpGet("get_rooms")]
-    public async Task<IActionResult> GetLinkItems()
+    public async Task<List<string>> GetLinkItems()
     {
         var existingUrls = await _context.LinkItems
             .Select(l => l.Url)
             .ToListAsync();
 
-        return Ok(existingUrls);
+        //return Ok(existingUrls);
+        return existingUrls;
     }
 
     // POST: api/LinkItem/set_rooms
