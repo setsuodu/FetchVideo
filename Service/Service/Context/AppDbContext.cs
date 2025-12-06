@@ -4,14 +4,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FetchVideo.Data;
 
+// 一个csproj →对应→ 一个数据库 →对应→ 一个 DbContext
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
     // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
     // 全局唯一配置表（永远只有一条记录）
     public DbSet<ScheduleConfig> ScheduleConfigs => Set<ScheduleConfig>();
     // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+    public DbSet<LinkItem> LinkItems { get; set; }
+
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,6 +21,15 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ScheduleConfig>()
             .HasIndex(x => x.Key)
             .IsUnique();
+
+        //modelBuilder.Entity<LinkItem>().ToTable("LinkItems");  // 表名
+        modelBuilder.Entity<LinkItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Url).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Active).HasDefaultValue(true);
+        });
 
         base.OnModelCreating(modelBuilder);
     }

@@ -128,7 +128,7 @@ public class DailyTriggerService : BackgroundService
     private async Task TriggerApiAsync()
     {
         //TODO: 这里写死了，改成配置
-        int length = 2;
+        //+读写2个方法，这里是[GET]读，web端[POST]写。
         List<string> urlList = new List<string>
         {
             "https://live.bilibili.com/1239314", //setsuodu（未开播）
@@ -165,6 +165,7 @@ public class DailyTriggerService : BackgroundService
         };
 
 
+        int length = 2; // 默认录制2分钟
         for (int i = 0; i < urlList.Count; i++)
         {
             string url = urlList[i];
