@@ -112,10 +112,7 @@ app.MapGet("/downloads/{*path}", async (string path, HttpContext ctx) =>
 //var svc = app.Services.GetRequiredService<ScheduleConfigService>();
 app.MapPost("/api/schedule/update", async (List<string> times_utc8, DailyTriggerService service) =>
 {
-    // 这里提交的是 UTC-8 时间，要转成宿主机时间保存
-    // 实现策划配时间用 UTC，兼容各种宿主机内部时间，前端阅读无障碍
-    // TODO: 
-    //var times = Shared.ConvertUtc8ConfigToLocal(times_utc8.ToArray()).ToList();
+    // 这里提交的时间，客户端上已经转成UTC了
     var times = times_utc8;
 
     using (var scope = app.Services.CreateScope())

@@ -1,13 +1,5 @@
 ﻿namespace FetchVideo.Models;
 
-// Models/TodoItem.cs
-//public class TodoItem
-//{
-//    public long Id { get; set; }
-//    public string? Name { get; set; }
-//    public bool IsComplete { get; set; }
-//}
-
 // 主播列表
 public class FavoriteUPs
 {

@@ -143,8 +143,48 @@ export function initScheduleManager() {
             return alert('请输入正确的 JSON 数组格式，例如：["00:00", "04:00"]');
         }
 
-        updateSchedule(timesArray);
+        // 客户端当地时间 转成 Docker的UTC
+        updateSchedule(convertLocalTimesToUTC(timesArray));
     });
+    /**
+     * 将本地时间字符串数组转换为 UTC 时间字符串数组
+     * @param {string[]} localTimes - 本地时间数组，例如 ["08:00", "12:00"]
+     * @returns {string[]} UTC 时间数组，例如 ["00:00", "04:00"]（假设本地为 UTC+8）
+     */
+    function convertLocalTimesToUTC(localTimes) {
+        // 获取当前时区的偏移分钟数（本地时间减 UTC 的分钟数，例如 UTC+8 为 480）
+        const offsetMinutes = new Date().getTimezoneOffset(); // 注意：返回值为负数或正数
+        // 转换为小时（正值表示 UTC 到本地的偏移小时）
+        const offsetHours = -offsetMinutes / 60;
+
+        return localTimes.map(time => {
+            // 解析时间字符串 "HH:MM"
+            const [hours, minutes] = time.split(':').map(Number);
+
+            // 本地时间转换为分钟
+            let localMinutes = hours * 60 + minutes;
+
+            // 减去偏移（本地到 UTC）
+            let utcMinutes = localMinutes - offsetHours * 60;
+
+            // 处理跨天（模 1440）
+            utcMinutes = (utcMinutes + 1440) % 1440;
+
+            // 转换回小时和分钟
+            const utcHours = Math.floor(utcMinutes / 60);
+            const utcMins = utcMinutes % 60;
+
+            // 格式化为 "HH:MM"
+            return `${utcHours.toString().padStart(2, '0')}:${utcMins.toString().padStart(2, '0')}`;
+        });
+    }
+    // 示例使用（假设当前时区为 UTC+8，如中国标准时间）
+    //console.log(convertLocalTimesToUTC(["08:00", "12:00"]));
+    // 输出: ["00:00", "04:00"]
+    // 另一个示例（假设时区为 UTC-5，如美国东部标准时间）
+    //console.log(convertLocalTimesToUTC(["08:00", "12:00"]));
+    // 输出: ["13:00", "17:00"]
+
 
     /**
      * POST 停止所有任务
