@@ -136,15 +136,18 @@ app.MapPost("/api/schedule/update", async (List<string> times_utc8, DailyTrigger
 // GET：查看当前定时时间
 app.MapGet("/api/schedule/current", async (DailyTriggerService service) =>
 {
+    List<string> times = new List<string>();
     using (var scope = app.Services.CreateScope())
     {
         var svc = scope.ServiceProvider.GetRequiredService<ScheduleConfigService>();
         // 读取
         var timesNew = await svc.GetAsync();   // 直接得到 List<string>
         Console.WriteLine($"SQLite读取: length=[{timesNew.Count}]:`{string.Join(", ", timesNew)}");
+
+        times.AddRange(timesNew);
     }
 
-    var times = service.GetCurrentTriggerTimes();
+    //var times = service.GetCurrentTriggerTimes(); // 去读取写死的配置
     return Results.Ok(new
     {
         currentTimes = times,
