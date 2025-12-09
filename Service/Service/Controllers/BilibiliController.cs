@@ -160,11 +160,18 @@ public class BilibiliController : ControllerBase
         //Console.WriteLine($"返回值: {roomJson}");
         var jsonData = JObject.Parse(roomJson);
         string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
-        Console.WriteLine($"u3u8是: {m3u8Url}");
+        Console.WriteLine($"m3u8是: {m3u8Url}");
 
         // FFmpeg 转码
-        string desktopPath = _downloadPath;
+        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd"); //"2025-12-09";
+        string desktopPath = Path.Combine(_downloadPath, dateFolder);
+        if (Directory.Exists(desktopPath) == false)
+        {
+            Directory.CreateDirectory(desktopPath); // 当天的子文件夹
+            Console.WriteLine($"创建文件夹: {desktopPath}");
+        }
         string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
+        Console.WriteLine($"outputFile: {outputFile}");
         string convertCMD = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         Console.WriteLine($"FFmpeg命令是: {convertCMD}");
         Console.WriteLine($"标题是: {title}");

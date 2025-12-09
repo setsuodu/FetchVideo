@@ -66,36 +66,58 @@ export function initLiveRecordManager() {
                 credentials: 'include',
                 headers: { 'Accept': 'application/json' },
             });
-
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
 
-            const data = await response.json(); // 这里 data 就是你上面那个数组
+            console.log('↓运行的任务↓');
             console.log(data);
 
-            // 例如取第一个任务的 TaskId
-            if (data.length > 0) {
-                console.log('当前运行中的任务ID:', data[0].TaskId);
-                console.log('状态:', data[0].Status);
+            let html = `
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th style="width:60px;">序号</th>
+                        <th style="width:100px;">状态</th>
+                        <th>主播</th>
+                        <th>开始时间</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            if (data.length === 0) {
+                html += `<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">暂无运行中的任务</td></tr>`;
+            } else {
+                data.forEach((task, index) => {
+                    const statusClass =
+                        task.Status === 'Running' ? 'running' :
+                            task.Status === 'Completed' ? 'completed' :
+                                task.Status === 'Failed' ? 'failed' : 'other';
+
+                    const statusText =
+                        task.Status === 'Running' ? '运行中' :
+                            task.Status === 'Completed' ? '已完成' :
+                                task.Status === 'Failed' ? '失败' : task.Status;
+
+                    html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        <td class="upname">${task.UpName || '-'}</td>
+                        <td>${task.StartTimeDisplay || '-'}</td>
+                    </tr>`;
+                });
             }
 
-            let text = `序号 \t状态 \t主播 \t开始时间 \n`;
-            //text += `────┼──────┼──────────────────┼─────────\n`;
-            data.forEach((task, index) => {
-                console.log(`在遍历：${index}`);
-                const up_name = task.UpName;
-                const time = task.StartTimeDisplay;
+            html += `
+                </tbody>
+            </table>`;
 
-                // 根据状态加颜色标记（只是文本标记，textarea不认HTML）
-                const statusMark = task.Status === 'Running' ? 'RUNNING' :
-                    task.Status === 'Completed' ? 'COMPLETED' :
-                        task.Status === 'Failed' ? 'FAILED' : task.Status;
-
-                text += `${String(index + 1).padStart(3)} │ ${statusMark} │ ${up_name} │ ${time}\n`;
-            });
-            processTextLabel.textContent = text;
+            // 关键就这一行：改用 innerHTML，而不是 textContent
+            processTextLabel.innerHTML = html;
 
         } catch (err) {
-            console.error('当前任务数失败:', err);
+            console.error('获取当前任务失败:', err);
+            processTextLabel.innerHTML = `<div style="color:#e74c3c;text-align:center;padding:20px;">加载失败：${err.message}</div>`;
         }
     }
 
