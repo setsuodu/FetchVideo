@@ -27,7 +27,7 @@ public class FFmpegProcessManager
             Status = "Running"
         };
 
-        using (var process = new Process())
+        var process = new Process();
         {
             process.StartInfo = new ProcessStartInfo
             {

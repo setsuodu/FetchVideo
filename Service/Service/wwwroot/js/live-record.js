@@ -1,16 +1,60 @@
 ﻿// live-record.js
 export function initLiveRecordManager() {
+    const API_GET_ROOMS = '/api/linkItem/get_rooms';
     const API_PROCESS = '/api/bilibili/running_tasks';
     const API_STOP = '/api/bilibili/stop_tasks';
 
+    const upListTextLabel = document.querySelector('#upListText');
     const processTextLabel = document.querySelector('#processText');
     const processStopBtn = document.getElementById('processStop');
 
-    if (!processTextLabel || !processStopBtn) {
+    if (!upListTextLabel || !processTextLabel || !processStopBtn) {
         console.warn('LiveRecord 模块未找到对应元素，跳过初始化');
         return;
     }
-    console.log('找到 processTextLabel 和 processStopBtn');
+
+
+    /**
+     * GET 订阅的主播列表
+     */
+    async function fetchGetRooms() {
+        try {
+            const response = await fetch(API_GET_ROOMS, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' },
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            //console.log('↓订阅的主播↓');
+            //console.log(data);
+            // ['https://live.bilibili.com/1904551806', 'https://live.bilibili.com/1868870262']
+
+            let text = `序号 \t状态 \t主播 \t开始时间 \n`;
+            text += `────┼──────┼──────────────────┼─────────\n`;
+            data.forEach((url, index) => {
+                //console.log(`在遍历：${index}`);
+                //const up_name = task.UpName;
+                //const time = task.StartTimeDisplay;
+
+                // 根据状态加颜色标记（只是文本标记，textarea不认HTML）
+                //const statusMark = task.Status === 'Running' ? 'RUNNING' :
+                //    task.Status === 'Completed' ? 'COMPLETED' :
+                //        task.Status === 'Failed' ? 'FAILED' : task.Status;
+
+                //text += `${String(index + 1).padStart(3)} │ ${statusMark} │ ${up_name} │ ${time}\n`;
+                text += `${String(index + 1).padStart(3)} │ 'UP状态' │ 'UP名字' │ ${url}\n`;
+            });
+            upListTextLabel.textContent = text;
+
+        } catch (err) {
+            console.error('当前任务数失败:', err);
+        }
+    }
+
+
 
     /**
      * GET 当前任务数
@@ -98,7 +142,8 @@ export function initLiveRecordManager() {
 
     if (liveRecordTab) {
         liveRecordTab.addEventListener('shown.bs.tab', () => {
-            console.log('每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）')
+            // 每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）
+            fetchGetRooms();
             fetchCurrentProcess();
         });
 
@@ -107,6 +152,7 @@ export function initLiveRecordManager() {
         // if (liveRecordTab.parentElement.classList.contains('active')) fetchCurrentSchedule();
     } else {
         console.warn('未找到 liveRecord 的 Tab 按钮，降级为页面加载时请求一次');
+        fetchGetRooms();
         fetchCurrentProcess(); // 降级方案
     }
 }
