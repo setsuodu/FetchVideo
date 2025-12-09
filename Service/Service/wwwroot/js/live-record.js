@@ -33,7 +33,7 @@ export function initLiveRecordManager() {
             // ['https://live.bilibili.com/1904551806', 'https://live.bilibili.com/1868870262']
 
             let text = `序号 \t状态 \t主播 \t开始时间 \n`;
-            text += `────┼──────┼──────────────────┼─────────\n`;
+            //text += `────┼──────┼──────────────────┼─────────\n`;
             data.forEach((url, index) => {
                 //console.log(`在遍历：${index}`);
                 //const up_name = task.UpName;
@@ -45,7 +45,7 @@ export function initLiveRecordManager() {
                 //        task.Status === 'Failed' ? 'FAILED' : task.Status;
 
                 //text += `${String(index + 1).padStart(3)} │ ${statusMark} │ ${up_name} │ ${time}\n`;
-                text += `${String(index + 1).padStart(3)} │ 'UP状态' │ 'UP名字' │ ${url}\n`;
+                //text += `${String(index + 1).padStart(3)} │ 'UP状态' │ 'UP名字' │ ${url}\n`;
             });
             upListTextLabel.textContent = text;
 
