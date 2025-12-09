@@ -148,7 +148,7 @@ public class Shared
             localList.Add(localTime.ToString(@"HH\:mm"));
         }
 
-        return localList;
+        return ScheduleConfigSort(localList);
     }
     // 更健壮的 UTC+8 时区获取
     private static TimeZoneInfo GetUtc8TimeZone()
@@ -160,6 +160,12 @@ public class Shared
 
         // 兜底：手动创建 UTC+8（无夏令时）
         return TimeZoneInfo.CreateCustomTimeZone("UTC+8", TimeSpan.FromHours(8), "UTC+8", "UTC+8");
+    }
+    // 排序计划列表
+    private static List<string> ScheduleConfigSort(List<string> times)
+    {
+        var list = times.OrderBy(x => x).ToList();
+        return list;
     }
 
     // 客户端用 👇
