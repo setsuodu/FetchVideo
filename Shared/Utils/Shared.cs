@@ -171,13 +171,17 @@ public class Shared
     // 客户端用 👇
     public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
     {
-        var ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
-        ffmpeg.StartInfo.Arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c copy \"{outputPath}\" -y";
-        ffmpeg.StartInfo.UseShellExecute = false;
-        ffmpeg.StartInfo.CreateNoWindow = true;
-        ffmpeg.Start();
-        ffmpeg.WaitForExit();
+        using (var ffmpeg = new Process())
+        {
+            ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
+            ffmpeg.StartInfo.Arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c copy \"{outputPath}\" -y";
+            ffmpeg.StartInfo.UseShellExecute = false;
+            ffmpeg.StartInfo.CreateNoWindow = true;
+            ffmpeg.Start();
+            ffmpeg.WaitForExit();
+
+            // 当 using 块结束时，process.Dispose() 会被自动调用
+        }
 
         // 只有当 FFmpeg 进程退出后，代码才会执行到这里
         //删除源视频的代码 // <-- 这里的代码
@@ -187,13 +191,16 @@ public class Shared
     // 客户端用 👇
     public static void M3U8toMP4(string room_id, string m3u8Url, string outputPath)
     {
-        var ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
-        ffmpeg.StartInfo.Arguments = $"-headers \"Referer: {BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -c copy \"{outputPath}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
-        // -t 01:00:00"; // 录制1h自动停止
-        ffmpeg.StartInfo.UseShellExecute = false;
-        ffmpeg.StartInfo.CreateNoWindow = false; //关键①，true不执行
-        ffmpeg.Start();
-        ffmpeg.WaitForExit();
+        using (var ffmpeg = new Process())
+        {
+            ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
+            ffmpeg.StartInfo.Arguments = $"-headers \"Referer: {BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -c copy \"{outputPath}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
+            ffmpeg.StartInfo.UseShellExecute = false;
+            ffmpeg.StartInfo.CreateNoWindow = false; //关键①，true不执行
+            ffmpeg.Start();
+            ffmpeg.WaitForExit();
+
+            // 当 using 块结束时，process.Dispose() 会被自动调用
+        }
     }
 }

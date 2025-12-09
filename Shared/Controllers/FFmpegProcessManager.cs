@@ -17,18 +17,6 @@ public class FFmpegProcessManager
         var taskId = Guid.NewGuid().ToString();
         Console.WriteLine($"ffmpeg任务: {taskId}, up: {up_name}");
         var startTime = DateTime.UtcNow;
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "ffmpeg",
-                Arguments = command,
-                RedirectStandardInput = true,
-                UseShellExecute = false,
-                CreateNoWindow = false, // 打印到console
-            },
-            EnableRaisingEvents = true
-        };
 
         var info = new FFmpegProcessInfo
         {
@@ -39,25 +27,37 @@ public class FFmpegProcessManager
             Status = "Running"
         };
 
-        process.Exited += (s, e) =>
+        using (var process = new Process())
         {
-            Console.WriteLine($"监听到 Exited");
-            info.Status = process.ExitCode == 0 ? "Completed" : "Error";
-            RemoveProcess(taskId);
-        };
+            process.StartInfo = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = command,
+                RedirectStandardInput = true,
+                UseShellExecute = false,
+                CreateNoWindow = false, // 打印到console
+            };
+            process.EnableRaisingEvents = true;
+            process.Exited += (s, e) =>
+            {
+                Console.WriteLine($"监听到 Exited");
+                info.Status = process.ExitCode == 0 ? "Completed" : "Error";
+                RemoveProcess(taskId);
+            };
 
-        try
-        {
-            process.Start();
-            info.process = process;
-            _processes.TryAdd(taskId, (process, info));
-            Console.WriteLine($"info.process : {info.process != null}");
-            return info;
-        }
-        catch (Exception ex)
-        {
-            info.Status = "Failed to start";
-            throw new InvalidOperationException($"FFmpeg 启动失败: {ex.Message}", ex);
+            try
+            {
+                process.Start();
+                info.process = process;
+                _processes.TryAdd(taskId, (process, info));
+                Console.WriteLine($"info.process : {info.process != null}");
+                return info;
+            }
+            catch (Exception ex)
+            {
+                info.Status = "Failed to start";
+                throw new InvalidOperationException($"FFmpeg 启动失败: {ex.Message}", ex);
+            }
         }
     }
 
@@ -145,6 +145,7 @@ public class FFmpegProcessInfo
     public string TaskId { get; set; } = string.Empty;
     public string UpName { get; set; } = string.Empty; // 主播名
     public DateTime StartTime { get; set; }
+    public int Minute { get; set; } // 录制时间
     public string Command { get; set; } = string.Empty;
     public string Status { get; set; } = "Running"; // Running / Stopped / Error
     public Process process { get; set; }
@@ -157,6 +158,8 @@ public class FFmpegTaskDto
 
     public DateTime StartTime { get; set; }          // 开始时间
     public string StartTimeDisplay => StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+
+    public int Munite { get; set; } = 2;
 
     public string RunningTime => (DateTime.Now - StartTime).ToString(@"hh\:mm\:ss"); // 已运行时长
 
