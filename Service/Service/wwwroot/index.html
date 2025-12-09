@@ -82,6 +82,11 @@
                         后台状态
                     </a>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="live-record-tab" data-bs-toggle="tab" data-bs-target="#live-record-content" role="tab">
+                        订阅录制
+                    </a>
+                </li>
             </ul>
 
             <div class="tab-content" id="downloadTabContent">
@@ -151,7 +156,7 @@
                     </div>
                 </div>
 
-                <!-- 后台状态 -->
+                <!-- 定时计划 -->
                 <div class="tab-pane fade" id="dashboard-content" role="tabpanel">
                     <form id="scheduleForm">
                         <div class="mb-3">
@@ -161,6 +166,12 @@
                             <input type="text" class="form-control" id="scheduleJson" required placeholder="输入时间 json">
                         </div>
                         <button type="submit" class="btn btn-success w-100" id="schedulePost">提交</button>
+                    </form>
+                </div>
+
+                <!-- 订阅录制 -->
+                <div class="tab-pane fade" id="live-record-content" role="tabpanel">
+                    <form id="liveRecordForm">
                         <div><label class="form-label">当前任务</label></div>
                         <div><label class="form-label" id="processText">[]</label></div>
                         <button type="submit" class="btn btn-success w-100" id="processStop">停止所有</button>
