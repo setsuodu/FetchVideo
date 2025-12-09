@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
+
 namespace FetchVideo.Utils;
 
 public class Shared
@@ -109,7 +110,8 @@ public class Shared
         return baseUrl;
     }
 
-    public static string[] ConvertUtc8ConfigToLocal(params string[] utc8Times)
+    // 转换 UTC+8 配置时间 到 本地时间
+    public static List<string> ConvertUtc8ConfigToLocal(List<string> utc8Times)
     {
         if (utc8Times == null) throw new ArgumentNullException(nameof(utc8Times));
 
@@ -146,7 +148,7 @@ public class Shared
             localList.Add(localTime.ToString(@"HH\:mm"));
         }
 
-        return localList.ToArray();
+        return localList;
     }
     // 更健壮的 UTC+8 时区获取
     private static TimeZoneInfo GetUtc8TimeZone()

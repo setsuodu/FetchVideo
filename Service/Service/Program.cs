@@ -3,7 +3,10 @@ using FetchVideo.Controllers;
 using FetchVideo.Data;
 using FetchVideo.Models;
 using FetchVideo.Services;
+using FetchVideo.Utils;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -112,8 +115,11 @@ app.MapGet("/downloads/{*path}", async (string path, HttpContext ctx) =>
 //var svc = app.Services.GetRequiredService<ScheduleConfigService>();
 app.MapPost("/api/schedule/update", async (List<string> times_utc8, DailyTriggerService service) =>
 {
-    // 这里提交的时间，客户端上已经转成UTC了
-    var times = times_utc8;
+    // 这里提交的时间，一定是UTC-8
+    // 转成服务器的时区。
+    Console.WriteLine($"客户端提交: {string.Join(", ", times_utc8)}");
+    var times = Shared.ConvertUtc8ConfigToLocal(times_utc8);
+    Console.WriteLine($"转服务器时区: {string.Join(", ", times)}");
 
     using (var scope = app.Services.CreateScope())
     {
@@ -144,22 +150,59 @@ app.MapGet("/api/schedule/current", async (DailyTriggerService service) =>
         times.AddRange(timesNew);
     }
 
-    //var times = service.GetCurrentTriggerTimes(); // 去读取写死的配置
+    // ===== 获取服务器时区信息（始终返回标准 IANA ID）=====
+    TimeZoneInfo localTimeZone = TimeZoneInfo.Local;
+
+    // 常见 Windows 时区名 → 标准 IANA ID 映射（只列最常用，够用即可）
+    string serverTimeZoneId = localTimeZone.Id switch
+    {
+        "China Standard Time" => "Asia/Shanghai",
+        "Pacific Standard Time" => "America/Los_Angeles",
+        "Eastern Standard Time" => "America/New_York",
+        "Central Standard Time" => "America/Chicago",
+        "Mountain Standard Time" => "America/Denver",
+        "GMT Standard Time" => "Europe/London",
+        "Central Europe Standard Time" => "Europe/Prague",    // 或 Europe/Warsaw 等
+        "Romance Standard Time" => "Europe/Paris",
+        "Tokyo Standard Time" => "Asia/Tokyo",
+        "Korean Standard Time" => "Asia/Seoul",
+        "Singapore Standard Time" => "Asia/Singapore",
+        "India Standard Time" => "Asia/Kolkata",
+        // 如需更多可继续补充
+        _ => localTimeZone.Id  // .NET 6+ 在 Linux 上已经是 IANA，直接返回；Windows 上若未匹配则返回原 Id（兜底）
+    };
+
+    int serverOffsetMinutes = (int)localTimeZone.GetUtcOffset(DateTime.UtcNow).TotalMinutes;
+
+    // ===== 计算下一个可能的触发时间（基于服务器本地时区）=====
+    var nextPossibleTriggers = times.Select(t =>
+    {
+        if (TimeSpan.TryParseExact(t, new[] { "H:m:s", "HH:mm:ss", "H:m", "HH:mm", "HH:mm:ss.fff", "H:m:s.fff" },
+            CultureInfo.InvariantCulture, TimeSpanStyles.None, out var ts))
+        {
+            var next = DateTime.Today.Add(ts);
+            if (next <= DateTime.Now) next = next.AddDays(1);
+            return new
+            {
+                time = t,
+                nextRun = next.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+        }
+        return null;
+    }).Where(x => x != null)!;
+
     return Results.Ok(new
     {
-        currentTimes = times,
+        currentTimes = times,                    // 服务器本地时区的时间点列表
         count = times.Count,
-        nextPossibleTriggers = times.Select(t =>
+        nextPossibleTriggers,
+
+        // 下发给客户端的时区信息（ianaId 现在一定是浏览器支持的格式）
+        serverTimeZone = new
         {
-            if (TimeSpan.TryParseExact(t, new[] { "H:m:s", "HH:mm:ss", "H:m", "HH:mm", "HH:mm:ss.fff", "H:m:s.fff" },
-                System.Globalization.CultureInfo.InvariantCulture, out var ts))
-            {
-                var next = DateTime.Today.Add(ts);
-                if (next <= DateTime.Now) next = next.AddDays(1);
-                return new { time = t, nextRun = next.ToString("yyyy-MM-dd HH:mm:ss") };
-            }
-            return null;
-        }).Where(x => x != null)
+            ianaId = serverTimeZoneId,           // 标准 IANA ID，前端可直接用于 Intl.DateTimeFormat
+            offsetMinutes = serverOffsetMinutes  // 备用（手动计算时使用）
+        }
     });
 });
 // 可选：默认跳转到 WebView

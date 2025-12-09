@@ -34,7 +34,7 @@ export function initScheduleManager() {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const data = await response.json(); // 这里 data 就是你上面那个数组
-            console.log(data);
+            //console.log(data);
 
             // 例如取第一个任务的 TaskId
             if (data.length > 0) {
@@ -67,7 +67,7 @@ export function initScheduleManager() {
      * GET 当前计划并更新显示
      */
     async function fetchCurrentSchedule() {
-        console.log('GET 当前计划并更新显示');
+        console.log('GET 当前计划并更新显示'); //👈这时间是服务器时区。
         try {
             const response = await fetch(API_GET, {
                 method: 'GET',
@@ -78,14 +78,46 @@ export function initScheduleManager() {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const data = await response.json();
-            //console.log(data);
-            //console.log(data['currentTimes']);
-            updateDisplayAndInput(data['currentTimes']);
+            console.log(data);
+            console.log(data['currentTimes']);
+            console.log(data['serverTimeZone']);
+            console.log('↓↓↓↓↓↓↓↓↓↓');
+            const localTimes = convertServerTimesToLocal(
+                data.currentTimes,
+                data.serverTimeZone.ianaId  // 或 data.serverTimeZone.offsetMinutes（备用）
+            );
+            console.log('↓转成客户端时区↓');
+            console.log(localTimes);
+
+            updateDisplayAndInput(localTimes);
             hasFetched = true;
         } catch (err) {
             console.error('获取当前计划失败:', err);
             scheduleTextLabel.textContent = '当前计划：获取失败';
         }
+    }
+    /**
+     * 将服务器时区的时间列表转换为客户端本地时区时间
+     * @param {string[]} serverTimes - 如 ["00:00", "08:00", "12:00"]
+     * @param {string} serverIanaId - 服务器时区 IANA ID（如 "Asia/Shanghai"、"China Standard Time" 在现代浏览器中也支持）
+     * @returns {string[]} 本地时区的时间字符串数组（如 ["16:00", "00:00", "04:00"]）
+     */
+    function convertServerTimesToLocal(serverTimes, serverIanaId) {
+        return serverTimes.map(timeStr => {
+            // 解析 HH:mm（支持 1-2 位小时）
+            const [h, m] = timeStr.split(':').map(Number);
+            // 用今天作为基准日期
+            const date = new Date();
+            date.setHours(h, m, 0, 0);
+
+            // 使用服务器时区格式化，再转为本地时间（核心一步）
+            return new Intl.DateTimeFormat('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: serverIanaId
+            }).format(date).replace(/AM|PM/i, '').trim();
+        });
     }
 
     /**
@@ -105,6 +137,9 @@ export function initScheduleManager() {
      * POST 更新计划（保持不变）
      */
     async function updateSchedule(timesArray) {
+        console.log('↑↑↑↑↑↑↑↑POST');
+        console.log(timesArray);
+        console.log('↑POST客户端时区↑');
         try {
             const response = await fetch(API_POST, {
                 method: 'POST',
@@ -120,6 +155,8 @@ export function initScheduleManager() {
                 return;
             }
             const data = await response.json();
+            console.log('↓服务器返回↓');
+            console.log(data);
             updateDisplayAndInput(data['current']);
             //alert('计划更新成功！');
         } catch (err) {
@@ -143,47 +180,8 @@ export function initScheduleManager() {
             return alert('请输入正确的 JSON 数组格式，例如：["00:00", "04:00"]');
         }
 
-        // 客户端当地时间 转成 Docker的UTC
-        updateSchedule(convertLocalTimesToUTC(timesArray));
+        updateSchedule(timesArray); //js也在客户端，这里还不知道服务器的时区
     });
-    /**
-     * 将本地时间字符串数组转换为 UTC 时间字符串数组
-     * @param {string[]} localTimes - 本地时间数组，例如 ["08:00", "12:00"]
-     * @returns {string[]} UTC 时间数组，例如 ["00:00", "04:00"]（假设本地为 UTC+8）
-     */
-    function convertLocalTimesToUTC(localTimes) {
-        // 获取当前时区的偏移分钟数（本地时间减 UTC 的分钟数，例如 UTC+8 为 480）
-        const offsetMinutes = new Date().getTimezoneOffset(); // 注意：返回值为负数或正数
-        // 转换为小时（正值表示 UTC 到本地的偏移小时）
-        const offsetHours = -offsetMinutes / 60;
-
-        return localTimes.map(time => {
-            // 解析时间字符串 "HH:MM"
-            const [hours, minutes] = time.split(':').map(Number);
-
-            // 本地时间转换为分钟
-            let localMinutes = hours * 60 + minutes;
-
-            // 减去偏移（本地到 UTC）
-            let utcMinutes = localMinutes - offsetHours * 60;
-
-            // 处理跨天（模 1440）
-            utcMinutes = (utcMinutes + 1440) % 1440;
-
-            // 转换回小时和分钟
-            const utcHours = Math.floor(utcMinutes / 60);
-            const utcMins = utcMinutes % 60;
-
-            // 格式化为 "HH:MM"
-            return `${utcHours.toString().padStart(2, '0')}:${utcMins.toString().padStart(2, '0')}`;
-        });
-    }
-    // 示例使用（假设当前时区为 UTC+8，如中国标准时间）
-    //console.log(convertLocalTimesToUTC(["08:00", "12:00"]));
-    // 输出: ["00:00", "04:00"]
-    // 另一个示例（假设时区为 UTC-5，如美国东部标准时间）
-    //console.log(convertLocalTimesToUTC(["08:00", "12:00"]));
-    // 输出: ["13:00", "17:00"]
 
 
     /**

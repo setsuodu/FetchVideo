@@ -19,7 +19,7 @@ public class ScheduleConfigService
     {
         // 先读取宿主机时区
         // 把配置的UTC-8时间，转成宿主机格式
-        return Shared.ConvertUtc8ConfigToLocal(DefaultTimes.ToArray()).ToList();
+        return Shared.ConvertUtc8ConfigToLocal(DefaultTimes);
     }
     // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 
