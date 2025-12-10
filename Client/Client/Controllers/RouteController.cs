@@ -32,6 +32,12 @@ public class RouteController //路由器
             Console.WriteLine($"直播标题: {title}");
             await bili.GetM3U8(roomId, title);
         }
+        else if (url.Contains("www.bilibili.com"))
+        {
+            // https://www.bilibili.com/
+            var tube = new BilibiliController();
+            await tube.ClickMessage(url);
+        }
         else if (url.Contains("youtu"))
         {
             //string fullUrl = "https://www.youtube.com/watch?v=ij89E9qABho"; // 标准地址

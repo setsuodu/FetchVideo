@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using FetchVideo.Models;
 using FetchVideo.Utils;
+using FetchVideo.Playwright;
 
 namespace FetchVideo.Controllers;
 
@@ -178,5 +179,15 @@ public class BilibiliController
             //Console.WriteLine("标题：" + title);
             return $"{title}_{timestamp}";
         }
+    }
+
+
+    public async Task ClickMessage(string url)
+    {
+        HeadlessBrowser browser = new HeadlessBrowser();
+        var page = await browser.GetHTML(url);
+        //await page.ClickAsync("a.right-entry__outside:has-text('消息')");
+        //await page.ClickAsync(".right-entry__outside"); //消息
+        //await page.ClickAsync("a.default-entry");
     }
 }

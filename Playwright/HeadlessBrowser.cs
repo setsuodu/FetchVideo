@@ -7,7 +7,7 @@ public class HeadlessBrowser
     // 使用 Playwright 模仿浏览器行为获取 html
     // ❌Playwright放服务器太重了，直接 +200MB，编译5分钟❌
     // ❌B站对Linux反爬更严格，建议功能移到客户端❌
-    public async Task<string> GetHTML(string url)
+    public async Task<IPage> GetHTML(string url)
     {
         // 自动安装浏览器（第一次运行会下载 Chromium，后面就不会了）
         using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();
@@ -67,6 +67,6 @@ public class HeadlessBrowser
         //Console.WriteLine("按任意键退出...");
         //Console.ReadKey();
 
-        return html;
+        return page;
     }
 }
