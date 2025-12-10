@@ -3,7 +3,6 @@ using FetchVideo.Utils;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Playwright;
 using System.Text.Json;
 
 namespace FetchVideo.Controllers;
@@ -235,107 +234,7 @@ public class BilibiliController : ControllerBase
         }
     }
 
-    // 分析B站个人主页视频列表（严查，好几分钟才敢用一次）
-    public async Task<List<string>> GetUploadVideosAsync(long mid, int page = 1, int pageSize = 20)
-    {
-        using var client = new HttpClient();
-        // 模拟浏览器，避免部分风控
-        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-        string referer = $"https://space.bilibili.com/{mid}";
-        client.DefaultRequestHeaders.Add("Referer", referer);
-
-
-        var url = $"{Shared.BILI_SPACE}arc/search?mid={mid}&pn={page}&ps={pageSize}&order=pubdate&jsonp=jsonp";
-        var json = await client.GetStringAsync(url);
-        Console.WriteLine("👇json👇");
-        Console.WriteLine(json);
-
-        // 用 System.Text.Json 解析（或 Json.NET）
-        var doc = JsonDocument.Parse(json);
-        var vlist = doc.RootElement
-            .GetProperty("data")
-            .GetProperty("list")
-            .GetProperty("vlist");
-
-        List<string> videoList = new List<string> ();
-        foreach (var video in vlist.EnumerateArray())
-        {
-            string title = video.GetProperty("title").GetString();
-            string bvId = video.GetProperty("bvid").GetString();
-            videoList.Add(bvId);
-
-            Console.WriteLine($"标题: {title}");
-            Console.WriteLine($"BV: {bvId}");
-            //Console.WriteLine($"播放: {video.GetProperty("play").GetInt32()}");
-            Console.WriteLine("---");
-        }
-        return videoList;
-    }
-    // 使用 Playwright 模仿浏览器行为获取 html
-    // ❌Playwright放服务器太重了，直接 +200MB，编译5分钟❌
-    // ❌B站对Linux反爬更严格，建议功能移到客户端❌
-    public async Task<string> GetHTML(string url)
-    {
-        // 自动安装浏览器（第一次运行会下载 Chromium，后面就不会了）
-        using var playwright = await Playwright.CreateAsync();
-
-        // 无头模式（不显示浏览器窗口）
-        await using var browser = await playwright.Chromium.LaunchAsync(new()
-        {
-            //Headless = true,  // 改成 false 可以看到浏览器窗口，便于调试
-            Headless = false,  // 先改成 false！有窗口才能通过大部分检测
-            Args = new[]
-            {
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-infobars",
-                "--window-position=0,0",
-                "--disable-extensions",
-                "--disable-blink-features=AutomationControlled"
-            }
-        });
-        var context = await browser.NewContextAsync(new()
-        {
-            ViewportSize = new() { Width = 1920, Height = 1080 },
-            UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-        });
-
-        // 关键反检测代码（这一段必须加！）
-        await context.AddInitScriptAsync(@"
-            Object.defineProperty(navigator, 'webdriver', { get: () => false });
-            window.chrome = { runtime: {}, app: {}, loadTimes: () => {} };
-            Object.defineProperty(navigator, 'languages', { get: () => ['zh-CN', 'zh'] });
-            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-        ");
-        var page = await browser.NewPageAsync();
-
-        await page.GotoAsync(url);
-
-        // 等待页面主要内容加载完成（推荐用 NetworkIdle，比固定延时更可靠）
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-
-        // 可选：再等一下确保动态内容渲染完（B 站有时稍慢）
-        await Task.Delay(3000);
-
-        // 获取完整的渲染后 HTML
-        string html = await page.ContentAsync();
-
-        // 输出到控制台（实际项目可以保存到文件）
-        Console.WriteLine("=== 页面 HTML 长度 ===");
-        Console.WriteLine(html.Length);
-        Console.WriteLine("\n=== 前 1000 个字符预览 ===");
-        Console.WriteLine(html.Substring(0, Math.Min(1000, html.Length)));
-
-        // 保存到文件（可选）
-        await System.IO.File.WriteAllTextAsync("C:\\Users\\33913\\Desktop\\up主页面.html", html);
-        Console.WriteLine("完整 HTML 已保存到 up主页面.html");
-
-        // 按任意键退出
-        //Console.WriteLine("按任意键退出...");
-        //Console.ReadKey();
-
-        return html;
-    }
+    // 无头浏览器模拟行为，获取 UP 主上传的视频列表
     [HttpGet("upload_video")]
     public async Task<List<string>> GetUploadVideo(string uid)
     {
@@ -344,43 +243,32 @@ public class BilibiliController : ControllerBase
         string url = $"https://space.bilibili.com/{uid}/upload/video";
 
         // 获取完整的渲染后 HTML
-        string html = await GetHTML(url);
+        //string html = await GetHTML(url);
 
         // 用 HtmlAgilityPack 解析 HTML
-        var doc = new HtmlDocument();
-        doc.LoadHtml(html);
+        //var doc = new HtmlDocument();
+        //doc.LoadHtml(html);
 
-        var videoNodes = doc.DocumentNode.SelectNodes("//a[@class='bili-cover-card']");
-        Console.WriteLine($"UP有{videoNodes.Count}个视频");
+        //var videoNodes = doc.DocumentNode.SelectNodes("//a[@class='bili-cover-card']");
+        //Console.WriteLine($"UP有{videoNodes.Count}个视频");
 
         List<string> videoList = new List<string>();
-        foreach (var video in videoNodes)
-        {
-            string href = video.GetAttributeValue("href", "");
-            string bvId = Shared.GetBvId(href);
-            Console.WriteLine($"{href}👉{bvId}");
-            videoList.Add(bvId);
-        }
+        //foreach (var video in videoNodes)
+        //{
+        //    string href = video.GetAttributeValue("href", "");
+        //    string bvId = Shared.GetBvId(href);
+        //    Console.WriteLine($"{href}👉{bvId}");
+        //    videoList.Add(bvId);
+        //}
         return videoList;
     }
 
-    [HttpGet("upload_test")]
-    public async Task<string> TestAsync(string uid)
-    {
-        // 获取收藏夹列表
-        string url = $"https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={uid}";
-        var resp = await RequestAsync(url);
-        Console.WriteLine(resp);
-        return resp;
-    }
     private static readonly HttpClient client = new HttpClient();
     // ←←← 这里填你的 SESSDATA（必须登录有效）
     private const string SessData = "f0ce3d2c%2C1780465626%2C7172e%2Ac2CjBGS5AJwPcfnaaVc8XogrSvBMwv_ARSaHY0GVUqDuByTCC9RpyOO_86Ks4WuQE1whASVl9Zb2JMVDlPMVBNTEkxdnhhdUJlajFMTkpCeWU2aVV0Z21PVnR2TDVkWlMyY2c2V20yaE1sSTQ4d3o1MzlhZzJaOElMMmVpejN1OVpKbTBmU1B5RHpnIIEC";
     // 你的 mid（用户ID），可通过 https://api.bilibili.com/x/space/myinfo 获取
     private static long MyMid = 3546649320229192;   // ←←← 改成自己的 mid
     // 统一请求方法（自动加 Cookie 和常见 Header）
-    static DateTime UnixTimestampToDateTime(long timestamp)
-        => DateTimeOffset.FromUnixTimeSeconds(timestamp).ToLocalTime().DateTime;
     static async Task<string> RequestAsync(string url)
     {
         client.DefaultRequestHeaders.Remove("Cookie");
@@ -439,7 +327,7 @@ public class BilibiliController : ControllerBase
                 Console.WriteLine($"BV号: BV{v.Bvid}");
                 Console.WriteLine($"链接: https://www.bilibili.com/video/BV{v.Bvid}");
                 //Console.WriteLine($"封面: {v.Cover}");
-                //Console.WriteLine($"播放量: {v.CntInfo.Play}   收藏时间: {UnixTimestampToDateTime(v.FavTime):yyyy-MM-dd HH:mm}");
+                //Console.WriteLine($"播放量: {v.CntInfo.Play}
                 Console.WriteLine(new string('-', 20));
             }
 
