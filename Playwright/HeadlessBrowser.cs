@@ -48,7 +48,7 @@ public class HeadlessBrowser
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         // 可选：再等一下确保动态内容渲染完（B 站有时稍慢）
-        await Task.Delay(3000);
+        await Task.Delay(2000);
 
         // 获取完整的渲染后 HTML
         string html = await page.ContentAsync();

@@ -9,6 +9,7 @@ public class RouteController //路由器
         // ①B站视频
         // ②B站直播
         // ③YouTube视频
+        // ④TKTube视频
         // missav访问时用油猴自动提交SQL，没有则记入本地文件
         if (url.Contains("bilibili.com/video/BV"))
         {
@@ -42,6 +43,12 @@ public class RouteController //路由器
 
             var tube = new YoutubeController();
             await tube.GetYoutubeVideoAsync(url);
+        }
+        else if (url.Contains("tktube"))
+        {
+            // https://tktube.com/zh/videos/362994/jur-5062/
+            var tube = new TKTubeController();
+            await tube.Fetch(url);
         }
         else
         {

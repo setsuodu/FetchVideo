@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Playwright\FetchVideo.Playwright.csproj" />
     <ProjectReference Include="..\..\Shared\FetchVideo.Shared.csproj" />
   </ItemGroup>
 
