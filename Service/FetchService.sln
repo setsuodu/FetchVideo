@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FetchVideo.Service", "Servi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FetchVideo.Shared", "..\Shared\FetchVideo.Shared.csproj", "{70066436-0A9F-DBA3-489E-98BB1E1ACE68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FetchVideo.Playwright", "..\Playwright\FetchVideo.Playwright.csproj", "{D669B5A1-4442-B3F5-A739-4C9D5F27C8A2}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{70066436-0A9F-DBA3-489E-98BB1E1ACE68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70066436-0A9F-DBA3-489E-98BB1E1ACE68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70066436-0A9F-DBA3-489E-98BB1E1ACE68}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D669B5A1-4442-B3F5-A739-4C9D5F27C8A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D669B5A1-4442-B3F5-A739-4C9D5F27C8A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D669B5A1-4442-B3F5-A739-4C9D5F27C8A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D669B5A1-4442-B3F5-A739-4C9D5F27C8A2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

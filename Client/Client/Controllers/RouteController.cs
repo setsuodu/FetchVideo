@@ -55,6 +55,9 @@ public class RouteController //路由器
             // https://tktube.com/zh/videos/362994/jur-5062/
             var tube = new TKTubeController();
             await tube.Fetch(url);
+
+            //var tk = new TktubeMp4Extractor();
+            //await tk.GetRealMp4UrlAsync(url);
         }
         else
         {
