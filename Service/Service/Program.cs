@@ -115,7 +115,7 @@ app.MapGet("/downloads/{*path}", async (string path, HttpContext ctx) =>
 //var svc = app.Services.GetRequiredService<ScheduleConfigService>();
 app.MapPost("/api/schedule/update", async (List<string> times_utc8, DailyTriggerService service) =>
 {
-    // 这里提交的时间，一定是UTC-8
+    // 这里提交的时间，一定是UTC+8
     // 转成服务器的时区。
     Console.WriteLine($"客户端提交: {string.Join(", ", times_utc8)}");
     var times = Shared.ConvertUtc8ConfigToLocal(times_utc8);
@@ -133,7 +133,8 @@ app.MapPost("/api/schedule/update", async (List<string> times_utc8, DailyTrigger
     return Results.Ok(new
     {
         message = "定时时间已更新",
-        current = service.GetCurrentTriggerTimes()
+        //current = service.GetCurrentTriggerTimes() //👈这要返回 UTC+8 的配置
+        current = Shared.ScheduleConfigSort(times_utc8)
     });
 });
 // GET：查看当前定时时间

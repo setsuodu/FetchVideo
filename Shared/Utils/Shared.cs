@@ -110,59 +110,193 @@ public class Shared
         return baseUrl;
     }
 
-    // 转换 UTC+8 配置时间 到 本地时间
+    /// <summary>
+    /// 转换 UTC+8 配置时间列表 到 服务器本地时间，并打印详细的调试信息。
+    /// 仅支持 HH:mm 格式的输入 (e.g., "00:00", "12:00")。
+    /// 修正 ArgumentException 错误：通过将 Kind 设置为 Unspecified 解决。
+    /// </summary>
+    /// <param name="utc8Times">输入的 UTC+8 时间字符串列表，如 "00:00", "12:00"。</param>
+    /// <returns>转换后的服务器本地时间字符串列表 (HH:mm)，并按时间排序。</returns>
     public static List<string> ConvertUtc8ConfigToLocal(List<string> utc8Times)
     {
         if (utc8Times == null) throw new ArgumentNullException(nameof(utc8Times));
 
-        var localList = new List<string>();
-        TimeZoneInfo localZone = TimeZoneInfo.Local;
-        TimeZoneInfo utc8Zone = GetUtc8TimeZone();
+        // 1. 关键：手动创建 UTC+8 时区，保证跨平台和独立性。
+        TimeZoneInfo utc8Zone = TimeZoneInfo.CreateCustomTimeZone(
+            "Custom UTC+8",
+            TimeSpan.FromHours(8),
+            "UTC+8",
+            "UTC+8");
 
-        //Console.WriteLine($"宿主机时区：{Shared.GetUtcOffsetString(localZone)}");
-        var offset = localZone.BaseUtcOffset;
-        string sign = offset >= TimeSpan.Zero ? "+" : "-";
-        string offsetStr = $"{sign}{Math.Abs(offset.Hours):D2}:{offset.Minutes:D2}";
-        Console.WriteLine($"宿主机时区：{offsetStr}");
+        // 2. 获取服务器的本地时区。
+        TimeZoneInfo localZone = TimeZoneInfo.Local;
+        TimeSpan localOffset = localZone.BaseUtcOffset;
+
+        Console.WriteLine("--- 时区转换信息 ---");
+        Console.WriteLine($"🚀 服务器本地时区 (Local Zone): {localZone.Id}");
+        Console.WriteLine($"🌐 服务器 UTC 偏移量: UTC{(localOffset >= TimeSpan.Zero ? "+" : "")}{localOffset:hh\\:mm}");
+        Console.WriteLine($"⏱️ 原始配置时区 (UTC+8): UTC+08:00");
+        Console.WriteLine($"---------------------");
+        Console.WriteLine($"原始配置 (UTC+8): {string.Join(", ", utc8Times)}");
+        Console.WriteLine($"---------------------");
+
+        var localList = new List<string>();
+
+        // 获取一个固定的基准日期（服务器本地的今天午夜 00:00:00）
+        DateTime todayDate = DateTime.Today;
 
         foreach (var timeStr in utc8Times)
         {
-            // 重点：用 HH 而不是 hh
-            if (!TimeSpan.TryParseExact(timeStr.Trim(), @"HH\:mm", CultureInfo.InvariantCulture, out TimeSpan ts))
+            string input = timeStr?.Trim() ?? string.Empty;
+
+            // 3. 解析输入的时间字符串
+            if (!TimeSpan.TryParseExact(input,
+                new[] { @"hh\:mm" },
+                CultureInfo.InvariantCulture,
+                TimeSpanStyles.None,
+                out TimeSpan ts))
             {
-                // 可选：也支持不带冒号的写法如 0800, 1830
-                if (!TimeSpan.TryParseExact(timeStr.Trim(), @"HHmm", CultureInfo.InvariantCulture, out ts))
-                {
-                    localList.Add(timeStr); // 解析失败原样返回
-                    continue;
-                }
+                Console.WriteLine($"\n⚠️ 警告：时间格式无法识别，原样返回 → {timeStr}");
+                localList.Add(timeStr);
+                continue;
             }
 
-            // 构造今天任意日期 + 这个时间点（作为 UTC+8 时间）
-            DateTime utc8Time = DateTime.Today + ts;
+            // 4. 构造 UTC+8 的完整时间点，并【修正 Kind 属性】
+            DateTime utc8DateTimeUnspecified = todayDate.Add(ts);
 
-            // 转换为 UTC → 再转成本地时间
-            DateTime utc = TimeZoneInfo.ConvertTimeToUtc(utc8Time, utc8Zone);
-            DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(utc, localZone);
+            // 关键修正：将 Kind 强制设置为 Unspecified，以满足 TimeZoneInfo.ConvertTimeToUtc 的要求。
+            DateTime utc8DateTime = DateTime.SpecifyKind(utc8DateTimeUnspecified, DateTimeKind.Unspecified);
 
-            localList.Add(localTime.ToString(@"HH\:mm"));
+            // 5. 核心转换路径：UTC+8 → UTC → 服务器本地时间
+
+            // 步骤 A: 将 UTC+8 时间（Kind=Unspecified）转换为 UTC 时间。
+            // 现在可以成功执行，因为它不再认为源 DateTime 是 TimeZoneInfo.Local 的时间。
+            DateTime utcDateTime = TimeZoneInfo.ConvertTimeToUtc(utc8DateTime, utc8Zone);
+
+            // 步骤 B: 将 UTC 时间转换为服务器本地时间。
+            DateTime localDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, localZone);
+
+            string result = localDateTime.ToString(@"HH\:mm");
+
+            // 详细打印转换过程
+            Console.WriteLine($"\n⚙️ 转换过程 for '{input}'");
+            Console.WriteLine($"   1. 配置时间 (UTC+8)  : {utc8DateTime:yyyy-MM-dd HH:mm:ss} (Kind: {utc8DateTime.Kind})");
+            Console.WriteLine($"   2. 转换为 UTC        : {utcDateTime:yyyy-MM-dd HH:mm:ss} (Kind: {utcDateTime.Kind})");
+            Console.WriteLine($"   3. 转换为本地时间    : {localDateTime:yyyy-MM-dd HH:mm:ss} (Kind: {localDateTime.Kind})");
+            Console.WriteLine($"   => 最终结果 (HH:mm)  : {result}");
+
+            localList.Add(result);
         }
 
-        return ScheduleConfigSort(localList);
-    }
-    // 更健壮的 UTC+8 时区获取
-    private static TimeZoneInfo GetUtc8TimeZone()
-    {
-        try { return TimeZoneInfo.FindSystemTimeZoneById("China Standard Time"); }
-        catch { }
-        try { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai"); }
-        catch { }
+        // 6. 按时间排序后返回
+        var sortedList = localList
+            .OrderBy(t => TimeSpan.TryParse(t, out TimeSpan ts) ? ts : TimeSpan.MaxValue)
+            .ToList();
 
-        // 兜底：手动创建 UTC+8（无夏令时）
-        return TimeZoneInfo.CreateCustomTimeZone("UTC+8", TimeSpan.FromHours(8), "UTC+8", "UTC+8");
+        Console.WriteLine($"\n---------------------");
+        Console.WriteLine($"✅ 最终本地时间列表 (已排序): {string.Join(", ", sortedList)}");
+        Console.WriteLine($"---------------------");
+
+        return sortedList;
+    }
+    /// <summary>
+    /// 转换 服务器本地时区 的配置时间列表 到 UTC+8 时区配置。
+    /// 兼容 Windows / Linux / macOS / Docker / 任何时区环境。
+    /// 仅支持 HH:mm 格式的输入 (e.g., "00:00", "12:00")。
+    /// </summary>
+    /// <param name="localTimes">输入的服务器本地时间字符串列表，如 "00:00", "12:00"。</param>
+    /// <returns>转换后的 UTC+8 时间字符串列表 (HH:mm)，并按时间排序。</returns>
+    public static List<string> ConvertLocalConfigToUtc8(List<string> localTimes)
+    {
+        if (localTimes == null) throw new ArgumentNullException(nameof(localTimes));
+
+        // 1. 关键：手动创建 UTC+8 时区
+        TimeZoneInfo utc8Zone = TimeZoneInfo.CreateCustomTimeZone(
+            "Custom UTC+8",
+            TimeSpan.FromHours(8),
+            "UTC+8",
+            "UTC+8");
+
+        // 2. 获取服务器的本地时区。
+        TimeZoneInfo localZone = TimeZoneInfo.Local;
+        TimeSpan localOffset = localZone.BaseUtcOffset;
+
+        Console.WriteLine("--- 时区转换信息 ---");
+        Console.WriteLine($"🚀 原始配置时区 (Local Zone): {localZone.Id}");
+        Console.WriteLine($"🌐 服务器 UTC 偏移量: UTC{(localOffset >= TimeSpan.Zero ? "+" : "")}{localOffset:hh\\:mm}");
+        Console.WriteLine($"⏱️ 目标配置时区 (UTC+8): UTC+08:00");
+        Console.WriteLine($"---------------------");
+        Console.WriteLine($"原始配置 (本地): {string.Join(", ", localTimes)}");
+        Console.WriteLine($"---------------------");
+
+        var utc8List = new List<string>();
+
+        // 获取一个固定的基准日期（服务器本地的今天午夜 00:00:00）
+        DateTime todayDate = DateTime.Today;
+
+        foreach (var timeStr in localTimes)
+        {
+            string input = timeStr?.Trim() ?? string.Empty;
+
+            // 3. 解析输入的时间字符串 (HH:mm 格式)
+            if (!TimeSpan.TryParseExact(input,
+                new[] { @"hh\:mm" },
+                CultureInfo.InvariantCulture,
+                TimeSpanStyles.None,
+                out TimeSpan ts))
+            {
+                Console.WriteLine($"\n⚠️ 警告：时间格式无法识别，原样返回 → {timeStr}");
+                utc8List.Add(timeStr);
+                continue;
+            }
+
+            // 4. 构造本地时间点，并明确指定 Kind 为 Local（与 DateTime.Today 一致）
+            // 这里可以直接使用 DateTime.Today 得到的 Local Kind，
+            // 因为我们将使用 TimeZoneInfo.ConvertTimeToUtc(localDateTime, localZone) 进行转换。
+            DateTime localDateTimeWithKind = todayDate.Add(ts);
+
+            // 确保 Kind 是 Local (虽然 DateTime.Today 默认就是 Local，但明确指定更安全)
+            DateTime localDateTime = DateTime.SpecifyKind(localDateTimeWithKind, DateTimeKind.Local);
+
+            // 💡 注意：如果您需要在 Docker/Linux 环境中绝对依赖 Unspecified/UTC，
+            // 最好使用 DateTimeOffset 来避免 Local Kind 的复杂性，
+            // 但为了保持与您现有代码风格的一致性，我们遵循 TimeZoneInfo 的标准做法：
+            // Local Kind 必须配合 TimeZoneInfo.Local 使用。
+
+            // 5. 核心转换路径：本地时区 → UTC → UTC+8
+
+            // 步骤 A: 将本地时间转换为 UTC 时间。
+            // 因为 localDateTime.Kind 是 Local，这里必须使用 TimeZoneInfo.Local
+            DateTime utcDateTime = TimeZoneInfo.ConvertTimeToUtc(localDateTime, localZone);
+
+            // 步骤 B: 将 UTC 时间转换为 UTC+8 时间。
+            DateTime utc8DateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, utc8Zone);
+
+            string result = utc8DateTime.ToString(@"HH\:mm");
+
+            // 详细打印转换过程
+            Console.WriteLine($"\n⚙️ 转换过程 for '{input}'");
+            Console.WriteLine($"   1. 配置时间 (本地) : {localDateTime:yyyy-MM-dd HH:mm:ss} (Kind: {localDateTime.Kind})");
+            Console.WriteLine($"   2. 转换为 UTC      : {utcDateTime:yyyy-MM-dd HH:mm:ss} (Kind: {utcDateTime.Kind})");
+            Console.WriteLine($"   3. 转换为 UTC+8    : {utc8DateTime:yyyy-MM-dd HH:mm:ss} (Kind: {utc8DateTime.Kind})");
+            Console.WriteLine($"   => 最终结果 (HH:mm): {result}");
+
+            utc8List.Add(result);
+        }
+
+        // 6. 按时间排序后返回
+        var sortedList = utc8List
+            .OrderBy(t => TimeSpan.TryParse(t, out TimeSpan ts) ? ts : TimeSpan.MaxValue)
+            .ToList();
+
+        Console.WriteLine($"\n---------------------");
+        Console.WriteLine($"✅ 最终 UTC+8 时间列表 (已排序): {string.Join(", ", sortedList)}");
+        Console.WriteLine($"---------------------");
+
+        return sortedList;
     }
     // 排序计划列表
-    private static List<string> ScheduleConfigSort(List<string> times)
+    public static List<string> ScheduleConfigSort(List<string> times)
     {
         var list = times.OrderBy(x => x).ToList();
         return list;
