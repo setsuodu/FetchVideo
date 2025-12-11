@@ -78,11 +78,7 @@ export function initVideoDownloader() {
                         文件已保存
                     `;
                     log.textContent = `录制已终止，文件已保存。`;
-                    //if (stopData.filePath || stopData.downloadUrl) {
-                    //    logLink.href = stopData.filePath || stopData.downloadUrl;
-                    //    logLink.textContent = `下载录制文件`;
-                    //    logLink.classList.remove('d-none');
-                    //}
+
                     // 执行 finally{ } 中的重置流程
                     setStartButton();
                     unlockForm();
@@ -162,7 +158,9 @@ export function initVideoDownloader() {
         log.textContent = '';
         logLink.classList.add('d-none');
 
-        const videoUrl = encodeURIComponent(videoInput.value.trim());
+        const videoUrl = encodeURIComponent(extractCleanUrl(videoInput.value)); // 移除空白字符
+        console.log(`videoUrl: ${videoUrl}`);
+
         //const lengthNum = getRecordLength();
         recordLength = getRecordLength();
         console.log(`录制时长: ${recordLength} min`);
@@ -246,6 +244,11 @@ export function initVideoDownloader() {
             }
         }
     });
+    // 清理 URL 如👉【此女极其擅长嫌弃脸-哔哩哔哩直播】 https://b23.tv/4eU6Qsp
+    function extractCleanUrl(str) {
+        const match = str.match(/(https?:\/\/[^\s"。』」】）》]+)/i);
+        return match ? match[1].trim() : '';
+    }
 
     // —— 停止录制函数 ——
     async function stopRecording() {
