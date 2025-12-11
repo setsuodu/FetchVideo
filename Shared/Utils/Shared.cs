@@ -337,4 +337,21 @@ public class Shared
             // 当 using 块结束时，process.Dispose() 会被自动调用
         }
     }
+
+    // 获取网页
+    public static async Task<string> GetHTML(string url)
+    {
+        using (var http = new HttpClient())
+        {
+            // 一些 headers 模拟浏览器访问
+            http.DefaultRequestHeaders.Add("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/122.0.0.0 Safari/537.36");
+
+            string html = await http.GetStringAsync(url);
+            //Console.WriteLine(html);
+            return html;
+        }
+    }
 }

@@ -105,9 +105,9 @@ public class YoutubeController
     {
         string mergeCMD = $"-i \"{m3u8}\" -c copy \"{_downloadPath}.mp4\"";
         var processInfo = _manager.StartFFmpeg(mergeCMD, "missav");
-        Console.WriteLine($"下载完成: {DateTime.Now}");
-        await processInfo.process.WaitForExitAsync();
         processInfo.Command = "Convert";
+        await processInfo.process.WaitForExitAsync();
+        Console.WriteLine($"下载完成: {DateTime.Now}");
         return processInfo;
     }
 }

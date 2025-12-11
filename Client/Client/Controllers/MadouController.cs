@@ -1,8 +1,6 @@
-﻿using AngleSharp.Dom;
+﻿using System.Text.RegularExpressions;
+using FetchVideo.Utils;
 using HtmlAgilityPack;
-using System;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
 
 namespace FetchVideo.Controllers;
 
@@ -17,28 +15,11 @@ public class MadouController
     //https://www.madou.io/index.php/vod/play/id/29147/sid/1/nid/1.html
     //https://www.madou.io/index.php/vod/play/id/22705/sid/1/nid/1.html //视频
 
-    // 获取网页
-    public async Task<string> GetHTML(string url)
-    {
-        using (var http = new HttpClient())
-        {
-            // 一些 headers 模拟浏览器访问
-            http.DefaultRequestHeaders.Add("User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/122.0.0.0 Safari/537.36");
-
-            string html = await http.GetStringAsync(url);
-            //Console.WriteLine(html);
-            return html;
-        }
-    }
-
     // 解析视频分页列表
     public async Task ParseListPage(string url)
     {
         Console.WriteLine("解析视频分页列表");
-        string html = await GetHTML(url);
+        string html = await Shared.GetHTML(url);
 
         // 用 HtmlAgilityPack 解析 HTML
         var doc = new HtmlDocument();
@@ -62,7 +43,7 @@ public class MadouController
         {
             string url = $"{BASE_URL}/type/id/{typeId}/page/{page}.html";
             Console.WriteLine($"处理第 {page} 页: {url}");
-            string html = await GetHTML(url);
+            string html = await Shared.GetHTML(url);
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
             var liNodes = doc.DocumentNode.SelectNodes("//div[@class='detail_right_div']//ul//li");
@@ -94,12 +75,11 @@ public class MadouController
         }
     }
 
-
-    // 单个视频页面，解析视频地址
+    // 单个视频页面，解析视频地址，下载
     public async Task ParseVideoPage(string url)
     {
         Console.WriteLine("解析视频地址");
-        string html = await GetHTML(url);
+        string html = await Shared.GetHTML(url);
         // 用 HtmlAgilityPack 解析 HTML
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
@@ -111,7 +91,16 @@ public class MadouController
         // 再从这个 script 标签的内容里抠 url
         string raw = Regex.Match(scriptContent ?? "", @"\""url\""\s*:\s*\""([^\""]+)\""", RegexOptions.IgnoreCase)
                           .Groups[1].Value;
-        string realUrl = raw.Replace(@"\/", "/");
-        Console.WriteLine($"m3u8: {realUrl}");
+        string m3u8Url = raw.Replace(@"\/", "/");
+        Console.WriteLine($"m3u8: {m3u8Url}");
+
+        // 执行下载
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string downloadPath = Path.Combine(desktopPath, title);
+        string command = $"-i \"{m3u8Url}\" -c copy \"{downloadPath}.mp4\"";
+        var _manager = new FFmpegProcessManager();
+        var processInfo = _manager.StartFFmpeg(command, "madou");
+        processInfo.Command = "Convert";
+        await processInfo.process.WaitForExitAsync();
     }
 }
