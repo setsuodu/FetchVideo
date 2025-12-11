@@ -59,6 +59,19 @@ public class RouteController //路由器
             //var tk = new TktubeMp4Extractor();
             //await tk.GetRealMp4UrlAsync(url);
         }
+        else if (url.Contains("madou") && url.Contains("sid") && url.Contains("sid"))
+        {
+            var tube = new MadouController();
+            //https://www.madou.io/index.php/vod/play/id/12134/sid/1/nid/1.html
+            await tube.ParseVideoPage(url); // 具体视频页
+        }
+        else if (url.Contains("madou"))
+        {
+            var tube = new MadouController();
+            //https://www.madou.io/index.php/vod/type/id/21.html
+            //await tube.ParseListPage(url); // 视频列表页
+            await tube.ParseAllListPages(21); // 所有视频列表页
+        }
         else
         {
             Console.WriteLine($"不支持的网站: {url}");
