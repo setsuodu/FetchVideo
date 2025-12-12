@@ -77,34 +77,56 @@ public class MadouVideoDownloader
 
     private static bool DownloadWithFFmpeg(string m3u8Url, string outputPath)
     {
-        var startInfo = new ProcessStartInfo
         {
-            FileName = "ffmpeg",
-            Arguments = $"-i \"{m3u8Url}\" " +
-                "-c copy " +
-                "-bsf:a aac_adtstoasc " +
-                "-y " +                     // 覆盖临时文件
-                $"\"{outputPath}\"",
-            UseShellExecute = false,
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            CreateNoWindow = false,
-        };
+            Process? ffmpegProcess = null;
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-i \"{m3u8Url}\" -c copy -bsf:a aac_adtstoasc -y \"{outputPath}\"",
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = false,
+                };
 
-        try
-        {
-            using var process = Process.Start(startInfo);
-            if (process == null) return false;
+                ffmpegProcess = new Process { StartInfo = startInfo };
+                ffmpegProcess.Start();
 
-            // 读取 ffmpeg 输出（进度在 stderr）
-            _ = process.StandardError.ReadToEndAsync(); // 不阻塞主线程
-            process.WaitForExit(7200_000); // 最多等 2 小时
+                // 实时打印进度（可选）
+                while (!ffmpegProcess.StandardError.EndOfStream)
+                {
+                    string? line = ffmpegProcess.StandardError.ReadLine();
+                    if (line != null && line.Contains("time="))
+                        Console.WriteLine($"[下载中] {Path.GetFileName(outputPath)} → {line.Trim()}");
+                }
 
-            return process.HasExited && process.ExitCode == 0 && File.Exists(outputPath) && new FileInfo(outputPath).Length > 0;
-        }
-        catch (Exception ex)
-        {
-            return false;
+                ffmpegProcess.WaitForExit(7200_000); // 最多等 2 小时
+
+                return ffmpegProcess.ExitCode == 0 && File.Exists(outputPath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ffmpeg 启动异常: {ex.Message}");
+                return false;
+            }
+            finally
+            {
+                // ────── 三重保险，确保 ffmpeg 必死 ──────
+                try
+                {
+                    if (ffmpegProcess != null && !ffmpegProcess.HasExited)
+                    {
+                        ffmpegProcess.Kill(true);        // 杀死整个进程树（防止 ffmpeg 再spawn 子进程）
+                        ffmpegProcess.WaitForExit(5000); // 再等 5 秒让它彻底死透
+                    }
+                }
+                catch { }
+
+                try { ffmpegProcess?.Dispose(); } catch { }
+                // ─────────────────────────────────────
+            }
         }
     }
 
