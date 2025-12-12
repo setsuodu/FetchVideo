@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-
 namespace FetchVideo.Utils;
 
 public class Shared

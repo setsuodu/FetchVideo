@@ -10,7 +10,7 @@ public class RouteController //路由器
         // ②B站直播
         // ③YouTube视频
         // ④TKTube视频
-        // missav访问时用油猴自动提交SQL，没有则记入本地文件
+        // ⑤Madou视频
         if (url.Contains("bilibili.com/video/BV"))
         {
             // https://www.bilibili.com/video/BV1ysySBsExt/
@@ -61,16 +61,22 @@ public class RouteController //路由器
         }
         else if (url.Contains("madou") && url.Contains("sid") && url.Contains("sid"))
         {
-            var tube = new MadouController();
             //https://www.madou.io/index.php/vod/play/id/12134/sid/1/nid/1.html
-            await tube.ParseVideo(url); // 具体视频页
+            var tube = new MadouController();
+            var dto = await tube.ParseVideo(url); // 单个视频解析
+            await tube.Parallel(new List<Models.MadouDto> { dto }); // 下载
         }
         else if (url.Contains("madou"))
         {
-            var tube = new MadouController();
             //https://www.madou.io/index.php/vod/type/id/21.html
-            //await tube.ParsePage(url); // 视频列表页
-            await tube.ParseAllPages(21); // 所有视频列表页
+            var ext = MadouController.ExtractTypeAndPage(url);
+            int typeId = ext.typeId;
+            int page = ext.page;
+
+            var tube = new MadouController();
+            var list = await tube.ParsePage(typeId, page); // 单页视频解析
+            //var list = await tube.ParseAllPages(typeId); // 单类视频解析
+            await tube.Parallel(list); // 下载
         }
         else
         {
