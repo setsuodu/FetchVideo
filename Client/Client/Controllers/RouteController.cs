@@ -63,14 +63,14 @@ public class RouteController //路由器
         {
             var tube = new MadouController();
             //https://www.madou.io/index.php/vod/play/id/12134/sid/1/nid/1.html
-            await tube.ParseVideoPage(url); // 具体视频页
+            await tube.ParseVideo(url); // 具体视频页
         }
         else if (url.Contains("madou"))
         {
             var tube = new MadouController();
             //https://www.madou.io/index.php/vod/type/id/21.html
-            //await tube.ParseListPage(url); // 视频列表页
-            await tube.ParseAllListPages(21); // 所有视频列表页
+            //await tube.ParsePage(url); // 视频列表页
+            await tube.ParseAllPages(21); // 所有视频列表页
         }
         else
         {
