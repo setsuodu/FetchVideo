@@ -340,6 +340,8 @@ public class Shared
     // 获取网页
     public static async Task<string> GetHTML(string url)
     {
+        Console.WriteLine($"获取网页: {url}");
+
         using (var http = new HttpClient())
         {
             // 一些 headers 模拟浏览器访问

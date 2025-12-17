@@ -7,6 +7,7 @@ namespace FetchVideo.Controllers;
 
 public class MadouController
 {
+    const string DOMAIN_URL = "https://www.madou.io";
     const string BASE_URL = "https://www.madou.io/index.php/vod";
 
     public static (int typeId, int page) ExtractTypeAndPage(string url)
@@ -60,12 +61,12 @@ public class MadouController
 
         Console.WriteLine($"分析本页上的视频: typeId={typeId}, page={page}");
         string url = $"{BASE_URL}/type/id/{typeId}/page/{page}.html";
-        //Console.WriteLine($"处理第 {page} 页: {url}");
+        Console.WriteLine($"url: {url}");
 
         string html = await Shared.GetHTML(url);
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
-        var liNodes = doc.DocumentNode.SelectNodes("//div[@class='detail_right_div']//ul//li");
+        var liNodes = doc.DocumentNode.SelectNodes("//div[@class='detail_right_div']//ul//li//p[@class='img']/a");
         if (liNodes == null || liNodes.Count == 0)
         {
             Console.WriteLine("没有找到更多视频条目，结束翻页。");
@@ -73,9 +74,12 @@ public class MadouController
         }
 
         //Console.WriteLine($"第{page}页，找到 {liNodes.Count} 个视频条目");
-        foreach (var video in liNodes)
+        foreach (var linkNode in liNodes)
         {
-            var dto = await ParseVideo(video.InnerText);
+            string href = linkNode.GetAttributeValue("href", "");
+            string video_url = DOMAIN_URL + href;
+            Console.WriteLine($"href: {video_url}");
+            var dto = await ParseVideo(video_url);
             videoList.Add(dto);
         }
         return videoList;
@@ -102,15 +106,6 @@ public class MadouController
         string m3u8Url = raw.Replace(@"\/", "/");
         Console.WriteLine($"m3u8: {m3u8Url}");
 
-        //// 执行下载
-        //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        //string downloadPath = Path.Combine(desktopPath, title);
-        //string command = $"-i \"{m3u8Url}\" -c copy \"{downloadPath}.mp4\"";
-        //var _manager = new FFmpegProcessManager();
-        //var processInfo = _manager.StartFFmpeg(command, "madou");
-        //processInfo.Command = "Convert";
-        //await processInfo.process.WaitForExitAsync();
-
         MadouDto dto = new MadouDto { Title = title, Url = m3u8Url };
         return dto;
     }
@@ -118,6 +113,6 @@ public class MadouController
     public async Task Parallel(List<MadouDto> list)
     {
         var downloader = new MadouVideoDownloader();
-        await downloader.DownloadAllAsync(list, @"C:\Users\33913\Downloads");
+        await downloader.DownloadAllAsync(list, @"W:\【杏吧】");
     }
 }
