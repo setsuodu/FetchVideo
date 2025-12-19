@@ -11,12 +11,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-	<PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.0" />
+	<PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
 	<PackageReference Include="YoutubeExplode" Version="6.5.6" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.16" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.16">
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.11" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
 		<PrivateAssets>all</PrivateAssets>
 		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	</PackageReference>
