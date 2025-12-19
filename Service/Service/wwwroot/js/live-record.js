@@ -113,6 +113,7 @@ export function initLiveRecordManager() {
                 checkbox.addEventListener('change', async function () {
                     const taskId = this.dataset.taskid;
                     const newState = this.checked;
+                    console.log(`任务 ${taskId} 订阅状态切换为: ${newState ? '订阅' : '取消订阅'}`);
 
                     try {
                         const resp = await fetch(API_SUBSCRIBE, {
