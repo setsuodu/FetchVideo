@@ -10,14 +10,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FetchVideo.Service.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251206115449_LiveRooms")]
-    partial class LiveRooms
+    [Migration("20251219093547_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.16");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
 
             modelBuilder.Entity("FetchVideo.Models.LinkItem", b =>
                 {
@@ -25,10 +25,15 @@ namespace FetchVideo.Service.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("Active")
+                    b.Property<int>("Duration")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
+                        .HasDefaultValue(2);
+
+                    b.Property<bool>("IsSubscribed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()

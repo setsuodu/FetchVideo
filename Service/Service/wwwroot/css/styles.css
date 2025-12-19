@@ -157,3 +157,52 @@ input:checked + .slider:before {
 .toggle-switch:hover .slider {
     box-shadow: 0 0 8px rgba(0,0,0,0.15);
 }
+
+
+/* 录制列表，表格进度条 */
+/* 录制中状态：绿色流动条纹底 + 只显示大号倒计时（不重叠文字） */
+.badge.recording {
+    position: relative;
+    overflow: hidden;
+    background: #d5f5e3; /* 和你原 .badge.running 一致 */
+    color: #27ae60;
+    font-weight: bold;
+    min-width: 110px; /* 宽一点，数字好看 */
+    padding: 6px 16px; /* 左右空间更大 */
+    text-align: center;
+    background-image: linear-gradient(45deg, #c8e6d3 25%, transparent 25%, transparent 50%, #c8e6d3 50%, #c8e6d3 75%, transparent 75%, transparent);
+    background-size: 1rem 1rem;
+    animation: stripe-move 3s linear infinite;
+}
+
+.badge.recording .stripe-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.3) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.3) 75%, transparent 75%, transparent);
+    pointer-events: none;
+}
+
+@keyframes stripe-move {
+    from {
+        background-position: 1rem 0;
+    }
+
+    to {
+        background-position: 0 0;
+    }
+}
+
+/* 倒计时文字：占满整个 badge，居中大字显示 */
+.badge.recording .countdown-text {
+    position: relative;
+    display: block;
+    width: 100%;
+    font-size: 16px; /* 数字更大更清晰 */
+    font-weight: bold;
+    color: #1e8449;
+    text-shadow: 1px 1px 1px rgba(255,255,255,0.9);
+    line-height: 1.6; /* 垂直居中微调 */
+}

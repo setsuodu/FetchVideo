@@ -7,9 +7,9 @@ export function initLiveRecordManager() {
     const API_STOP = '/api/bilibili/stop_tasks';
 
     const upListTextLabel = document.querySelector('#upListText');
-    const processTextLabel = document.querySelector('#processText');
+    //const processTextLabel = document.querySelector('#processText');
     const processStopBtn = document.getElementById('processStop');
-    if (!upListTextLabel || !processTextLabel || !processStopBtn) {
+    if (!upListTextLabel || !processStopBtn) {
         console.warn('LiveRecord 模块未找到对应元素，跳过初始化');
         return;
     }
@@ -19,13 +19,14 @@ export function initLiveRecordManager() {
     if (liveRecordTab) {
         liveRecordTab.addEventListener('shown.bs.tab', () => {
             // 每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）
+            console.log('每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）')
             fetchGetRooms();
-            fetchCurrentProcess();
+            //fetchCurrentProcess();
         });
     } else {
         console.warn('未找到 liveRecord 的 Tab 按钮，降级为页面加载时请求一次');
         fetchGetRooms();
-        fetchCurrentProcess(); // 降级方案
+        //fetchCurrentProcess(); // 降级方案
     }
 
 
@@ -42,170 +43,57 @@ export function initLiveRecordManager() {
             });
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
             const data = await response.json();
-            console.log(data); // 订阅的主播
+            console.log('订阅主播列表:', data);
 
             let html = `
             <table class="process-table">
                 <thead>
                     <tr>
                         <th style="width:60px;">序号</th>
-                        <th style="width:100px;">状态</th>
+                        <th style="width:140px;">状态</th>
                         <th>主播</th>
-                        <th>开始时间</th>
                         <th style="width:120px;text-align:center;">是否订阅</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
             if (data.length === 0) {
-                html += `<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">暂无运行中的任务</td></tr>`;
+                html += `<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">暂无订阅主播</td></tr>`;
             } else {
-                data.forEach((linkItem, index) => {
-                    const statusClass = 'other';
-                    const statusText = '空闲中';
+                data.forEach((item, index) => {
+                    const isRecording = item.CurrentStatus === "录制中" &&
+                        item.StartTime &&
+                        item.DurationSeconds > 0;
 
-                    html += `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td><span class="badge ${statusClass}">${statusText}</span></td>
-                            <td class="upname" title="${linkItem.Name || '-'}">${linkItem.Name || '-'}</td>
-                            <td>${linkItem.StartTimeDisplay || '-'}</td>
-                            <td style="text-align:center;">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" 
-                                           data-taskid="${linkItem.Id || index}" 
-                                           ${linkItem.IsSubscribed ? 'checked' : ''}>
-                                    <span class="slider"></span>
-                                </label>
-                            </td>
-                        </tr>`;
-                });
-            }
-
-            html += `
-                </tbody>
-            </table>`;
-
-            // 关键就这一行：改用 innerHTML，而不是 textContent
-            upListTextLabel.innerHTML = html;
-
-            // ============ 新增：动态绑定所有订阅开关的事件 ============
-            document.querySelectorAll('input[type="checkbox"][data-taskid]').forEach(checkbox => {
-                // 先移除旧的监听器（防止重复绑定，比如多次刷新表格）
-                checkbox.onchange = null;
-
-                checkbox.addEventListener('change', async function () {
-                    const taskId = this.dataset.taskid;
-                    const newState = this.checked;
-
-                    console.log(`任务 ${taskId} 订阅状态切换为: ${newState ? '订阅' : '取消订阅'}`);
-
-                    try {
-                        const response = await fetch(API_SUBSCRIBE, {
-                            method: 'POST',
-                            credentials: 'include', // 如果需要携带 cookie/session
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                id: taskId   // 后端只接受 "id" 字段
-                            })
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json().catch(() => ({}));
-                            throw new Error(errorData.message || '更新失败');
-                        }
-
-                        // 可选：成功后给出提示（根据返回的 isSubscribed 判断）
-                        const result = await response.json();
-                        console.log('订阅切换成功:', result);
-
-                        // 如果你想在前端同步更新 UI，可以直接使用 newState
-                        // 因为切换成功了，不需要额外处理
-
-                    } catch (err) {
-                        console.error('订阅切换失败:', err);
-
-                        // 超级重要：失败时回滚开关状态
-                        this.checked = !newState;  // 假设这是 el-switch 或 checkbox 的绑定值
-
-                        alert(err.message || '操作失败，请重试或检查网络');
+                    let statusHtml = '';
+                    if (isRecording) {
+                        statusHtml = `
+                        <span class="badge recording">
+                            <span class="stripe-overlay"></span>
+                            <span id="countdown-${item.Id}"
+                                  data-start-time="${item.StartTime}"
+                                  data-duration="${item.DurationSeconds}"
+                                  class="countdown-text">
+                                计算中...
+                            </span>
+                        </span>`;
+                    } else {
+                        statusHtml = `<span class="badge other">空闲</span>`;
                     }
-                });
-            });
-
-        } catch (err) {
-            console.error('当前任务数失败:', err);
-        }
-
-    }
-
-    //👆合并👇//
-
-    /**
-     * GET 当前任务数
-     */
-    async function fetchCurrentProcess() {
-        try {
-            const response = await fetch(API_PROCESS, {
-                method: 'GET',
-                credentials: 'include',
-                headers: { 'Accept': 'application/json' },
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-
-            console.log('↓运行的任务↓');
-            console.log(data);
-
-            let html = `
-            <table class="process-table">
-                <thead>
-                    <tr>
-                        <th style="width:60px;">序号</th>
-                        <th style="width:100px;">状态</th>
-                        <th>主播</th>
-                        <th>开始时间</th>
-                        <th style="width:120px;text-align:center;">是否订阅</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-            if (data.length === 0) {
-                html += `<tr><td colspan="5" style="text-align:center;color:#999;padding:30px;">暂无运行中的任务</td></tr>`;
-            } else {
-                data.forEach((task, index) => {
-                    const statusClass =
-                        task.Status === 'Running' ? 'running' :
-                            task.Status === 'Completed' ? 'completed' :
-                                task.Status === 'Failed' ? 'failed' : 'other';
-
-                    const statusText =
-                        task.Status === 'Running' ? '运行中' :
-                            task.Status === 'Completed' ? '已完成' :
-                                task.Status === 'Failed' ? '失败' : task.Status;
-
-                    // 假设任务对象里有 IsSubscribed 字段（true/false），没有就默认 false
-                    const isSubscribed = task.IsSubscribed === true;
-                    const checkedAttr = isSubscribed ? 'checked' : '';
-
-                    // 给每个 toggle 一个唯一 ID，方便后续操作（用 TaskId 最稳）
-                    const toggleId = `subscribe-toggle-${task.TaskId || index}`;
 
                     html += `
                     <tr>
                         <td>${index + 1}</td>
-                        <td><span class="badge ${statusClass}">${statusText}</span></td>
-                        <td class="upname" title="${task.UpName || '-'}">${task.UpName || '-'}</td>
-                        <td>${task.StartTimeDisplay || '-'}</td>
+                        <td class="status-cell">${statusHtml}</td>
+                        <td class="upname" title="${escapeHtml(item.Name || '-')}">
+                            ${escapeHtml(item.Name || '-')}
+                        </td>
                         <td style="text-align:center;">
                             <label class="toggle-switch">
-                                <input type="checkbox" id="${toggleId}" ${checkedAttr} 
-                                       data-taskid="${task.TaskId}" 
-                                       onchange="toggleSubscribe(this)">
+                                <input type="checkbox"
+                                       data-taskid="${item.Id}"
+                                       ${item.IsSubscribed ? 'checked' : ''}>
                                 <span class="slider"></span>
                             </label>
                         </td>
@@ -217,13 +105,124 @@ export function initLiveRecordManager() {
                 </tbody>
             </table>`;
 
-            processTextLabel.innerHTML = html;
+            upListTextLabel.innerHTML = html;
+
+            // 绑定订阅开关事件
+            document.querySelectorAll('input[type="checkbox"][data-taskid]').forEach(checkbox => {
+                checkbox.onchange = null;
+                checkbox.addEventListener('change', async function () {
+                    const taskId = this.dataset.taskid;
+                    const newState = this.checked;
+
+                    try {
+                        const resp = await fetch(API_SUBSCRIBE, {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: parseInt(taskId) })
+                        });
+
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({}));
+                            throw new Error(err.message || '更新失败');
+                        }
+                    } catch (err) {
+                        console.error('订阅切换失败:', err);
+                        this.checked = !newState;
+                        alert(err.message || '操作失败');
+                    }
+                });
+            });
+
+            // 启动倒计时
+            updateAllCountdowns();                    // 立即更新一次
+            setInterval(updateAllCountdowns, 1000);   // 每秒更新
 
         } catch (err) {
-            console.error('获取当前任务失败:', err);
-            processTextLabel.innerHTML = `<div style="color:#e74c3c;text-align:center;padding:20px;">加载失败：${err.message}</div>`;
+            console.error('获取列表失败:', err);
+            upListTextLabel.innerHTML = '<p style="color:red;text-align:center;">加载失败，请刷新重试</p>';
         }
     }
+
+    function escapeHtml(str) {
+        if (!str) return '-';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // 倒计时更新 + 详细时间打印
+    function updateAllCountdowns() {
+        document.querySelectorAll('.badge.recording .countdown-text').forEach(span => {
+            const startTimeIso = span.dataset.startTime;  // 后端传的原始 ISO 字符串
+            const durationSec = parseInt(span.dataset.duration) || 0;
+            const itemId = span.id.replace('countdown-', '');
+            const upName = span.closest('tr')?.querySelector('.upname')?.textContent.trim() || '未知主播';
+
+            if (!startTimeIso || durationSec <= 0) {
+                span.textContent = '00:00';
+                return;
+            }
+
+            // ========== 时间计算 ==========
+            const startTime = new Date(startTimeIso);                  // 解析为 Date 对象
+            const startTimestamp = startTime.getTime();                // 毫秒时间戳
+            const nowTimestamp = Date.now();                           // 当前毫秒时间戳
+            const now = new Date(nowTimestamp);                        // 当前 Date 对象
+
+            const elapsedSec = Math.floor((nowTimestamp - startTimestamp) / 1000);
+            const remainingSec = Math.max(0, durationSec - elapsedSec);
+
+            const plannedEndTime = new Date(startTimestamp + durationSec * 1000);
+
+            // ========== 详细打印 ==========
+            console.log(`%c[时间详情] 主播: ${upName} (ID: ${itemId})`, 'font-weight: bold; color: #3498db;');
+            console.log(`   开始时间（原始）: ${startTimeIso}`);
+            console.log(`   开始时间（本地）: ${startTime.toLocaleString()}`);
+            console.log(`   当前时间（本地）: ${now.toLocaleString()}`);
+            console.log(`   计划结束时间    : ${plannedEndTime.toLocaleString()}`);
+            console.log(`   已过去秒数      : ${elapsedSec} 秒`);
+            console.log(`   计划时长        : ${durationSec} 秒`);
+            console.log(`   剩余秒数        : ${remainingSec} 秒`);
+            console.log(`   倒计时显示      : ${remainingSec > 0 ?
+                Math.floor(remainingSec / 60).toString().padStart(2, '0') + ':' + (remainingSec % 60).toString().padStart(2, '0') :
+                '00:00'}`);
+
+            // ========== 原有每秒更新打印 ==========
+            if (remainingSec > 0) {
+                const m = Math.floor(remainingSec / 60).toString().padStart(2, '0');
+                const s = (remainingSec % 60).toString().padStart(2, '0');
+                console.log(`[倒计时更新] 主播: ${upName} (ID: ${itemId})  剩余: ${m}:${s}`);
+            }
+
+            // ========== UI 更新 ==========
+            if (remainingSec > 0) {
+                const m = Math.floor(remainingSec / 60).toString().padStart(2, '0');
+                const s = (remainingSec % 60).toString().padStart(2, '0');
+                span.textContent = `${m}:${s}`;
+                span.dataset.lastRemaining = remainingSec.toString();
+            } else {
+                span.textContent = '00:00';
+
+                // 只在刚结束时打印一次结束日志
+                if (span.dataset.lastRemaining && parseInt(span.dataset.lastRemaining) > 0) {
+                    console.log(`%c[录制结束] 主播: ${upName} (ID: ${itemId})  已完成录制，时长 ${durationSec} 秒`,
+                        'color: #27ae60; font-weight: bold; font-size: 14px;');
+                }
+                span.dataset.lastRemaining = '0';
+
+                // 自动变回“空闲”
+                const badge = span.closest('.badge.recording');
+                if (badge && !badge.dataset.ended) {
+                    badge.outerHTML = '<span class="badge other">空闲</span>';
+                    badge.dataset.ended = 'true';
+                    console.log(`[状态更新] 主播: ${upName} 已变回“空闲”`);
+                }
+            }
+        });
+    }
+
+    //👆合并👇//
 
     /**
      * POST 停止所有任务

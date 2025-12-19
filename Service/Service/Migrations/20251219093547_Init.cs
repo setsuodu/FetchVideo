@@ -5,11 +5,27 @@
 namespace FetchVideo.Service.Migrations
 {
     /// <inheritdoc />
-    public partial class InitGlobalConfig : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "LinkItems",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Url = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    IsSubscribed = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false),
+                    Duration = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 2)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LinkItems", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "ScheduleConfigs",
                 columns: table => new
@@ -34,6 +50,9 @@ namespace FetchVideo.Service.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "LinkItems");
+
             migrationBuilder.DropTable(
                 name: "ScheduleConfigs");
         }

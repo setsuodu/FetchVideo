@@ -77,8 +77,8 @@ public class SharedService : ISharedService
                 if (task != null)
                 {
                     startTime = task.StartTime;                    // 假设 FFmpegTaskDto 有 DateTime? StartTime
-                    durationSeconds = task.Duration;                // 假设有 int Duration（秒）
-                                                                    // 如果你的字段名不同，请对应修改（如 task.RecordingDuration）
+                    durationSeconds = task.Duration * 60;          // 假设有 int Duration（秒）
+                                                                   // 如果你的字段名不同，请对应修改（如 task.RecordingDuration）
                 }
             }
 
