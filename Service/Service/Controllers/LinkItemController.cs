@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using FetchVideo.Data;
 using FetchVideo.Models;
-using FetchVideo.Data;
+using FetchVideo.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 namespace FetchVideo.Controllers;
 
@@ -10,20 +12,21 @@ namespace FetchVideo.Controllers;
 [Route("api/[controller]")]
 public class LinkItemController : ControllerBase
 {
+    private readonly ISharedService _sharedService;
     private readonly AppDbContext _context;
 
-    public LinkItemController(AppDbContext context)
+    public LinkItemController(ISharedService sharedService)
     {
-        _context = context;
+        _sharedService = sharedService;
+        _context = sharedService._context;
     }
 
     // GET: api/LinkItem/get_rooms
     [HttpGet("get_rooms")]
-    public async Task<List<LinkItem>> GetLinkItems()
+    public async Task<IActionResult> GetLinkItems()
     {
-        var existingUrls = await _context.LinkItems.ToListAsync();
-        //return Ok(existingUrls);
-        return existingUrls;
+        //return Ok(await _context.LinkItems.ToListAsync());
+        return Ok(await _sharedService.GetLinkItems_Pro());
     }
 
     // POST: api/LinkItem/set_rooms
@@ -59,17 +62,9 @@ public class LinkItemController : ControllerBase
         if (link == null)
             return BadRequest("link不能为空");
 
-        // 查数据库，过滤掉已存在的
-        var existingUrl = await _context.LinkItems.Where(x => link.Url == x.Url).FirstOrDefaultAsync();
-        if (existingUrl != null)
-        {
-            return Conflict(new { message = "直播间已存在", url = existingUrl });
-        }
-
-        _context.LinkItems.Add(link);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "添加成功", id = link.Id } );
+        bool added = await _sharedService.AddNewLiveRoom(link);
+        return added ? Ok(new { message = "添加成功", id = link.Id })
+            : Conflict(new { message = "直播间已存在" });
     }
 
 

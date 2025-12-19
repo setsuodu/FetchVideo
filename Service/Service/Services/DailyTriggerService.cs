@@ -133,8 +133,8 @@ public class DailyTriggerService : BackgroundService
         var subsList = new List<LinkItem>();
         using (var scope = _scopeFactory.CreateScope())
         {
-            var link = scope.ServiceProvider.GetRequiredService<LinkItemController>();
-            listAll = await link.GetLinkItems();
+            var shared = scope.ServiceProvider.GetRequiredService<ISharedService>();
+            listAll = await shared.GetLinkItems();
             subsList = listAll.Where(x => x.IsSubscribed == true).ToList();
             Console.WriteLine($"配置中共有{listAll.Count}个主播，{subsList.Count}个订阅");
         }

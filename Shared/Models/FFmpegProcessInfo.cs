@@ -31,7 +31,7 @@ public class FFmpegTaskDto
     public string EndTimeDisplay => EndTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
     public string LeftTime => (EndTime - DateTime.Now).ToString(@"hh\:mm\:ss"); // 剩余时长
 
-    public string Status { get; set; } = "Running";   // Running / Completed / Error / Stopped
+    public string Status { get; set; } = "Running";   // 空闲 / 录制中
 
     // 可选额外信息（推荐加）
     //public int? ExitCode { get; set; } // 只有结束的进程才有

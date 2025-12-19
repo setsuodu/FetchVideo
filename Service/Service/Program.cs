@@ -26,7 +26,7 @@ builder.Services.AddSingleton<DailyTriggerService>();  // 单例！关键！
 builder.Services.AddHostedService(provider => provider.GetRequiredService<DailyTriggerService>());
 
 // 注册服务(内部调用)
-builder.Services.AddScoped<LinkItemController>();
+//builder.Services.AddScoped<LinkItemController>();
 builder.Services.AddScoped<BilibiliController>();
 builder.Services.AddScoped<RouteController>();
 builder.Services.AddScoped<ScheduleConfigService>();

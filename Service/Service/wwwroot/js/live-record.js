@@ -140,6 +140,7 @@ export function initLiveRecordManager() {
         } catch (err) {
             console.error('当前任务数失败:', err);
         }
+
     }
 
     //👆合并👇//

@@ -18,8 +18,6 @@ public class YoutubeController : ControllerBase
     // 从构造函数注入配置，变成本地只读（推荐写法！）
     public YoutubeController(ISharedService sharedService)
     {
-        // 如果配置中没找到，就用 "/app/downloads";
-        //_downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
         _sharedService = sharedService;
         _downloadPath = sharedService._downloadPath;
         ffManager = sharedService._ffManager;
