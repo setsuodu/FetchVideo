@@ -19,7 +19,7 @@ builder.Services.AddControllers()
 builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(); // 添加服务必须在 app build 之前
-builder.Services.AddSingleton<FFmpegProcessManager>();
+builder.Services.AddSingleton<FFmpegManager>();
 
 // 在 builder.Services 区域加入这行
 builder.Services.AddSingleton<DailyTriggerService>();  // 单例！关键！
@@ -30,6 +30,7 @@ builder.Services.AddScoped<LinkItemController>();
 builder.Services.AddScoped<BilibiliController>();
 builder.Services.AddScoped<RouteController>();
 builder.Services.AddScoped<ScheduleConfigService>();
+builder.Services.AddScoped<ISharedService, SharedService>();
 
 // SQLite 配置（数据库文件会生成在容器里的 /app/data 目录）
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=app.db"));

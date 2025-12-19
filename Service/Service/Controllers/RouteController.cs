@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FetchVideo.Models;
+using FetchVideo.Services;
 using FetchVideo.Utils;
-using FetchVideo.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FetchVideo.Controllers;
 
@@ -10,14 +11,14 @@ public class RouteController : ControllerBase //路由器
 {
     private readonly BilibiliController bili;
     private readonly YoutubeController tube;
-    private readonly FFmpegProcessManager _manager;
+    private readonly FFmpegManager _manager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
-    public RouteController(IConfiguration configuration, FFmpegProcessManager manager)
+    public RouteController(ISharedService service, FFmpegManager manager)
     {
         // 如果配置中没找到，就用 "/app/downloads";
-        bili = new BilibiliController(configuration, manager);
-        tube = new YoutubeController(configuration, manager);
+        bili = new BilibiliController(service, manager);
+        tube = new YoutubeController(service, manager);
         _manager = manager;
     }
 
@@ -79,7 +80,7 @@ public class RouteController : ControllerBase //路由器
         }
 
         return Ok(new { 
-            output = FFmpegProcessManager.ExtractOutput(dto.Command),
+            output = FFmpegManager.ExtractOutput(dto.Command),
             duration = dto.Duration,
         });
     }

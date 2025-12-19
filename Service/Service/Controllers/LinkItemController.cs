@@ -52,6 +52,27 @@ public class LinkItemController : ControllerBase
         return Ok(new { message = "批量添加成功", count = linkList.Count });
     }
 
+    // POST: api/LinkItem/add_live_room
+    [HttpPost("add_live_room")]
+    public async Task<IActionResult> AddLiveRoom([FromBody] LinkItem link)
+    {
+        if (link == null)
+            return BadRequest("link不能为空");
+
+        // 查数据库，过滤掉已存在的
+        var existingUrl = await _context.LinkItems.Where(x => link.Url == x.Url).FirstOrDefaultAsync();
+        if (existingUrl != null)
+        {
+            return Conflict(new { message = "直播间已存在", url = existingUrl });
+        }
+
+        _context.LinkItems.Add(link);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "添加成功", id = link.Id } );
+    }
+
+
     // 订阅/取消订阅
     [HttpPost("toggle_subscribe")]
     public async Task<IActionResult> ToggleSubscribe([FromBody] SubscribeRequest request)

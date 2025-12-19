@@ -1,7 +1,7 @@
 ﻿using FetchVideo.Models;
+using FetchVideo.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 
@@ -11,14 +11,17 @@ namespace FetchVideo.Controllers;
 [Route("api/[controller]")]
 public class YoutubeController : ControllerBase
 {
+    private readonly ISharedService _sharedService;
     private readonly string _downloadPath;
-    private readonly FFmpegProcessManager ffManager;
+    private readonly FFmpegManager ffManager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
-    public YoutubeController(IConfiguration configuration, FFmpegProcessManager manager)
+    public YoutubeController(ISharedService sharedService, FFmpegManager manager)
     {
         // 如果配置中没找到，就用 "/app/downloads";
-        _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+        //_downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+        _sharedService = sharedService;
+        _downloadPath = sharedService._downloadPath;
         ffManager = manager;
     }
 
@@ -75,7 +78,7 @@ public class YoutubeController : ControllerBase
             await task.Process.WaitForExitAsync();
             System.IO.File.Delete(videoFile);
             System.IO.File.Delete(audioFile);
-            return FFmpegProcessManager.ConvertDto(task);
+            return FFmpegManager.ConvertDto(task);
         }
     }
 
@@ -103,6 +106,6 @@ public class YoutubeController : ControllerBase
         var task = ffManager.StartFFmpeg(command, "missav");
         Console.WriteLine($"下载完成: {DateTime.Now}");
         await task.Process.WaitForExitAsync();
-        return FFmpegProcessManager.ConvertDto(task);
+        return FFmpegManager.ConvertDto(task);
     }
 }

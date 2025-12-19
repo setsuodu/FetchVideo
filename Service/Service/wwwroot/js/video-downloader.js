@@ -220,7 +220,7 @@ export function initVideoDownloader() {
                 status.innerHTML = `
                     <strong class="text-success">下载完成！</strong><br>
                     文件: <code>${data.output}</code><br>
-                    时长: <code>${data.duration}</code>分钟<br>
+                    时长: <code>${data.duration}</code> 分钟<br>
                 `;
 
                 log.textContent = `视频已下载至服务器。`;

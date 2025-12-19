@@ -1,11 +1,11 @@
 ﻿using FetchVideo.Models;
-using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace FetchVideo.Controllers;
 
-public class FFmpegProcessManager
+public class FFmpegManager
 {
     // 改为存储 Process + Info
     private readonly ConcurrentDictionary<string, FFmpegTask> _processes = new();

@@ -1,10 +1,10 @@
 ﻿using FetchVideo.Models;
+using FetchVideo.Services;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace FetchVideo.Controllers;
 
@@ -12,14 +12,17 @@ namespace FetchVideo.Controllers;
 [Route("api/[controller]")]
 public class BilibiliController : ControllerBase
 {
+    private readonly ISharedService _sharedService;
     private readonly string _downloadPath;
-    private readonly FFmpegProcessManager ffManager;
+    private readonly FFmpegManager ffManager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
-    public BilibiliController(IConfiguration configuration, FFmpegProcessManager manager)
+    public BilibiliController(ISharedService sharedService, FFmpegManager manager)
     {
         // 如果配置中没找到，就用 "/app/downloads";
-        _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+        //_downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+        _sharedService = sharedService;
+        _downloadPath = _sharedService._downloadPath;
         ffManager = manager;
     }
 
@@ -74,7 +77,7 @@ public class BilibiliController : ControllerBase
         System.IO.File.Delete(videoFile);
         System.IO.File.Delete(audioFile);
 
-        return FFmpegProcessManager.ConvertDto(task);
+        return FFmpegManager.ConvertDto(task);
     }
     // B站视频验证下载
     async Task DownloadBilibiliM4sAsync(string url, string referer, string outputPath)
@@ -176,7 +179,17 @@ public class BilibiliController : ControllerBase
         string command = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         Console.WriteLine($"FFmpeg命令是: {command}");
         var task = ffManager.StartFFmpeg(command, up_name, minute); //B站直播
-        return FFmpegProcessManager.ConvertDto(task);
+
+        // 检测新人，加入列表
+        LinkItem link = new LinkItem
+        {
+            Name = up_name,
+            Url = url,
+            IsSubscribed = false,
+        };
+        bool tryAdd = await _sharedService.AddNewLiveRoom(link);
+
+        return FFmpegManager.ConvertDto(task);
     }
     // 获取直播房间信息
     [HttpGet("get_bili_roominfo")]
