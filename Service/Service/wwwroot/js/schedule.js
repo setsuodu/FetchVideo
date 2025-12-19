@@ -39,15 +39,15 @@ export function initScheduleManager() {
 
             const data = await response.json();
             console.log(data);
-            console.log(data['currentTimes']);
-            console.log(data['serverTimeZone']);
+            console.log(data['currentTimes']); //['00:00', '04:00', '08:00', '12:00', '14:00', '16:00', '20:00']
+            console.log(data['serverTimeZone']); //{ianaId: 'UTC', offsetMinutes: 0}
             console.log('↓↓↓↓↓↓↓↓↓↓');
+            console.log('↓转成客户端时区↓');
             const localTimes = convertServerTimesToLocal(
                 data.currentTimes,
                 data.serverTimeZone.ianaId  // 或 data.serverTimeZone.offsetMinutes（备用）
             );
-            console.log('↓转成客户端时区↓');
-            console.log(localTimes);
+            console.log(localTimes); //['16:00', '20:00', '00:00', '04:00', '06:00', '08:00', '12:00']👈？？
 
             updateDisplayAndInput(localTimes);
             hasFetched = true;
@@ -63,21 +63,55 @@ export function initScheduleManager() {
      * @returns {string[]} 本地时区的时间字符串数组（如 ["16:00", "00:00", "04:00"]）
      */
     function convertServerTimesToLocal(serverTimes, serverIanaId) {
-        return serverTimes.map(timeStr => {
-            // 解析 HH:mm（支持 1-2 位小时）
-            const [h, m] = timeStr.split(':').map(Number);
-            // 用今天作为基准日期
-            const date = new Date();
-            date.setHours(h, m, 0, 0);
+        // 获取今天在服务器时区下的日期字符串（yyyy-mm-dd）
+        const todayInServerTz = new Intl.DateTimeFormat('sv', {  // 'sv' 为 ISO 格式
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            timeZone: serverIanaId
+        }).format(new Date());
 
-            // 使用服务器时区格式化，再转为本地时间（核心一步）
-            return new Intl.DateTimeFormat('en-US', {
+        const converted = serverTimes.map(timeStr => {
+            const [h, m] = timeStr.split(':').map(Number);
+            const hh = String(h).padStart(2, '0');
+            const mm = String(m).padStart(2, '0');
+
+            // 构造服务器时区的日期时间字符串
+            const serverDateTimeStr = `${todayInServerTz} ${hh}:${mm}:00`;
+
+            // 用服务器时区格式化成可被 new Date() 正确解析的字符串
+            const formattedInServerTz = new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+                timeZone: serverIanaId
+            }).formatToParts(new Date(serverDateTimeStr))
+                .map(part => part.value)
+                .join('');
+
+            const date = new Date(formattedInServerTz);
+
+            // 转为客户端固定时区（UTC+8）
+            let localFormatted = new Intl.DateTimeFormat('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false,
-                timeZone: serverIanaId
-            }).format(date).replace(/AM|PM/i, '').trim();
+                timeZone: 'Asia/Shanghai'
+            }).format(date);
+
+            localFormatted = localFormatted.replace(/AM|PM/i, '').trim();
+            // 确保小时两位（部分 locale 可能输出单数字，如 9:00）
+            return localFormatted.replace(/^(\d):/, '0$1:');
         });
+
+        // ★★★ 前端排序：按时间从小到大 ★★★
+        converted.sort((a, b) => a.localeCompare(b));
+
+        return converted;
     }
 
     /**
