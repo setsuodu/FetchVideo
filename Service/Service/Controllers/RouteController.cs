@@ -14,12 +14,12 @@ public class RouteController : ControllerBase //路由器
     private readonly FFmpegManager _manager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
-    public RouteController(ISharedService service, FFmpegManager manager)
+    public RouteController(ISharedService service)
     {
         // 如果配置中没找到，就用 "/app/downloads";
-        bili = new BilibiliController(service, manager);
-        tube = new YoutubeController(service, manager);
-        _manager = manager;
+        bili = new BilibiliController(service);
+        tube = new YoutubeController(service);
+        _manager = service._ffManager;
     }
 
     [HttpGet("check")]

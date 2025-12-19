@@ -17,13 +17,13 @@ public class BilibiliController : ControllerBase
     private readonly FFmpegManager ffManager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
-    public BilibiliController(ISharedService sharedService, FFmpegManager manager)
+    public BilibiliController(ISharedService sharedService)
     {
         // 如果配置中没找到，就用 "/app/downloads";
         //_downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
         _sharedService = sharedService;
-        _downloadPath = _sharedService._downloadPath;
-        ffManager = manager;
+        _downloadPath = sharedService._downloadPath;
+        ffManager = sharedService._ffManager;
     }
 
     // 视频下载 bvId 👉 cid/title 👉 url

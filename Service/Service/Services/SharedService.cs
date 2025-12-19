@@ -1,4 +1,5 @@
-﻿using FetchVideo.Data;
+﻿using FetchVideo.Controllers;
+using FetchVideo.Data;
 using FetchVideo.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +11,13 @@ public class SharedService : ISharedService
 
     public string _downloadPath { get; private set; }
 
-    public SharedService(AppDbContext context, IConfiguration configuration)
+    public FFmpegManager _ffManager { get; private set; }
+
+    public SharedService(AppDbContext context, IConfiguration configuration, FFmpegManager manager)
     {
         _context = context;
         _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
+        _ffManager = manager;
     }
 
     public async Task<bool> AddNewLiveRoom(LinkItem link)
