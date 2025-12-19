@@ -132,7 +132,7 @@ public class DailyTriggerService : BackgroundService
         using (var scope = _scopeFactory.CreateScope())
         {
             var link = scope.ServiceProvider.GetRequiredService<LinkItemController>();
-            urlList = await link.GetLinkItems();
+            urlList = (await link.GetLinkItems()).Select(l => l.Url).ToList();
             Console.WriteLine($"配置中共有{urlList.Count}个主播");
         }
 

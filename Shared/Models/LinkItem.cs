@@ -7,9 +7,11 @@ public class LinkItem
     [Key]  // 主键，通常自增
     public int Id { get; set; }
 
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty; // 主播用户名
 
-    public string Url { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty; // 直播间地址
     
-    public bool Active { get; set; } = true;  // 默认激活
+    public bool Active { get; set; } = false;  // 默认不订阅
+
+    public int Duration { get; set; } = 2;  // 默认录制2分钟
 }

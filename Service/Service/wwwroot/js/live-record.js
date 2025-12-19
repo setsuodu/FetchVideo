@@ -29,32 +29,53 @@ export function initLiveRecordManager() {
 
             const data = await response.json();
             //console.log('↓订阅的主播↓');
-            //console.log(data);
+            console.log(data);
             // ['https://live.bilibili.com/1904551806', 'https://live.bilibili.com/1868870262']
 
-            let text = `序号 \t状态 \t主播 \t开始时间 \n`;
-            //text += `────┼──────┼──────────────────┼─────────\n`;
-            data.forEach((url, index) => {
-                //console.log(`在遍历：${index}`);
-                //const up_name = task.UpName;
-                //const time = task.StartTimeDisplay;
 
-                // 根据状态加颜色标记（只是文本标记，textarea不认HTML）
-                //const statusMark = task.Status === 'Running' ? 'RUNNING' :
-                //    task.Status === 'Completed' ? 'COMPLETED' :
-                //        task.Status === 'Failed' ? 'FAILED' : task.Status;
+            let html = `
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th style="width:60px;">序号</th>
+                        <th style="width:100px;">状态</th>
+                        <th>主播</th>
+                        <th>开始时间</th>
+                        <th>订阅</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
-                //text += `${String(index + 1).padStart(3)} │ ${statusMark} │ ${up_name} │ ${time}\n`;
-                //text += `${String(index + 1).padStart(3)} │ 'UP状态' │ 'UP名字' │ ${url}\n`;
-            });
-            upListTextLabel.textContent = text;
+            if (data.length === 0) {
+                html += `<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">暂无运行中的任务</td></tr>`;
+            } else {
+                data.forEach((linkItem, index) => {
+                    const statusClass = 'other';
+                    const statusText = '空闲中';
+                    html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        <td class="upname">${linkItem.Name || '-'}</td>
+                        <td>${linkItem.StartTimeDisplay || '-'}</td>
+                        <td>${linkItem.Active ? "☑️" : "🔲"}</td>
+                    </tr>`;
+                });
+            }
+
+            html += `
+                </tbody>
+            </table>`;
+
+            // 关键就这一行：改用 innerHTML，而不是 textContent
+            upListTextLabel.innerHTML = html;
 
         } catch (err) {
             console.error('当前任务数失败:', err);
         }
     }
 
-
+    //👆合并👇//
 
     /**
      * GET 当前任务数
@@ -80,6 +101,7 @@ export function initLiveRecordManager() {
                         <th style="width:100px;">状态</th>
                         <th>主播</th>
                         <th>开始时间</th>
+                        <th>订阅</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -104,6 +126,7 @@ export function initLiveRecordManager() {
                         <td><span class="badge ${statusClass}">${statusText}</span></td>
                         <td class="upname">${task.UpName || '-'}</td>
                         <td>${task.StartTimeDisplay || '-'}</td>
+                        <td>☑️🟪 ⬜ ⏹️✔️❌🟦🔵 🟩✅❎🔲</td>
                     </tr>`;
                 });
             }

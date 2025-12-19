@@ -19,12 +19,9 @@ public class LinkItemController : ControllerBase
 
     // GET: api/LinkItem/get_rooms
     [HttpGet("get_rooms")]
-    public async Task<List<string>> GetLinkItems()
+    public async Task<List<LinkItem>> GetLinkItems()
     {
-        var existingUrls = await _context.LinkItems
-            .Select(l => l.Url)
-            .ToListAsync();
-
+        var existingUrls = await _context.LinkItems.ToListAsync();
         //return Ok(existingUrls);
         return existingUrls;
     }
