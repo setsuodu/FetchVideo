@@ -181,7 +181,7 @@ public class BilibiliController : ControllerBase
         LinkItem link = new LinkItem
         {
             Name = up_name,
-            Url = url,
+            Url = Shared.CleanUrl(url),
             IsSubscribed = false,
         };
         bool added = await _sharedService.AddNewLiveRoom(link);

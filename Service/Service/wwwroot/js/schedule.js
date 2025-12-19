@@ -63,8 +63,8 @@ export function initScheduleManager() {
      * @returns {string[]} 本地时区的时间字符串数组（如 ["16:00", "00:00", "04:00"]）
      */
     function convertServerTimesToLocal(serverTimes, serverIanaId) {
-        // 获取今天在服务器时区下的日期字符串（yyyy-mm-dd）
-        const todayInServerTz = new Intl.DateTimeFormat('sv', {  // 'sv' 为 ISO 格式
+        // 获取服务器时区下的今天日期 (yyyy-MM-dd)
+        const todayInServerTz = new Intl.DateTimeFormat('sv', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -76,11 +76,9 @@ export function initScheduleManager() {
             const hh = String(h).padStart(2, '0');
             const mm = String(m).padStart(2, '0');
 
-            // 构造服务器时区的日期时间字符串
-            const serverDateTimeStr = `${todayInServerTz} ${hh}:${mm}:00`;
-
-            // 用服务器时区格式化成可被 new Date() 正确解析的字符串
-            const formattedInServerTz = new Intl.DateTimeFormat('en-US', {
+            // 用服务器时区格式化一个 dummy 时间获取字符串
+            const dummyDate = new Date();
+            const serverTimeStr = new Intl.DateTimeFormat('en-US', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
@@ -89,13 +87,34 @@ export function initScheduleManager() {
                 second: '2-digit',
                 hour12: false,
                 timeZone: serverIanaId
-            }).formatToParts(new Date(serverDateTimeStr))
-                .map(part => part.value)
-                .join('');
+            }).format(dummyDate);
 
-            const date = new Date(formattedInServerTz);
+            // 解析服务器时间字符串 (MM/DD/YYYY, HH:mm:ss)
+            const match = serverTimeStr.match(/(\d+)\/(\d+)\/(\d+), (\d+):(\d+):(\d+)/);
+            if (!match) throw new Error('Failed to parse server time string');
+            const [, month, day, year, sh, sm, ss] = match.map(Number);
 
-            // 转为客户端固定时区（UTC+8）
+            // 假设该数字为 UTC 的时间戳
+            const utcDate = Date.UTC(year, month - 1, day, sh, sm, ss);
+
+            // 计算偏移分钟 (会是负的 for 东时区)
+            const offsetMinutes = Math.round((dummyDate.getTime() - utcDate) / 60000);
+
+            // 构造服务器今天 hh:mm:00 的假设 UTC 时间戳
+            const serverDate = new Date(Date.UTC(
+                parseInt(todayInServerTz.split('-')[0]),
+                parseInt(todayInServerTz.split('-')[1]) - 1,
+                parseInt(todayInServerTz.split('-')[2]),
+                h,
+                m,
+                0
+            ));
+
+            // 修正时间戳：加 offsetMinutes (因为负的，相当于减偏移得到真正 UTC)
+            const correctTimestamp = serverDate.getTime() + offsetMinutes * 60000;
+            const date = new Date(correctTimestamp);
+
+            // 转为客户端固定 Asia/Shanghai
             let localFormatted = new Intl.DateTimeFormat('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -104,7 +123,9 @@ export function initScheduleManager() {
             }).format(date);
 
             localFormatted = localFormatted.replace(/AM|PM/i, '').trim();
-            // 确保小时两位（部分 locale 可能输出单数字，如 9:00）
+
+            console.log(`${timeStr} →[服务器时区 ${serverIanaId}]→ ${localFormatted}`);
+
             return localFormatted.replace(/^(\d):/, '0$1:');
         });
 

@@ -15,6 +15,16 @@ A Windows console application, to download a video you should follow these steps
 3. press 'enter' on your keyboard;
 4. check your desktop, .mp4 file is there;
 
+## Run
+
+```
+// 👇默认只能用 http://localhost:8080访问
+dotnet run
+
+// 👇如果需要用IP，局域网内访问
+dotnet run --urls "http://*:8080"
+```
+
 ## Build
 
 ```

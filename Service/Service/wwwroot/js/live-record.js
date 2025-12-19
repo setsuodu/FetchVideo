@@ -21,14 +21,11 @@ export function initLiveRecordManager() {
             // 每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）
             console.log('每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）')
             fetchGetRooms();
-            //fetchCurrentProcess();
         });
     } else {
         console.warn('未找到 liveRecord 的 Tab 按钮，降级为页面加载时请求一次');
-        fetchGetRooms();
-        //fetchCurrentProcess(); // 降级方案
+        fetchGetRooms(); // 降级方案
     }
-
 
 
     /**
@@ -176,6 +173,7 @@ export function initLiveRecordManager() {
 
             const plannedEndTime = new Date(startTimestamp + durationSec * 1000);
 
+            /*
             // ========== 详细打印 ==========
             console.log(`%c[时间详情] 主播: ${upName} (ID: ${itemId})`, 'font-weight: bold; color: #3498db;');
             console.log(`   开始时间（原始）: ${startTimeIso}`);
@@ -195,6 +193,7 @@ export function initLiveRecordManager() {
                 const s = (remainingSec % 60).toString().padStart(2, '0');
                 console.log(`[倒计时更新] 主播: ${upName} (ID: ${itemId})  剩余: ${m}:${s}`);
             }
+            */
 
             // ========== UI 更新 ==========
             if (remainingSec > 0) {

@@ -75,7 +75,7 @@ public class Shared
         return location;
     }
 
-    // 裁掉 "/h5" 和 "?后面多余的"
+    // 裁掉 "/h5" 和 "?及后面多余的"
     public static string CleanUrl(string url)
     {
         if (string.IsNullOrWhiteSpace(url)) return url;
@@ -102,10 +102,10 @@ public class Shared
         string baseUrl = uri.Scheme + "://" + uri.Authority + path;
 
         // 如果原始 URL 有 ?，保留一个 ?（但不带参数）
-        if (url.Contains('?'))
-        {
-            baseUrl += "?";
-        }
+        //if (url.Contains('?'))
+        //{
+        //    baseUrl += "?";
+        //}
 
         return baseUrl;
     }

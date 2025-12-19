@@ -24,11 +24,15 @@ public class SharedService : ISharedService
     public async Task<bool> AddNewLiveRoom(LinkItem link)
     {
         // 这里放业务逻辑（如数据库查询、计算等）
-        var existingUrl = await _context.LinkItems.Where(x => link.Url == x.Url).FirstOrDefaultAsync();
+        var existingUrl = await _context.LinkItems
+            .Where(x => (link.Name == x.Name || link.Url == x.Url))
+            .FirstOrDefaultAsync();
         if (existingUrl != null)
         {
+            Console.WriteLine("AddNewLiveRoom: 已存在");
             return false;
         }
+        Console.WriteLine($"AddNewLiveRoom: {link.Name}:{link.Url}");
         _context.LinkItems.Add(link);
         await _context.SaveChangesAsync();
         return true;
