@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-using HtmlAgilityPack;
-using Newtonsoft.Json.Linq;
+﻿using FetchVideo.Models;
 using FetchVideo.Utils;
-using FetchVideo.Models;
+using HtmlAgilityPack;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace FetchVideo.Controllers;
 
@@ -12,26 +13,23 @@ namespace FetchVideo.Controllers;
 public class BilibiliController : ControllerBase
 {
     private readonly string _downloadPath;
-    private readonly FFmpegProcessManager _manager;
+    private readonly FFmpegProcessManager ffManager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
     public BilibiliController(IConfiguration configuration, FFmpegProcessManager manager)
     {
         // 如果配置中没找到，就用 "/app/downloads";
         _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
-        _manager = manager;
+        ffManager = manager;
     }
 
     // 视频下载 bvId 👉 cid/title 👉 url
     [HttpGet("get_bili_video")]
-    public async Task<FFmpegProcessInfo> GetBilibiliVideoAsync(string bvId)
+    public async Task<FFmpegTaskDto> GetBVAsync(string bvId)
     {
-        // 获取视频信息
-        var videoView = await GetUpInfo(bvId);
-
         // 1. 获取 cid
+        var videoView = await GetUpInfo(bvId);
         string cid = videoView.cid;
-
 
         // 2. 获取视频 URL
         var httpClient = new HttpClient();
@@ -43,45 +41,40 @@ public class BilibiliController : ControllerBase
         var videoArray = jsonPlayer["data"]?["dash"]?["video"] as JArray;
         var bestVideo = videoArray.OrderByDescending(v => (int)v["width"]).First();
         var videoUrl = bestVideo["baseUrl"].ToString();
-        Console.WriteLine($"视频地址: {videoUrl}");
+        //Console.WriteLine($"视频地址: {videoUrl}");
 
         var audioArray = jsonPlayer["data"]?["dash"]?["audio"] as JArray;
         var bestAudio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
         var audioUrl = bestAudio["baseUrl"].ToString();
-        Console.WriteLine($"音频地址: {audioUrl}");
+        //Console.WriteLine($"音频地址: {audioUrl}");
 
-
-        // 3. 下载到本地
         // videoArray, audioArray 已从 JSON 获取
         var video = videoArray.OrderByDescending(v => (int)v["width"]).First();
         var audio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
 
-        // Windows Docker Desktop 调试路径
+        // 3. 输出路径
         string desktopPath = _downloadPath;
         string videoFile = Path.Combine(desktopPath, "video.m4s");
         string audioFile = Path.Combine(desktopPath, "audio.m4s");
-        string outputFile = Path.Combine(desktopPath, $"【{videoView.owner.name}】{videoView.title}.mp4");
+        string outputFile = Path.Combine(desktopPath, $"【{videoView.owner.name}】{Shared.MakeFileNameSafe(videoView.title)}.mp4");
 
+        // 4. 下载到本地
         string referer = $"{Shared.BILI_VIDEO}{bvId}";
-        //await DownloadFileAsync(videoUrl, videoFile); //403 Forbidden
         await DownloadBilibiliM4sAsync(videoUrl, referer, videoFile);
         Console.WriteLine($"视频下载: {videoFile}");
-        //await DownloadFileAsync(audioUrl, audioFile); //403 Forbidden
         await DownloadBilibiliM4sAsync(audioUrl, referer, audioFile);
         Console.WriteLine($"音频下载: {audioFile}");
 
-        // FFmpeg 合并
-        string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
-        var processInfo = _manager.StartFFmpeg(mergeCMD, videoView.owner.name);
-        Console.WriteLine($"开始等待: {DateTime.Now}");
-        await processInfo.process.WaitForExitAsync();
-        Console.WriteLine($"下载完成: {DateTime.Now}");
+        // 5. FFmpeg 合并
+        string command = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
+        var task = ffManager.StartFFmpeg(command); //BV视频
+        Console.WriteLine($"开始时间: {DateTime.Now}");
+        await task.Process.WaitForExitAsync();
+        Console.WriteLine($"完成时间: {DateTime.Now}");
         System.IO.File.Delete(videoFile);
         System.IO.File.Delete(audioFile);
 
-        //return Ok(processInfo); // 返回封装对象
-        processInfo.Command = "Merge";
-        return processInfo;
+        return FFmpegProcessManager.ConvertDto(task);
     }
     // B站视频验证下载
     async Task DownloadBilibiliM4sAsync(string url, string referer, string outputPath)
@@ -148,11 +141,11 @@ public class BilibiliController : ControllerBase
 
     // B站直播流录制
     [HttpGet("get_bili_live")]
-    public async Task<FFmpegProcessInfo> BiliLiveRecord(string url, int minute)
+    public async Task<FFmpegTaskDto> LiveRecord(string url, int minute)
     {
         string room_id = Shared.GetRoomId(url);
         //Console.WriteLine($"是 Bilibili直播: 房间: {room_id}");
-        string title = await GetTitleAsync(url);
+        string up_name = await GetTitleAsync(url); // 小福包iu_
         //Console.WriteLine($"直播标题: {title}");
 
         int second = minute * 60;
@@ -175,16 +168,15 @@ public class BilibiliController : ControllerBase
             Directory.CreateDirectory(desktopPath); // 当天的子文件夹
             Console.WriteLine($"创建文件夹: {desktopPath}");
         }
-        string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        string outputFile = Path.Combine(desktopPath, $"{up_name}_{timestamp}.mp4");
         Console.WriteLine($"outputFile: {outputFile}");
 
         // FFmpeg 转码
-        string convertCMD = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
-        Console.WriteLine($"FFmpeg命令是: {convertCMD}");
-        Console.WriteLine($"标题是: {title}");
-        var processInfo = _manager.StartFFmpeg(convertCMD, title);
-        processInfo.Command = "Convert";
-        return processInfo;
+        string command = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
+        Console.WriteLine($"FFmpeg命令是: {command}");
+        var task = ffManager.StartFFmpeg(command, up_name, minute); //B站直播
+        return FFmpegProcessManager.ConvertDto(task);
     }
     // 获取直播房间信息
     [HttpGet("get_bili_roominfo")]
@@ -213,7 +205,7 @@ public class BilibiliController : ControllerBase
     public async Task<string> GetTitleAsync(string url)
     {
         string title = "找不到 <title> 标签";
-        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        //string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         //string logFile = $"log_{timestamp}.txt";
 
         using (var http = new HttpClient())
@@ -235,9 +227,10 @@ public class BilibiliController : ControllerBase
                 title = titleNode.InnerText.Trim();
 
             string title_result = Shared.GetMiddleText(title);
+            return title_result;
 
             //Console.WriteLine("标题：" + title);
-            return $"{title_result}_{timestamp}";
+            //return $"{title_result}_{timestamp}";
         }
     }
 
@@ -335,7 +328,7 @@ public class BilibiliController : ControllerBase
     [HttpGet("running_tasks")]
     public ActionResult<List<FFmpegTaskDto>> GetRunningTasks()
     {
-        var running = _manager.GetRunningTasks();
+        var running = ffManager.GetRunningTasks();
         return Ok(running);
     }
 
@@ -343,10 +336,10 @@ public class BilibiliController : ControllerBase
     [HttpPost("stop_tasks")]
     public async Task<ActionResult<List<FFmpegTaskDto>>> StopRunningTasks([FromBody] StopRequest stopUser)
     {
-        var running = _manager.GetRunningTasks();
+        var running = ffManager.GetRunningTasks();
         Console.WriteLine($"{stopUser.User} 要求停止, 当前任务{running.Count}个");
 
-        await _manager.StopTasks();
+        await ffManager.StopAll();
         return Ok(running); //[] 👉 0个任务，成功
     }
 }

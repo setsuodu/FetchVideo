@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FetchVideo.Models;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
-using FetchVideo.Models;
 
 namespace FetchVideo.Controllers;
 
@@ -11,14 +12,14 @@ namespace FetchVideo.Controllers;
 public class YoutubeController : ControllerBase
 {
     private readonly string _downloadPath;
-    private readonly FFmpegProcessManager _manager;
+    private readonly FFmpegProcessManager ffManager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
     public YoutubeController(IConfiguration configuration, FFmpegProcessManager manager)
     {
         // 如果配置中没找到，就用 "/app/downloads";
         _downloadPath = configuration["DownloadPath"] ?? "/app/downloads";
-        _manager = manager;
+        ffManager = manager;
     }
 
     // 创建进度回调
@@ -27,15 +28,14 @@ public class YoutubeController : ControllerBase
         Console.Write($"\r下载进度: {p:P1}"); // P1 = 百分比(一位小数)
     });
 
-    public async Task<FFmpegProcessInfo> GetYoutubeVideoAsync(string url)
+    public async Task<FFmpegTaskDto> GetYoutubeVideoAsync(string url)
     {
         string title = await GetVideoInfoAsync(url);
-        //string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string desktopPath = _downloadPath;
         string videoFile = Path.Combine(desktopPath, $"video.mp4");
         string audioFile = Path.Combine(desktopPath, $"audio.m4a");
         string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(title) ? "output" : title)}.mp4");
-        Console.WriteLine($"outputFile是: {outputFile}");
+        Console.WriteLine($"outputFile: {outputFile}");
 
         var youtube = new YoutubeClient();
         var video = await youtube.Videos.GetAsync(url);
@@ -55,14 +55,7 @@ public class YoutubeController : ControllerBase
         {
             await youtube.Videos.Streams.DownloadAsync(muxed, outputFile, progress); // 不分轨的
             Console.WriteLine($"不分轨的: {outputFile}");
-            var processInfo = new FFmpegProcessInfo
-            {
-                UpName = title,
-                Command = "Normal",
-                StartTime = DateTime.Now,
-                Status = "Completed"
-            };
-            return processInfo;
+            return null; // 没用用到 ffmpeg
         }
         else
         {
@@ -76,14 +69,13 @@ public class YoutubeController : ControllerBase
             Console.WriteLine($"音频下载: {audioFile}");
 
             // FFmpeg 合并
-            string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
-            var processInfo = _manager.StartFFmpeg(mergeCMD, title);
+            string command = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
+            var task = ffManager.StartFFmpeg(command); // YT视频
             Console.WriteLine($"下载完成: {DateTime.Now}");
-            await processInfo.process.WaitForExitAsync();
+            await task.Process.WaitForExitAsync();
             System.IO.File.Delete(videoFile);
             System.IO.File.Delete(audioFile);
-            processInfo.Command = "Merge";
-            return processInfo;
+            return FFmpegProcessManager.ConvertDto(task);
         }
     }
 
@@ -105,13 +97,12 @@ public class YoutubeController : ControllerBase
     }
 
     // missav
-    public async Task<FFmpegProcessInfo> GetM3U8(string m3u8)
+    public async Task<FFmpegTaskDto> TestM3U8(string m3u8)
     {
-        string mergeCMD = $"-i \"{m3u8}\" -c copy \"{_downloadPath}.mp4\"";
-        var processInfo = _manager.StartFFmpeg(mergeCMD, "missav");
+        string command = $"-i \"{m3u8}\" -c copy \"{_downloadPath}.mp4\"";
+        var task = ffManager.StartFFmpeg(command, "missav");
         Console.WriteLine($"下载完成: {DateTime.Now}");
-        await processInfo.process.WaitForExitAsync();
-        processInfo.Command = "Convert";
-        return processInfo;
+        await task.Process.WaitForExitAsync();
+        return FFmpegProcessManager.ConvertDto(task);
     }
 }

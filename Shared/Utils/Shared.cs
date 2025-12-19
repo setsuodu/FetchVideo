@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Text;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -30,6 +31,22 @@ public class Shared
         string roomId = match.Groups[1].Value;
         Console.WriteLine($"提取到的 房间号: **{roomId}**");
         return roomId;
+    }
+
+    // Windows文件名不允许文件名含（\ / : * ? " < > |）
+    // 替换为 下划线 _
+    public static string MakeFileNameSafe(string name)
+    {
+        // 常见所有系统的不合法字符
+        //char[] invalidChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }; //跨平台写法
+        char[] invalidChars = Path.GetInvalidFileNameChars(); //Windows写法
+
+        // 过滤
+        foreach (char c in invalidChars)
+        {
+            name = name.Replace(c, '_');
+        }
+        return name;
     }
 
     // "又长大了是时候夺回属于我的一切了 - 沐汐BB - 哔哩哔哩直播，二次元弹幕直播平台"

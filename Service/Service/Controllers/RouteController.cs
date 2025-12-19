@@ -32,7 +32,7 @@ public class RouteController : ControllerBase //路由器
                 message = "请提供有效的视频 URL"
             });
         }
-        FFmpegProcessInfo result = null;
+        FFmpegTaskDto dto = null;
         Console.WriteLine($"检查是什么平台的视频: {url}");
 
         // 短链👉长链
@@ -47,24 +47,24 @@ public class RouteController : ControllerBase //路由器
         // ③YouTube视频
         if (url.Contains("bilibili.com/video/BV"))
         {
-            string bvId = Shared.GetBvId(url); // 获取视频标题
+            string bvId = Shared.GetBvId(url);
             Console.WriteLine($"是 Bilibili视频: bvId={bvId}");
-            result = await bili.GetBilibiliVideoAsync(bvId); // 获取视频
+            dto = await bili.GetBVAsync(bvId);
         }
         else if (url.Contains("live.bilibili"))
         {
             int minute = length ?? 10; //默认十分钟
-            result = await bili.BiliLiveRecord(url, minute);
+            dto = await bili.LiveRecord(url, minute);
         }
         else if (url.Contains("youtu"))
         {
             Console.WriteLine($"是 Youtube视频: ");
-            result = await tube.GetYoutubeVideoAsync(url);
+            dto = await tube.GetYoutubeVideoAsync(url);
         }
         else if (url.Contains(".m3u8"))
         {
             Console.WriteLine($"是 m3u8视频: ");
-            result = await tube.GetM3U8(url);
+            dto = await tube.TestM3U8(url);
         }
         else
         {
@@ -78,17 +78,10 @@ public class RouteController : ControllerBase //路由器
             });
         }
 
-        var response = new
-        {
-            file = result.TaskId,
-            filePath = "result.FilePath",
-            size = "result.FileSize",
-            status = "success",
-            downloadUrl = result.Command,   // 可选：提供前端直接下载
-            logPath = "result.LogPath",           // 可选：下载日志
-            fileName = Path.GetFileName("result.FilePath"),
-        };
-        return Ok(response);
+        return Ok(new { 
+            output = FFmpegProcessManager.ExtractOutput(dto.Command),
+            duration = dto.Duration,
+        });
     }
 
     // 停止 API：接收任务 ID
