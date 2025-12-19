@@ -1,4 +1,5 @@
 ﻿using FetchVideo.Controllers;
+using FetchVideo.Models;
 using FetchVideo.Utils;
 
 namespace FetchVideo.Services;
@@ -128,18 +129,20 @@ public class DailyTriggerService : BackgroundService
     private async Task TriggerApiAsync()
     {
         //+读写2个方法，这里是[GET]读，web端[POST]写。
-        List<string> urlList = new List<string>();
+        var listAll = new List<LinkItem>();
+        var subsList = new List<LinkItem>();
         using (var scope = _scopeFactory.CreateScope())
         {
             var link = scope.ServiceProvider.GetRequiredService<LinkItemController>();
-            urlList = (await link.GetLinkItems()).Select(l => l.Url).ToList();
-            Console.WriteLine($"配置中共有{urlList.Count}个主播");
+            listAll = await link.GetLinkItems();
+            subsList = listAll.Where(x => x.IsSubscribed == true).ToList();
+            Console.WriteLine($"配置中共有{listAll.Count}个主播，{subsList.Count}个订阅");
         }
 
-        int length = 2; // 默认录制2分钟
-        for (int i = 0; i < urlList.Count; i++)
+        for (int i = 0; i < subsList.Count; i++)
         {
-            string url = urlList[i];
+            var linkItem = subsList[i];
+            string url = linkItem.Url;
 
             // 🌟 核心修改 3: 在作用域内执行服务操作
             using (var scope = _scopeFactory.CreateScope())
@@ -158,7 +161,7 @@ public class DailyTriggerService : BackgroundService
                     var route = scope.ServiceProvider.GetRequiredService<RouteController>();
                     try
                     {
-                        await route.Check(url, length);
+                        await route.Check(url, linkItem.Duration);
                         _logger.LogInformation("计划录制...");
                     }
                     catch (Exception ex)

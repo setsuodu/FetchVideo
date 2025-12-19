@@ -53,6 +53,7 @@ input.disabled {
 #processText {
     white-space: pre-line; /* 或者 pre-wrap / pre */
 }
+
 /*↓列表表格↓*/
 .process-table {
     width: 100%;
@@ -64,23 +65,20 @@ input.disabled {
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
-
-    .process-table th {
-        background: #2c3e50;
-        color: white;
-        padding: 12px 10px;
-        text-align: left;
-        font-weight: 600;
-    }
-
-    .process-table td {
-        padding: 12px 10px;
-        border-bottom: 1px solid #eee;
-    }
-
-    .process-table tr:hover {
-        background: #f5f8ff;
-    }
+.process-table th {
+    background: #2c3e50;
+    color: white;
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+}
+.process-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #eee;
+}
+.process-table tr:hover {
+    background: #f5f8ff;
+}
 
 .badge {
     padding: 4px 12px;
@@ -88,26 +86,22 @@ input.disabled {
     font-size: 13px;
     font-weight: bold;
 }
-
-    .badge.running {
-        background: #d5f5e3;
-        color: #27ae60;
-    }
-
-    .badge.completed {
-        background: #e3f2fd;
-        color: #2980b9;
-    }
-
-    .badge.failed {
-        background: #fdeaea;
-        color: #c0392b;
-    }
-
-    .badge.other {
-        background: #f0f0f0;
-        color: #7f8c8d;
-    }
+.badge.running {
+    background: #d5f5e3;
+    color: #27ae60;
+}
+.badge.completed {
+    background: #e3f2fd;
+    color: #2980b9;
+}
+.badge.failed {
+    background: #fdeaea;
+    color: #c0392b;
+}
+.badge.other {
+    background: #f0f0f0;
+    color: #7f8c8d;
+}
 
 .upname {
     max-width: 180px;
@@ -126,13 +120,11 @@ input.disabled {
     height: 28px;
     cursor: pointer;
 }
-
 .toggle-switch input {
     opacity: 0;
     width: 0;
     height: 0;
 }
-
 .slider {
     position: absolute;
     top: 0;
@@ -143,7 +135,6 @@ input.disabled {
     border-radius: 34px;
     transition: .3s;
 }
-
 .slider:before {
     position: absolute;
     content: "";
@@ -156,15 +147,12 @@ input.disabled {
     transition: .3s;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-
 input:checked + .slider {
     background-color: #4CAF50; /* 绿色表示已订阅 */
 }
-
 input:checked + .slider:before {
     transform: translateX(28px);
 }
-
 /* 悬停效果 */
 .toggle-switch:hover .slider {
     box-shadow: 0 0 8px rgba(0,0,0,0.15);

@@ -15,3 +15,9 @@ public class LinkItem
 
     public int Duration { get; set; } = 2;  // 默认录制2分钟
 }
+
+// 请求模型（只用于单个操作）
+public class SubscribeRequest
+{
+    public int? Id { get; set; }
+}

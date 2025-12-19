@@ -1,18 +1,18 @@
 ﻿// live-record.js
 export function initLiveRecordManager() {
     const API_GET_ROOMS = '/api/linkItem/get_rooms';
+    const API_SET_ROOMS = '/api/linkItem/set_rooms';
+    const API_SUBSCRIBE = '/api/linkItem/toggle_subscribe';
     const API_PROCESS = '/api/bilibili/running_tasks';
     const API_STOP = '/api/bilibili/stop_tasks';
 
     const upListTextLabel = document.querySelector('#upListText');
     const processTextLabel = document.querySelector('#processText');
     const processStopBtn = document.getElementById('processStop');
-
     if (!upListTextLabel || !processTextLabel || !processStopBtn) {
         console.warn('LiveRecord 模块未找到对应元素，跳过初始化');
         return;
     }
-
     // 关键：监听 Bootstrap Tab 切换事件
     const liveRecordTab = document.querySelector('a[data-bs-target="#live-record-content"], a[href="#live-record-content"]');
     // 兼容两种常见写法：data-bs-target 或 href
@@ -22,10 +22,6 @@ export function initLiveRecordManager() {
             fetchGetRooms();
             fetchCurrentProcess();
         });
-
-        // 可选：第一次手动点开时如果还没请求过，也请求一次
-        // 如果你希望第一次进入页面就显示（即使没点 Tab），可以加下面这行：
-        // if (liveRecordTab.parentElement.classList.contains('active')) fetchCurrentSchedule();
     } else {
         console.warn('未找到 liveRecord 的 Tab 按钮，降级为页面加载时请求一次');
         fetchGetRooms();
@@ -70,9 +66,6 @@ export function initLiveRecordManager() {
                     const statusClass = 'other';
                     const statusText = '空闲中';
 
-                    // 假设任务对象里有 IsSubscribed 字段（true/false），没有就默认 false
-                    const isSubscribed = linkItem.Active === true;
-
                     html += `
                         <tr>
                             <td>${index + 1}</td>
@@ -83,7 +76,7 @@ export function initLiveRecordManager() {
                                 <label class="toggle-switch">
                                     <input type="checkbox" 
                                            data-taskid="${linkItem.Id || index}" 
-                                           ${isSubscribed ? 'checked' : ''}>
+                                           ${linkItem.IsSubscribed ? 'checked' : ''}>
                                     <span class="slider"></span>
                                 </label>
                             </td>
@@ -109,29 +102,38 @@ export function initLiveRecordManager() {
 
                     console.log(`任务 ${taskId} 订阅状态切换为: ${newState ? '订阅' : '取消订阅'}`);
 
-                    // 如果你已经有后端接口，取消注释下面这段：
-                    /*
                     try {
-                        const response = await fetch('/api/toggle-subscribe', {  // ← 改成你的真实接口
+                        const response = await fetch(API_SUBSCRIBE, {
                             method: 'POST',
-                            credentials: 'include',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ taskId: taskId, subscribe: newState })
+                            credentials: 'include', // 如果需要携带 cookie/session
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                id: taskId   // 后端只接受 "id" 字段
+                            })
                         });
-            
-                        if (!response.ok) throw new Error('更新失败');
-            
-                        // 可选：成功提示
-                        // alert(newState ? '订阅成功' : '取消订阅成功');
-            
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData.message || '更新失败');
+                        }
+
+                        // 可选：成功后给出提示（根据返回的 isSubscribed 判断）
+                        const result = await response.json();
+                        console.log('订阅切换成功:', result);
+
+                        // 如果你想在前端同步更新 UI，可以直接使用 newState
+                        // 因为切换成功了，不需要额外处理
+
                     } catch (err) {
                         console.error('订阅切换失败:', err);
-                        this.checked = !newState;  // 失败时回滚开关状态（超级重要！）
-                        alert('操作失败，请重试或检查网络');
-                    }
-                    */
 
-                    // 暂时没接口？就用上面 console.log 测试，开关也能正常点
+                        // 超级重要：失败时回滚开关状态
+                        this.checked = !newState;  // 假设这是 el-switch 或 checkbox 的绑定值
+
+                        alert(err.message || '操作失败，请重试或检查网络');
+                    }
                 });
             });
 

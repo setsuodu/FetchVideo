@@ -51,4 +51,30 @@ public class LinkItemController : ControllerBase
 
         return Ok(new { message = "批量添加成功", count = linkList.Count });
     }
+
+    // 订阅/取消订阅
+    [HttpPost("toggle_subscribe")]
+    public async Task<IActionResult> ToggleSubscribe([FromBody] SubscribeRequest request)
+    {
+        if (request == null || !request.Id.HasValue)
+            return BadRequest("必须提供有效的 Id");
+
+        var item = await _context.LinkItems
+            .FirstOrDefaultAsync(l => l.Id == request.Id.Value);
+
+        if (item == null)
+            return NotFound("未找到对应的直播间");
+
+        // 切换订阅状态
+        item.IsSubscribed = !item.IsSubscribed;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = item.IsSubscribed ? "订阅成功" : "取消订阅成功",
+            id = item.Id,
+            isSubscribed = item.IsSubscribed
+        });
+    }
 }

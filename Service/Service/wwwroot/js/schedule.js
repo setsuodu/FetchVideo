@@ -6,14 +6,23 @@ export function initScheduleManager() {
     const scheduleForm = document.getElementById('scheduleForm');
     const scheduleJsonInput = document.getElementById('scheduleJson');
     const scheduleTextLabel = document.querySelector('#scheduleText');
-
     if (!scheduleForm || !scheduleJsonInput || !scheduleTextLabel) {
         console.warn('Schedule 模块未找到对应元素，跳过初始化');
         return;
     }
+    // 关键：监听 Bootstrap Tab 切换事件
+    const dashboardTab = document.querySelector('a[data-bs-target="#dashboard-content"], a[href="#dashboard-content"]');
+    if (dashboardTab) {
+        dashboardTab.addEventListener('shown.bs.tab', () => {
+            fetchCurrentSchedule();
+        });
+    } else {
+        console.warn('未找到 dashboard 的 Tab 按钮，降级为页面加载时请求一次');
+        fetchCurrentSchedule();
+    }
+
 
     let hasFetched = false; // 标记是否已经请求过，避免重复请求
-
     /**
      * GET 当前计划并更新显示
      */
@@ -133,25 +142,4 @@ export function initScheduleManager() {
 
         updateSchedule(timesArray); //js也在客户端，这里还不知道服务器的时区
     });
-
-
-
-
-    // 关键：监听 Bootstrap Tab 切换事件
-    const dashboardTab = document.querySelector('a[data-bs-target="#dashboard-content"], a[href="#dashboard-content"]');
-    // 兼容两种常见写法：data-bs-target 或 href
-
-    if (dashboardTab) {
-        dashboardTab.addEventListener('shown.bs.tab', () => {
-            // 每次切到 dashboard Tab 都刷新一次（即使已经请求过，也拿最新）
-            fetchCurrentSchedule();
-        });
-
-        // 可选：第一次手动点开时如果还没请求过，也请求一次
-        // 如果你希望第一次进入页面就显示（即使没点 Tab），可以加下面这行：
-        // if (dashboardTab.parentElement.classList.contains('active')) fetchCurrentSchedule();
-    } else {
-        console.warn('未找到 dashboard 的 Tab 按钮，降级为页面加载时请求一次');
-        fetchCurrentSchedule(); // 降级方案
-    }
 }
