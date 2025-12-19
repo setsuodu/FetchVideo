@@ -11,7 +11,7 @@ public class LinkItem
 
     public string Url { get; set; } = string.Empty; // 直播间地址
     
-    public bool Active { get; set; } = false;  // 默认不订阅
+    public bool IsSubscribed { get; set; } = false;  // 默认不订阅
 
     public int Duration { get; set; } = 2;  // 默认录制2分钟
 }
