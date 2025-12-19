@@ -32,22 +32,6 @@ public class Shared
         return roomId;
     }
 
-    // Windows文件名不允许文件名含（\ / : * ? " < > |）
-    // 替换为 下划线 _
-    //public static string MakeFileNameSafe(string name)
-    //{
-    //    // 常见所有系统的不合法字符
-    //    //char[] invalidChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }; //跨平台写法
-    //    char[] invalidChars = Path.GetInvalidFileNameChars(); //Windows写法
-
-    //    // 过滤
-    //    foreach (char c in invalidChars)
-    //    {
-    //        name = name.Replace(c, '_');
-    //    }
-    //    return name;
-    //}
-
     // "又长大了是时候夺回属于我的一切了 - 沐汐BB - 哔哩哔哩直播，二次元弹幕直播平台"
     // 比封面可爱一点点 - -阿少少Ash - 哔哩哔哩直播，二次元弹幕直播平台
     public static string GetMiddleText(string input)

@@ -1,9 +1,9 @@
-﻿using FetchVideo.Models;
-using FetchVideo.Utils;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
-using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
+using FetchVideo.Utils;
+using FetchVideo.Models;
 
 namespace FetchVideo.Controllers;
 
@@ -83,7 +83,7 @@ public class BilibiliController : ControllerBase
         processInfo.Command = "Merge";
         return processInfo;
     }
-    // B站验证下载
+    // B站视频验证下载
     async Task DownloadBilibiliM4sAsync(string url, string referer, string outputPath)
     {
         using var http = new HttpClient();
@@ -146,22 +146,28 @@ public class BilibiliController : ControllerBase
         return view;
     }
 
-    // 直播流
+    // B站直播流录制
     [HttpGet("get_bili_live")]
-    public async Task<FFmpegProcessInfo> GetM3U8(string room_id, string title, int minute)
+    public async Task<FFmpegProcessInfo> BiliLiveRecord(string url, int minute)
     {
+        string room_id = Shared.GetRoomId(url);
+        //Console.WriteLine($"是 Bilibili直播: 房间: {room_id}");
+        string title = await GetTitleAsync(url);
+        //Console.WriteLine($"直播标题: {title}");
+
         int second = minute * 60;
-        Console.WriteLine($"直播流录制: {second}s 停止");
         string finalUrl = $"{Shared.BILI_ROOM}playUrl?cid={room_id}&platform=web";
         //Console.WriteLine($"URL是: {finalUrl}");
+
+        // 请求 B站 API，获取地址
         var httpClient = new HttpClient();
         string roomJson = await httpClient.GetStringAsync(finalUrl);
-        //Console.WriteLine($"返回值: {roomJson}");
+        //Console.WriteLine($"roomJson: {roomJson}");
         var jsonData = JObject.Parse(roomJson);
         string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
-        Console.WriteLine($"m3u8是: {m3u8Url}");
+        //Console.WriteLine($"m3u8Url: {m3u8Url}");
 
-        // FFmpeg 转码
+        // 输出目录
         string dateFolder = DateTime.Now.ToString("yyyy-MM-dd"); //"2025-12-09";
         string desktopPath = Path.Combine(_downloadPath, dateFolder);
         if (Directory.Exists(desktopPath) == false)
@@ -171,6 +177,8 @@ public class BilibiliController : ControllerBase
         }
         string outputFile = Path.Combine(desktopPath, $"{title}.mp4");
         Console.WriteLine($"outputFile: {outputFile}");
+
+        // FFmpeg 转码
         string convertCMD = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         Console.WriteLine($"FFmpeg命令是: {convertCMD}");
         Console.WriteLine($"标题是: {title}");
@@ -201,7 +209,6 @@ public class BilibiliController : ControllerBase
 
     // 获取B站直播标题
     // ❌仅适用直播，视频，个人主页无法获取完整html❌
-    // 无头浏览器 MicroSoft.Playwright
     [HttpGet("title")]
     public async Task<string> GetTitleAsync(string url)
     {
@@ -234,40 +241,9 @@ public class BilibiliController : ControllerBase
         }
     }
 
-    // 无头浏览器模拟行为，获取 UP 主上传的视频列表
-    [HttpGet("upload_video")]
-    public async Task<List<string>> GetUploadVideo(string uid)
-    {
-        // 替换成你要抓的 UP 主 UID
-        //string uid = "502793565";  // 示例：某个 UP 主
-        string url = $"https://space.bilibili.com/{uid}/upload/video";
-
-        // 获取完整的渲染后 HTML
-        //string html = await GetHTML(url);
-
-        // 用 HtmlAgilityPack 解析 HTML
-        //var doc = new HtmlDocument();
-        //doc.LoadHtml(html);
-
-        //var videoNodes = doc.DocumentNode.SelectNodes("//a[@class='bili-cover-card']");
-        //Console.WriteLine($"UP有{videoNodes.Count}个视频");
-
-        List<string> videoList = new List<string>();
-        //foreach (var video in videoNodes)
-        //{
-        //    string href = video.GetAttributeValue("href", "");
-        //    string bvId = Shared.GetBvId(href);
-        //    Console.WriteLine($"{href}👉{bvId}");
-        //    videoList.Add(bvId);
-        //}
-        return videoList;
-    }
-
     private static readonly HttpClient client = new HttpClient();
     // ←←← 这里填你的 SESSDATA（必须登录有效）
     private const string SessData = "f0ce3d2c%2C1780465626%2C7172e%2Ac2CjBGS5AJwPcfnaaVc8XogrSvBMwv_ARSaHY0GVUqDuByTCC9RpyOO_86Ks4WuQE1whASVl9Zb2JMVDlPMVBNTEkxdnhhdUJlajFMTkpCeWU2aVV0Z21PVnR2TDVkWlMyY2c2V20yaE1sSTQ4d3o1MzlhZzJaOElMMmVpejN1OVpKbTBmU1B5RHpnIIEC";
-    // 你的 mid（用户ID），可通过 https://api.bilibili.com/x/space/myinfo 获取
-    private static long MyMid = 3546649320229192;   // ←←← 改成自己的 mid
     // 统一请求方法（自动加 Cookie 和常见 Header）
     static async Task<string> RequestAsync(string url)
     {
@@ -326,8 +302,6 @@ public class BilibiliController : ControllerBase
                 Console.WriteLine($"标题: {v.Title}");
                 Console.WriteLine($"BV号: BV{v.Bvid}");
                 Console.WriteLine($"链接: https://www.bilibili.com/video/BV{v.Bvid}");
-                //Console.WriteLine($"封面: {v.Cover}");
-                //Console.WriteLine($"播放量: {v.CntInfo.Play}
                 Console.WriteLine(new string('-', 20));
             }
 
@@ -343,46 +317,17 @@ public class BilibiliController : ControllerBase
             await Task.Delay(600);    // 防风控，建议 500~1000ms
         }
 
-        //return json;
         return videoList;
     }
 
     [HttpGet("favlist")]
-    public async Task<List<string>> GetFavList(string uid)
+    public async Task<List<string>> GetFavList()
     {
         // 一般就用一个，写死即可
         //默认：https://space.bilibili.com/3546649320229192/favlist?fid=3108098292&ftype=create
         //下载：https://space.bilibili.com/3546649320229192/favlist?fid=3573957792&ftype=create
 
-        // 找 <a class="bili-cover-card" href="...BV...">
-
-        // 替换成你要抓的 UP 主 UID
-        //string uid = "502793565";  // 示例：某个 UP 主
-        //string url = $"https://space.bilibili.com/{uid}/favlist?fid=3573957792&ftype=create";
-
-        /*
-        // 获取完整的渲染后 HTML
-        string html = await GetHTML(url);
-
-        // 用 HtmlAgilityPack 解析 HTML
-        var doc = new HtmlDocument();
-        doc.LoadHtml(html);
-
-        var videoNodes = doc.DocumentNode.SelectNodes("//a[@class='bili-cover-card']");
-        Console.WriteLine($"收藏了有{videoNodes.Count}个视频");
-
-        List<string> videoList = new List<string>();
-        foreach (var video in videoNodes)
-        {
-            string href = video.GetAttributeValue("href", "");
-            string bvId = Shared.GetBvId(href);
-            Console.WriteLine($"{href}👉{bvId}");
-            videoList.Add(bvId);
-        }
-        return videoList;
-        */
-
-        // 获取收藏家内视频列表
+        // 专门用来下载的收藏夹（3573957792）中视频列表
         return await GetVideosInFolderAsync(3573957792);
     }
 

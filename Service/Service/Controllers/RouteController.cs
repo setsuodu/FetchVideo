@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using FetchVideo.Utils;
+using FetchVideo.Models;
 
 namespace FetchVideo.Controllers;
 
@@ -44,8 +45,6 @@ public class RouteController : ControllerBase //路由器
         // ①B站视频
         // ②B站直播
         // ③YouTube视频
-        // ④missav手动获取的 video.m3u8 / playlist.m3u8
-        // missav访问时用油猴自动提交SQL，没有则记入本地文件
         if (url.Contains("bilibili.com/video/BV"))
         {
             string bvId = Shared.GetBvId(url); // 获取视频标题
@@ -54,13 +53,8 @@ public class RouteController : ControllerBase //路由器
         }
         else if (url.Contains("live.bilibili"))
         {
-            // Up主信息 + 当前时间戳
-            string roomId = Shared.GetRoomId(url);
-            Console.WriteLine($"是 Bilibili直播: 房间: {roomId}");
-            string title = await bili.GetTitleAsync(url);
-            Console.WriteLine($"直播标题: {title}");
             int minute = length ?? 10; //默认十分钟
-            result = await bili.GetM3U8(roomId, title, minute);
+            result = await bili.BiliLiveRecord(url, minute);
         }
         else if (url.Contains("youtu"))
         {

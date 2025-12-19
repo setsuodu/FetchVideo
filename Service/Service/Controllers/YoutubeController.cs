@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
+using FetchVideo.Models;
 
 namespace FetchVideo.Controllers;
 

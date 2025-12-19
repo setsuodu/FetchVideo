@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using FetchVideo.Models;
 using FetchVideo.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace FetchVideo.Controllers;
 
