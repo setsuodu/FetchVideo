@@ -105,6 +105,8 @@ public class Shared
             using var headRequest = new HttpRequestMessage(HttpMethod.Head, url);
             using var headResponse = await _client.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead, ct);
 
+            Console.WriteLine($"检查单个 URL 是否有效: {url}👉{headResponse.StatusCode}");
+
             if (headResponse.IsSuccessStatusCode)
             {
                 return true;

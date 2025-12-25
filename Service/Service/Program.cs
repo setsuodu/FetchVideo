@@ -68,6 +68,7 @@ using (var scope = app.Services.CreateScope())
             new LinkItem { Name = "小四桃子",       Url = "https://live.bilibili.com/1724212928", IsSubscribed = true },
             new LinkItem { Name = "星梨梨S",        Url = "https://live.bilibili.com/1747118475", IsSubscribed = true },
             new LinkItem { Name = "aeri酱咩",       Url = "https://live.bilibili.com/1948312359", IsSubscribed = true },
+            new LinkItem { Name = "bili家家",       Url = "https://live.bilibili.com/1828675450", IsSubscribed = true },
             new LinkItem { Name = "青清禾月",       Url = "https://live.bilibili.com/1786263208", IsSubscribed = true },
             new LinkItem { Name = "秋茗ovo",        Url = "https://live.bilibili.com/1946284495", IsSubscribed = true },
             new LinkItem { Name = "开心螺蛳粉宝宝", Url = "https://live.bilibili.com/1868871042", IsSubscribed = true },
@@ -95,6 +96,10 @@ using (var scope = app.Services.CreateScope())
             new LinkItem { Name = "在下小颖是也",   Url = "https://live.bilibili.com/1904557421", IsSubscribed = true },
             new LinkItem { Name = "草莓萱萱-",      Url = "https://live.bilibili.com/1851391546", IsSubscribed = true },
             new LinkItem { Name = "我是小龙虾大王", Url = "https://live.bilibili.com/1874223564", IsSubscribed = true },
+            new LinkItem { Name = "林尤奈",         Url = "https://live.bilibili.com/1977907120", IsSubscribed = true },
+            new LinkItem { Name = "佐伊Z0E",        Url = "https://live.bilibili.com/1732021672", IsSubscribed = true },
+            new LinkItem { Name = "doki小美-",      Url = "https://live.bilibili.com/1870440922", IsSubscribed = true },
+            new LinkItem { Name = "小芋喵_以梦冠",  Url = "https://live.bilibili.com/1904559280", IsSubscribed = true },
             new LinkItem { Name = "小栩小不点-",    Url = "https://live.bilibili.com/32270626", IsSubscribed = true },
             new LinkItem { Name = "梗洋洋",         Url = "https://live.bilibili.com/27880410", IsSubscribed = true },
         }

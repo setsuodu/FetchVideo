@@ -63,6 +63,16 @@ docker push setsuodu/fetch-service:latest
 docker pull setsuodu/fetch-service:latest
 docker run -d --name downloader -p 8080:8080 -v /vol1/1000/download:/app/downloads setsuodu/fetch-service:latest
 ```
+
+🐳挂载app.db映射
+```
+docker run -d --name downloader \
+  -p 8080:8080 \
+  -v /vol1/1000/download:/app/downloads \
+  -v /vol1/1000/docker:/app/data \     # 新增这一行：主机 /vol1/1000/docker ↔ 容器 /app/data
+  setsuodu/fetch-service:latest
+```
+
 🐳删除旧的镜像，出现<none>是latest标签被取代了
 ```
 docker ps
