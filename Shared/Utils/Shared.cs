@@ -58,6 +58,102 @@ public class Shared
         return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 
+    // 确保不是404
+    // 复用单个 HttpClient 实例（线程安全）
+    private static readonly HttpClient _client = new HttpClient(new HttpClientHandler
+    {
+        // 自动处理重定向（默认就是 true）
+        AllowAutoRedirect = true,
+        MaxAutomaticRedirections = 10
+    })
+    {
+        Timeout = TimeSpan.FromSeconds(30)  // 可根据需要调整超时时间
+    };
+
+    /// <summary>
+    /// 按顺序检查 urls 数组中的 URL，返回第一个有效的 URL。
+    /// 如果全部无效，返回 null。
+    /// </summary>
+    /// <param name="urls">要检查的 URL 数组</param>
+    /// <param name="cancellationToken">可选的取消令牌</param>
+    /// <returns>第一个有效的 URL，或 null</returns>
+    public static async Task<string?> GetFirstValidUrlAsync(string[] urls, CancellationToken cancellationToken = default)
+    {
+        if (urls == null) throw new ArgumentNullException(nameof(urls));
+
+        foreach (var url in urls)
+        {
+            if (string.IsNullOrWhiteSpace(url)) continue;
+
+            bool isValid = await IsUrlValidAsync(url.Trim(), cancellationToken);
+            if (isValid)
+            {
+                return url.Trim();  // 直接返回有效的原始 URL
+            }
+        }
+
+        return null; // 全部无效
+    }
+    /// <summary>
+    /// 检查单个 URL 是否有效（优先 HEAD，失败时回退 GET）
+    /// </summary>
+    private static async Task<bool> IsUrlValidAsync(string url, CancellationToken ct)
+    {
+        try
+        {
+            // 优先尝试 HEAD 请求（只取响应头）
+            using var headRequest = new HttpRequestMessage(HttpMethod.Head, url);
+            using var headResponse = await _client.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead, ct);
+
+            if (headResponse.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            // 如果 HEAD 返回 404，直接判定无效
+            if (headResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return false;
+            }
+
+            // 如果 HEAD 返回 405（Method Not Allowed）或其他非成功码，尝试 GET
+            if (headResponse.StatusCode == System.Net.HttpStatusCode.MethodNotAllowed ||
+                !headResponse.IsSuccessStatusCode)
+            {
+                using var getResponse = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+
+                if (getResponse.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+
+                if (getResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // 超时
+            Console.WriteLine($"请求超时: {url}");
+            return false;
+        }
+        catch (HttpRequestException ex)
+        {
+            // 网络错误、DNS 失败等
+            Console.WriteLine($"请求失败 ({url}): {ex.Message}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"未知错误 ({url}): {ex.Message}");
+            return false;
+        }
+    }
+
     // 短链👉长链
     public static async Task<string> Curl_I(string shortUrl)
     {

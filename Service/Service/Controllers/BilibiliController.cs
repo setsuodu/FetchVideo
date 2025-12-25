@@ -157,8 +157,16 @@ public class BilibiliController : ControllerBase
         string roomJson = await httpClient.GetStringAsync(finalUrl);
         //Console.WriteLine($"roomJson: {roomJson}");
         var jsonData = JObject.Parse(roomJson);
-        string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
-        //Console.WriteLine($"m3u8Url: {m3u8Url}");
+        //string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
+        var durlArray = jsonData["data"]?["durl"];
+        //Console.WriteLine($"durlArray: {durlArray.Count()}"); //3
+        string[] urls = new string[durlArray.Count()];
+        for (int i = 0; i < durlArray.Count(); i++)
+        {
+            urls[i] = jsonData["data"]?["durl"]?[i]?["url"]?.ToString();
+        }
+        string m3u8Url = await Shared.GetFirstValidUrlAsync(urls);
+        Console.WriteLine($"m3u8Url: {m3u8Url}");
 
         // 输出目录
         string dateFolder = DateTime.Now.ToString("yyyy-MM-dd"); //"2025-12-09";
@@ -176,6 +184,7 @@ public class BilibiliController : ControllerBase
         string command = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         Console.WriteLine($"FFmpeg命令是: {command}");
         var task = ffManager.StartFFmpeg(command, up_name, minute); //B站直播
+        //Console.WriteLine($"FFmpeg任务状态: {task.Status}"); //Running
 
         // 检测新人，加入列表
         LinkItem link = new LinkItem

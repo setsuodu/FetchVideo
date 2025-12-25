@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using FetchVideo.Models;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 
@@ -7,7 +8,7 @@ namespace FetchVideo.Controllers;
 public class YoutubeController
 {
     private readonly string _downloadPath;
-    private readonly FFmpegProcessManager _manager;
+    private readonly FFmpegManager _manager;
 
     // 从构造函数注入配置，变成本地只读（推荐写法！）
     //public YoutubeController(IConfiguration configuration, FFmpegProcessManager manager)
@@ -23,7 +24,7 @@ public class YoutubeController
         Console.Write($"\r下载进度: {p:P1}"); // P1 = 百分比(一位小数)
     });
 
-    public async Task<FFmpegProcessInfo> GetYoutubeVideoAsync(string url)
+    public async Task<FFmpegTask> GetYoutubeVideoAsync(string url)
     {
         string title = await GetVideoInfoAsync(url);
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -51,7 +52,7 @@ public class YoutubeController
         {
             await youtube.Videos.Streams.DownloadAsync(muxed, outputFile, progress); // 不分轨的
             Console.WriteLine($"不分轨的: {outputFile}");
-            var processInfo = new FFmpegProcessInfo
+            var processInfo = new FFmpegTask
             {
                 UpName = title,
                 Command = "Normal",
@@ -75,7 +76,7 @@ public class YoutubeController
             string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
             var processInfo = _manager.StartFFmpeg(mergeCMD, title);
             Console.WriteLine($"下载完成: {DateTime.Now}");
-            await processInfo.process.WaitForExitAsync();
+            await processInfo.Process.WaitForExitAsync();
             System.IO.File.Delete(videoFile);
             System.IO.File.Delete(audioFile);
             processInfo.Command = "Merge";
@@ -101,12 +102,12 @@ public class YoutubeController
     }
 
     // missav
-    public async Task<FFmpegProcessInfo> GetM3U8(string m3u8)
+    public async Task<FFmpegTask> GetM3U8(string m3u8)
     {
         string mergeCMD = $"-i \"{m3u8}\" -c copy \"{_downloadPath}.mp4\"";
         var processInfo = _manager.StartFFmpeg(mergeCMD, "missav");
         processInfo.Command = "Convert";
-        await processInfo.process.WaitForExitAsync();
+        await processInfo.Process.WaitForExitAsync();
         Console.WriteLine($"下载完成: {DateTime.Now}");
         return processInfo;
     }

@@ -44,7 +44,8 @@ public class FFmpegManager
             process.EnableRaisingEvents = true;
             process.Exited += (s, e) =>
             {
-                Console.WriteLine($"监听到 Exited");
+                Console.WriteLine($"监听到 Exited: {process.ExitCode}");
+                //-875574520, s=System.Diagnostics.Process, e=System.EventArgs
                 task.Status = process.ExitCode == 0 ? "Completed" : "Error";
                 _processes.TryRemove(taskId, out _);
             };
