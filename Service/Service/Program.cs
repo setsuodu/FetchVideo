@@ -33,7 +33,7 @@ builder.Services.AddScoped<ScheduleConfigService>();
 builder.Services.AddScoped<ISharedService, SharedService>();
 
 // SQLite 配置（数据库文件会生成在容器里的 /app/data 目录）
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=app.db"));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=/app/data/app.db"));
 // 自动创建目录和数据库（开发/生产都好用）
 builder.Services.BuildServiceProvider().GetService<AppDbContext>()?.Database.Migrate();
 
