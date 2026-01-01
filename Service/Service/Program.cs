@@ -32,8 +32,19 @@ builder.Services.AddScoped<RouteController>();
 builder.Services.AddScoped<ScheduleConfigService>();
 builder.Services.AddScoped<ISharedService, SharedService>();
 
+// 动态路径
+var dataDir = Path.Combine(Directory.GetCurrentDirectory(), "data");
+if (!Directory.Exists(dataDir))
+{
+    Directory.CreateDirectory(dataDir);
+}
+var dbPath = Path.Combine(dataDir, "app.db");
+Console.WriteLine($"SQLite 数据库路径: {dbPath}");
+
 // SQLite 配置（数据库文件会生成在容器里的 /app/data 目录）
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=/app/data/app.db"));
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=app.db")); // vs√docker×
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=/app/data/app.db")); // vs×docker√
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
 // 自动创建目录和数据库（开发/生产都好用）
 builder.Services.BuildServiceProvider().GetService<AppDbContext>()?.Database.Migrate();
 
@@ -59,8 +70,8 @@ using (var scope = app.Services.CreateScope())
             new LinkItem { Name = "小蜜疯_璀璨",    Url = "https://live.bilibili.com/1729389539", IsSubscribed = false },
             new LinkItem { Name = "蔓柠er",         Url = "https://live.bilibili.com/1786565278", IsSubscribed = false },
             new LinkItem { Name = "甜奈-好运常伴",  Url = "https://live.bilibili.com/1984186978", IsSubscribed = false },
+            new LinkItem { Name = "婉婉每天吃十个舰长", Url = "https://live.bilibili.com/1909460797", IsSubscribed = false },
             // 订阅的
-            new LinkItem { Name = "婉婉每天吃十个舰长", Url = "https://live.bilibili.com/1909460797", IsSubscribed = true },
             new LinkItem { Name = "牛角包去睡了",   Url = "https://live.bilibili.com/1904551806", IsSubscribed = true },
             new LinkItem { Name = "废宅三文鱼",     Url = "https://live.bilibili.com/1871979231", IsSubscribed = true },
             new LinkItem { Name = "小福包iu_",      Url = "https://live.bilibili.com/1868870262", IsSubscribed = true },
@@ -91,21 +102,33 @@ using (var scope = app.Services.CreateScope())
             new LinkItem { Name = "小鱼要饿死了",   Url = "https://live.bilibili.com/32443468", IsSubscribed = true },
             new LinkItem { Name = "濛雨清波",       Url = "https://live.bilibili.com/21156534", IsSubscribed = true },
             new LinkItem { Name = "呀思思",         Url = "https://live.bilibili.com/11368496", IsSubscribed = true },
+            new LinkItem { Name = "梗洋洋",         Url = "https://live.bilibili.com/27880410", IsSubscribed = true },
             new LinkItem { Name = "路人饼饼ovo",    Url = "https://live.bilibili.com/4533196", IsSubscribed = true },
             // 可以继续添加更多默认链接
+            new LinkItem { Name = "是只萌宠",       Url = "https://live.bilibili.com/31735043", IsSubscribed = true },
+            new LinkItem { Name = "小栩小不点-",    Url = "https://live.bilibili.com/32270626", IsSubscribed = true },
+            new LinkItem { Name = "_橘子_味的猫",   Url = "https://live.bilibili.com/32058161", IsSubscribed = true },
+            new LinkItem { Name = "林一璇-",        Url = "https://live.bilibili.com/14695348", IsSubscribed = true },
+            new LinkItem { Name = "番外の宅",       Url = "https://live.bilibili.com/1930407195", IsSubscribed = true },// like=牛角包
             new LinkItem { Name = "样样不知道",     Url = "https://live.bilibili.com/1791356093", IsSubscribed = true },
-            new LinkItem { Name = "鲨鱼摆摆崽",     Url = "https://live.bilibili.com/1889475119", IsSubscribed = true },
-            new LinkItem { Name = "在下小颖是也",   Url = "https://live.bilibili.com/1904557421", IsSubscribed = true },
             new LinkItem { Name = "草莓萱萱-",      Url = "https://live.bilibili.com/1851391546", IsSubscribed = true },
+            new LinkItem { Name = "在下小颖是也",   Url = "https://live.bilibili.com/1904557421", IsSubscribed = true },
             new LinkItem { Name = "我是小龙虾大王", Url = "https://live.bilibili.com/1874223564", IsSubscribed = true },
             new LinkItem { Name = "林尤奈",         Url = "https://live.bilibili.com/1977907120", IsSubscribed = true },
             new LinkItem { Name = "佐伊Z0E",        Url = "https://live.bilibili.com/1732021672", IsSubscribed = true },
             new LinkItem { Name = "doki小美-",      Url = "https://live.bilibili.com/1870440922", IsSubscribed = true },
             new LinkItem { Name = "小芋喵_以梦冠",  Url = "https://live.bilibili.com/1904559280", IsSubscribed = true },
-            new LinkItem { Name = "小栩小不点-",    Url = "https://live.bilibili.com/32270626", IsSubscribed = true },
-            new LinkItem { Name = "梗洋洋",         Url = "https://live.bilibili.com/27880410", IsSubscribed = true },
-        }
-    ;
+            new LinkItem { Name = "萱萱xxOvO",      Url = "https://live.bilibili.com/1964696515", IsSubscribed = true },
+            new LinkItem { Name = "一只小梨涡a_",   Url = "https://live.bilibili.com/1771626222", IsSubscribed = true },
+            new LinkItem { Name = "星予iuk",        Url = "https://live.bilibili.com/1768502866", IsSubscribed = true },
+            new LinkItem { Name = "周周aaaaaa-",    Url = "https://live.bilibili.com/1871518514", IsSubscribed = true },
+            new LinkItem { Name = "熙熙兔ツ",       Url = "https://live.bilibili.com/1991384022", IsSubscribed = true },
+            new LinkItem { Name = "沐川琦",         Url = "https://live.bilibili.com/1799898897", IsSubscribed = true },
+            new LinkItem { Name = "饼饼的酱",       Url = "https://live.bilibili.com/1808576670", IsSubscribed = true },
+            new LinkItem { Name = "鲨鱼摆摆崽",     Url = "https://live.bilibili.com/1889475119", IsSubscribed = true },
+            new LinkItem { Name = "牙牙大王yy-串串惯", Url = "https://live.bilibili.com/1921278229", IsSubscribed = true },
+            new LinkItem { Name = "眠眠鱼菜菜-idea宠", Url = "https://live.bilibili.com/1955141527", IsSubscribed = true },
+        };
 
         db.LinkItems.AddRange(defaultLinks);
         db.SaveChanges();

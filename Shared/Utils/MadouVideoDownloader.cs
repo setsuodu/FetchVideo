@@ -45,7 +45,7 @@ public class MadouVideoDownloader
             // 如果文件已存在且大于 10MB，视为已完整下载，跳过
             if (File.Exists(outputPath) && new FileInfo(outputPath).Length > 10 * 1024 * 1024)
             {
-                Console.WriteLine($"已存在，跳过: {video.Title}");
+                Console.WriteLine($"已存在，跳过: {video.Title} 👉 {outputPath}");
                 continue;
             }
 
