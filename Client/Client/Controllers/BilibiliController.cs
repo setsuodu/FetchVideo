@@ -46,7 +46,7 @@ public class BilibiliController
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string videoFile = Path.Combine(desktopPath, "video.m4s");
         string audioFile = Path.Combine(desktopPath, "audio.m4s");
-        string outputFile = Path.Combine(desktopPath, $"【{videoView.owner.name}】{videoView.title}.mp4");
+        string outputFile = Path.Combine(desktopPath, $"【{videoView.owner.name}】{Shared.MakeFileNameSafe(videoView.title)}.mp4");
 
         string referer = $"{Shared.BILI_VIDEO}{bvId}";
         //await DownloadFileAsync(videoUrl, videoFile); //403 Forbidden
@@ -116,7 +116,7 @@ public class BilibiliController
                 name = jsonObject["data"]["owner"]["name"].ToString(), //B站用户名
                 face = jsonObject["data"]["owner"]["face"].ToString(), //头像
             },
-            title = jsonObject["data"]["title"].ToString(),
+            title = Shared.MakeFileNameSafe(jsonObject["data"]["title"].ToString()),
             cid = jsonObject["data"]["cid"].ToString()
         };
         Console.WriteLine($"up-name={view.owner.name}, title={view.cid}, cid={view.cid}");
