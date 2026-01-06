@@ -392,8 +392,8 @@ public static class LinkItemSQL
             int urlPadding = Math.Max(0, 36 - urlVisualWidth);
 
             // 构建各部分
-            string namePart = $"Name = \"{Shared.EscapeString(item.Name)}\"{new string(' ', namePadding)}";
-            string urlPart = $"Url = \"{Shared.EscapeString(item.Url)}\"{new string(' ', urlPadding)}";
+            string namePart = $"Name = \"{EscapeString(item.Name)}\"{new string(' ', namePadding)}";
+            string urlPart = $"Url = \"{EscapeString(item.Url)}\"{new string(' ', urlPadding)}";
             string subPart = $"IsSubscribed = {isSubscribed.ToString().ToLower()}";
             string durationPart = item.Duration != 2 ? $", Duration = {item.Duration}" : "";
 
@@ -410,4 +410,7 @@ public static class LinkItemSQL
         Console.WriteLine($"    //可以继续添加更多默认链接（{totalCount}）");
         Console.WriteLine("};");
     }
+
+    // 辅助方法：转义字符串中的双引号
+    static string EscapeString(string s) => s.Replace("\"", "\\\"");
 }
