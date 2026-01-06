@@ -14,7 +14,7 @@ public class ScheduleConfigService
     // 改成 public！！！不然外面拿不到
     // 这里配的是北京时间UTC-8（阅读友好设计）
     // 宿主机跑的时间不一定：Docker是UTC-0，UNIX是UTC-8或其他，使之兼容
-    private static readonly List<string> DefaultTimes = new() { "08:00", "12:00", "18:00", "22:00" }; //UTC+8，Docker是UTC时间
+    private static readonly List<string> DefaultTimes = new() { "00:00", "08:00", "12:00", "18:00", "20:00", "22:00" }; //UTC+8，Docker是UTC时间
     public static List<string> GetHostTimes()
     {
         // 先读取宿主机时区

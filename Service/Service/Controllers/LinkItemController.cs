@@ -25,7 +25,6 @@ public class LinkItemController : ControllerBase
     [HttpGet("get_rooms")]
     public async Task<IActionResult> GetLinkItems()
     {
-        //return Ok(await _context.LinkItems.ToListAsync());
         return Ok(await _sharedService.GetLinkItems_Pro());
     }
 

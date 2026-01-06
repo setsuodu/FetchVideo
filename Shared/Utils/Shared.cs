@@ -454,4 +454,10 @@ public class Shared
             return html;
         }
     }
+
+    // 辅助方法：转义字符串中的双引号
+    public static string EscapeString(string s)
+    {
+        return s.Replace("\"", "\\\"");
+    }
 }
