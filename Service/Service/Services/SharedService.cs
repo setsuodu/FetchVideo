@@ -54,6 +54,10 @@ public class SharedService : ISharedService
         // 获取数据库中所有直播间项
         List<LinkItem> subsList = await GetLinkItems();
 
+#if DEBUG
+        LinkItemSQL.DebugSort(subsList);
+#endif
+
         // 将正在录制的 UpName 提取为 HashSet，快速匹配（忽略大小写和空格）
         var runningNames = runningTasks
             .Where(t => !string.IsNullOrWhiteSpace(t.UpName))
