@@ -70,9 +70,7 @@ docker push setsuodu/fetch-service:latest
 🐳部署机器上更新
 ```
 docker pull setsuodu/fetch-service:latest
-docker run -d --name downloader -p 8080:8080 -v /vol1/1000/download:/app/downloads setsuodu/fetch-service:latest
 ```
-
 🐳挂载app.db映射
 ```
 docker run -d \

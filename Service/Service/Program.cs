@@ -40,6 +40,8 @@ if (!Directory.Exists(dataDir))
 }
 var dbPath = Path.Combine(dataDir, "app.db");
 Console.WriteLine($"SQLite 数据库路径: {dbPath}");
+// Docker 👉 SQLite 数据库路径: /app/data/app.db
+// VS     👉 SQLite 数据库路径: D:\GitHub\[Workspace]\FetchVideo\Service\Service\data\app.db
 
 // SQLite 配置（数据库文件会生成在容器里的 /app/data 目录）
 //builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=app.db")); // vs√docker×
@@ -91,7 +93,6 @@ app.MapGet("/downloads/{*path}", async (string path, HttpContext ctx) =>
     return Results.File(filePath, "application/octet-stream");
 });
 // 在 app.MapControllers(); 之前加一个 API
-//var svc = app.Services.GetRequiredService<ScheduleConfigService>();
 app.MapPost("/api/schedule/update", async (List<string> times_utc8, DailyTriggerService service) =>
 {
     // 这里提交的时间，一定是UTC+8

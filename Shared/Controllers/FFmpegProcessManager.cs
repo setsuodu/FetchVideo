@@ -48,6 +48,7 @@ public class FFmpegManager
                 //-875574520, s=System.Diagnostics.Process, e=System.EventArgs
                 task.Status = process.ExitCode == 0 ? "Completed" : "Error";
                 _processes.TryRemove(taskId, out _);
+                process.Dispose(); // 在进程退出时手动释放 Process 资源
             };
 
             try
