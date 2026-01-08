@@ -128,51 +128,56 @@ public class DailyTriggerService : BackgroundService
 
     private async Task TriggerApiAsync()
     {
-        //+读写2个方法，这里是[GET]读，web端[POST]写。
-        var listAll = new List<LinkItem>();
-        var subsList = new List<LinkItem>();
+        // 获取订阅列表：单独一个作用域，读完即毁
+        List<LinkItem> subsList;
         using (var scope = _scopeFactory.CreateScope())
         {
             var shared = scope.ServiceProvider.GetRequiredService<ISharedService>();
-            listAll = await shared.GetLinkItems();
-            subsList = listAll.Where(x => x.IsSubscribed == true).ToList();
-            Console.WriteLine($"配置中共有{listAll.Count}个主播，{subsList.Count}个订阅");
+            var listAll = await shared.GetLinkItems();
+            subsList = listAll.Where(x => x.IsSubscribed).ToList();
         }
+
+        if (subsList.Count == 0) return;
+
+        _logger.LogInformation($"配置中共有订阅：{subsList.Count}个");
+
+        // 🌟 核心优化：所有主播的检查共用一个 Scope
+        // 这样 BilibiliController 和相关服务只会被实例化一次，大幅降低内存抖动
+        using var businessScope = _scopeFactory.CreateScope();
+        var bili = businessScope.ServiceProvider.GetRequiredService<BilibiliController>();
+        var route = businessScope.ServiceProvider.GetRequiredService<RouteController>();
 
         for (int i = 0; i < subsList.Count; i++)
         {
             var linkItem = subsList[i];
             string url = linkItem.Url;
 
-            // 🌟 核心修改 3: 在作用域内执行服务操作
-            using (var scope = _scopeFactory.CreateScope())
+            try
             {
-                // 先检查是否开播
-                var bili = scope.ServiceProvider.GetRequiredService<BilibiliController>();
+                // 1. 获取房间 ID (静态方法不消耗实例内存)
                 string room_id = Shared.GetRoomId(url);
+
+                // 2. 检查开播状态
                 var room_info = await bili.GetRoomInfo(room_id);
-                if (room_info.live_status == 0)
+
+                if (room_info.live_status == 1) // 正在直播
+                {
+                    _logger.LogInformation($"[{i}] - 确定开播 - 准备录制: {url}");
+                    // 调用录制逻辑
+                    await route.Check(url, linkItem.Duration);
+                }
+                else if (room_info.live_status == 0) // 未开播
                 {
                     _logger.LogInformation($"[{i}] - 未开播 - {url}");
                 }
-                if (room_info.live_status == 1)
-                {
-                    // 确定开播开始录制
-                    var route = scope.ServiceProvider.GetRequiredService<RouteController>();
-                    try
-                    {
-                        await route.Check(url, linkItem.Duration);
-                        _logger.LogInformation("计划录制...");
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "调用 route.CheckAsync 失败。");
-                    }
-                }
-                else
+                else // 轮播中
                 {
                     _logger.LogInformation($"[{i}] - 在轮播 - {url}");
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"处理主播 [{i}] {url} 时发生异常");
             }
         }
     }

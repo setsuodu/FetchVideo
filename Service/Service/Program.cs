@@ -186,6 +186,32 @@ app.MapGet("/api/schedule/current", async (DailyTriggerService service) =>
         }
     });
 });
+// [GET] /api/debug/gc-collect
+app.MapGet("/api/debug/gc-collect", () =>
+{
+    // 获取当前正在运行的任务数，判断 ConcurrentDictionary 是否真的清空了
+    var ffmpegMgr = app.Services.GetRequiredService<FFmpegManager>();
+    int taskCount = ffmpegMgr.GetRunningTasks().Count;
+
+    long before = GC.GetTotalMemory(false) / 1024 / 1024;
+
+    // 强制触发 Full GC (Generation 2) 并压缩堆空间
+    // 这会把所有没有被引用的对象全部清理掉
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    GC.WaitForPendingFinalizers();
+
+    long after = GC.GetTotalMemory(true) / 1024 / 1024;
+
+    return Results.Ok(new
+    {
+        Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+        RunningFFmpegTasks = taskCount,
+        BeforeMB = before,
+        AfterMB = after,
+        ReleasedMB = before - after,
+        Analysis = after > 250 ? "警告：手动回收后内存依然较高，可能存在真泄露" : "提示：内存已回落，属于 .NET GC 正常延迟回收"
+    });
+});
 // 可选：默认跳转到 WebView
 app.MapGet("/", () => Results.Redirect("/index.html")); //重定向
 

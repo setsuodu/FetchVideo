@@ -17,7 +17,7 @@ public class FFmpegManager
     public FFmpegTask StartFFmpeg(string command, string up_name = "", int minute = 0)
     {
         var taskId = Guid.NewGuid().ToString();
-        Console.WriteLine($"ffmpeg任务: {taskId}, up: {up_name}");
+        //Console.WriteLine($"ffmpeg任务: {taskId}, up: {up_name}");
 
         var task = new FFmpegTask
         {
@@ -37,26 +37,35 @@ public class FFmpegManager
             {
                 FileName = "ffmpeg",
                 Arguments = command,
-                RedirectStandardInput = true,
+                // 彻底关闭所有重定向，不给 .NET 任何机会建立内存缓冲区
+                RedirectStandardInput = false,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
                 UseShellExecute = false,
-                CreateNoWindow = false, // 打印到console
+                CreateNoWindow = true, // Docker 环境不需要窗口
             };
             process.EnableRaisingEvents = true;
-            process.Exited += (s, e) =>
-            {
-                Console.WriteLine($"监听到 Exited: {process.ExitCode}");
-                //-875574520, s=System.Diagnostics.Process, e=System.EventArgs
-                task.Status = process.ExitCode == 0 ? "Completed" : "Error";
+            //process.Exited += (s, e) =>
+            //{
+            //    //Console.WriteLine($"监听到 Exited: {process.ExitCode}");
+            //    task.Status = process.ExitCode == 0 ? "Completed" : "Error";
+            //    _processes.TryRemove(taskId, out _);
+            //    process.Dispose(); // 在进程退出时手动释放 Process 资源
+            //};
+            EventHandler exitedHandler = null!;
+            exitedHandler = (s, e) => {
+                process.Exited -= exitedHandler; // 执行完立即解绑事件，斩断所有闭包引用
                 _processes.TryRemove(taskId, out _);
-                process.Dispose(); // 在进程退出时手动释放 Process 资源
+                process.Dispose();
             };
+            process.Exited += exitedHandler;
 
             try
             {
                 process.Start();
                 task.Process = process;
                 _processes.TryAdd(taskId, task);
-                Console.WriteLine($"info.process : {task.Process != null}");
+                //Console.WriteLine($"info.process : {task.Process != null}");
                 return task;
             }
             catch (Exception ex)
