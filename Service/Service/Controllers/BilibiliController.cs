@@ -3,8 +3,8 @@ using FetchVideo.Services;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace FetchVideo.Controllers;
 
@@ -36,14 +36,14 @@ public class BilibiliController : ControllerBase
         var apiUrl = $"{Shared.BILI_PLAYER}playurl?bvid={bvId}&cid={cid}&qn=80&fnval=16";
         var playUrlJson = await httpClient.GetStringAsync(apiUrl);
         //Console.WriteLine($"返回值: {playUrlJson}");
-        var jsonPlayer = JObject.Parse(playUrlJson);
+        var jsonPlayer = JsonNode.Parse(playUrlJson).AsObject();
 
-        var videoArray = jsonPlayer["data"]?["dash"]?["video"] as JArray;
+        var videoArray = jsonPlayer["data"]?["dash"]?["video"]?.AsArray();
         var bestVideo = videoArray.OrderByDescending(v => (int)v["width"]).First();
         var videoUrl = bestVideo["baseUrl"].ToString();
         //Console.WriteLine($"视频地址: {videoUrl}");
 
-        var audioArray = jsonPlayer["data"]?["dash"]?["audio"] as JArray;
+        var audioArray = jsonPlayer["data"]?["dash"]?["audio"]?.AsArray();
         var bestAudio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
         var audioUrl = bestAudio["baseUrl"].ToString();
         //Console.WriteLine($"音频地址: {audioUrl}");
@@ -123,17 +123,17 @@ public class BilibiliController : ControllerBase
         var httpClient = new HttpClient();
         string json = await httpClient.GetStringAsync(finalUrl);
         //Console.WriteLine($"返回值: {json}");
-        var jsonObject = JObject.Parse(json);
+        var jsonObject = JsonNode.Parse(json).AsObject();
         VideoView view = new VideoView
         {
             owner = new Owner
             {
-                mid = jsonObject["data"]["owner"]["mid"].ToString(), //B站Uid
-                name = jsonObject["data"]["owner"]["name"].ToString(), //B站用户名
-                face = jsonObject["data"]["owner"]["face"].ToString(), //头像
+                mid = jsonObject["data"]?["owner"]?["mid"]?.ToString(), //B站Uid
+                name = jsonObject["data"]?["owner"]?["name"]?.ToString(), //B站用户名
+                face = jsonObject["data"]?["owner"]?["face"]?.ToString(), //头像
             },
-            title = jsonObject["data"]["title"].ToString(),
-            cid = jsonObject["data"]["cid"].ToString()
+            title = jsonObject["data"]?["title"]?.ToString(),
+            cid = jsonObject["data"]?["cid"]?.ToString()
         };
         Console.WriteLine($"up-name={view.owner.name}, title={view.cid}, cid={view.cid}");
         return view;
@@ -156,9 +156,9 @@ public class BilibiliController : ControllerBase
         var httpClient = new HttpClient();
         string roomJson = await httpClient.GetStringAsync(finalUrl);
         //Console.WriteLine($"roomJson: {roomJson}");
-        var jsonData = JObject.Parse(roomJson);
+        var jsonData = JsonNode.Parse(roomJson).AsObject();
         //string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
-        var durlArray = jsonData["data"]?["durl"];
+        var durlArray = jsonData["data"]?["durl"]?.AsArray();
         //Console.WriteLine($"durlArray: {durlArray.Count()}"); //3
         string[] urls = new string[durlArray.Count()];
         for (int i = 0; i < durlArray.Count(); i++)
@@ -205,15 +205,15 @@ public class BilibiliController : ControllerBase
         var httpClient = new HttpClient();
         string roomJson = await httpClient.GetStringAsync(finalUrl);
         Console.WriteLine(roomJson);
-        var jsonObject = JObject.Parse(roomJson);
+        var jsonObject = JsonNode.Parse(roomJson).AsObject();
         var info = new RoomInfo
         {
-            uid = jsonObject["data"]["uid"].ToObject<double>(), //直播间Up主
-            live_status = jsonObject["data"]["live_status"].ToObject<byte>(), //是否开播
-            title = jsonObject["data"]["title"].ToString(), //直播间标题
-            user_cover = jsonObject["data"]["user_cover"].ToString(),
-            parent_area_name = jsonObject["data"]["parent_area_name"].ToString(),
-            area_name = jsonObject["data"]["area_name"].ToString(),
+            uid = jsonObject["data"]["uid"].GetValue<double>(), //直播间Up主
+            live_status = jsonObject["data"]["live_status"].GetValue<byte>(), //是否开播
+            title = jsonObject["data"]?["title"]?.ToString(), //直播间标题
+            user_cover = jsonObject["data"]?["user_cover"]?.ToString(),
+            parent_area_name = jsonObject["data"]?["parent_area_name"]?.ToString(),
+            area_name = jsonObject["data"]?["area_name"]?.ToString(),
         };
         return info;
     }
@@ -285,7 +285,8 @@ public class BilibiliController : ControllerBase
                          $"?media_id={mediaId}&pn={pn}&ps={ps}&platform=web";
 
             var resp = await RequestAsync(url);
-            var result = JsonSerializer.Deserialize<BiliFavResourceResponse>(resp, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var result = System.Text.Json.JsonSerializer.Deserialize<BiliFavResourceResponse>(resp, options);
             //json = resp;
             //Console.WriteLine("打印json");
             //Console.WriteLine(json);

@@ -17,12 +17,26 @@ public class ScheduleConfig
     public string TriggerTimesJson { get; set; } = "[]";     // 唯一真正有用的字段
 
     // 方便你代码里直接读写 List<string>
+    private List<string>? _triggerTimesCache;
     [NotMapped, JsonIgnore]
     public List<string> TriggerTimes
     {
-        get => string.IsNullOrWhiteSpace(TriggerTimesJson)
-            ? new List<string>()
-            : System.Text.Json.JsonSerializer.Deserialize<List<string>>(TriggerTimesJson)!;
-        set => TriggerTimesJson = System.Text.Json.JsonSerializer.Serialize(value);
+        get
+        {
+            // 如果缓存为空，才进行反序列化（只做一次）
+            if (_triggerTimesCache == null)
+            {
+                _triggerTimesCache = string.IsNullOrWhiteSpace(TriggerTimesJson)
+                    ? new List<string>()
+                    : System.Text.Json.JsonSerializer.Deserialize<List<string>>(TriggerTimesJson) ?? new List<string>();
+            }
+            return _triggerTimesCache;
+        }
+        set
+        {
+            // 更新时，同时更新缓存和 Json 字符串
+            _triggerTimesCache = value;
+            TriggerTimesJson = System.Text.Json.JsonSerializer.Serialize(value);
+        }
     }
 }
