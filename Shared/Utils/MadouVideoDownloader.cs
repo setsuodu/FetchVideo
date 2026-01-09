@@ -34,6 +34,7 @@ public class MadouVideoDownloader
 
     private static void Worker(BlockingCollection<MadouDto> queue, string saveFolder)
     {
+        int index = 0;
         while (!queue.IsCompleted)
         {
             if (!queue.TryTake(out MadouDto video, millisecondsTimeout: 1000))
@@ -42,10 +43,11 @@ public class MadouVideoDownloader
             string safeFileName = GetSafeFileName(video.Title) + ".mp4";
             string outputPath = Path.Combine(saveFolder, safeFileName);
 
+            index++;
             // 如果文件已存在且大于 10MB，视为已完整下载，跳过
             if (File.Exists(outputPath) && new FileInfo(outputPath).Length > 10 * 1024 * 1024)
             {
-                Console.WriteLine($"已存在，跳过: {video.Title} 👉 {outputPath}");
+                Console.WriteLine($"[{index}]已存在，跳过: {video.Title} 👉 {outputPath}");
                 continue;
             }
 
