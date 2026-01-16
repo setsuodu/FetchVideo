@@ -186,6 +186,22 @@ public class BilibiliController : ControllerBase
         var task = ffManager.StartFFmpeg(command, up_name, minute); //B站直播
         //Console.WriteLine($"FFmpeg任务状态: {task.Status}"); //Running
 
+        var roomInfo = await GetRoomInfo(room_id);
+        try
+        {
+            string savedPath = await HttpRemote.DownloadImageAsync(
+                roomInfo.user_cover,
+                desktopPath,
+                $"{up_name}_{timestamp}.jpg"  // 可选，自定义文件名，不带扩展名也可以
+            );
+            Console.WriteLine($"封面已保存到: {savedPath}");
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"封面下载失败: {ex.Message}");
+        }
+
+
         // 检测新人，加入列表
         LinkItem link = new LinkItem
         {
