@@ -187,20 +187,26 @@ public class BilibiliController : ControllerBase
         //Console.WriteLine($"FFmpeg任务状态: {task.Status}"); //Running
 
         var roomInfo = await GetRoomInfo(room_id);
-        try
+        if (!string.IsNullOrEmpty(roomInfo.user_cover))
         {
-            string savedPath = await HttpRemote.DownloadImageAsync(
-                roomInfo.user_cover,
-                desktopPath,
-                $"{up_name}_{timestamp}.jpg"  // 可选，自定义文件名，不带扩展名也可以
-            );
-            Console.WriteLine($"封面已保存到: {savedPath}");
+            try
+            {
+                string savedPath = await HttpRemote.DownloadImageAsync(
+                    roomInfo.user_cover,
+                    desktopPath,
+                    $"{up_name}_{timestamp}.jpg"  // 可选，自定义文件名，不带扩展名也可以
+                );
+                Console.WriteLine($"封面已保存到: {savedPath}");
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"封面下载失败: {ex.Message}");
+            }
         }
-        catch (HttpRequestException ex)
+        else
         {
-            Console.WriteLine($"封面下载失败: {ex.Message}");
+            Console.WriteLine("没有封面");
         }
-
 
         // 检测新人，加入列表
         LinkItem link = new LinkItem
