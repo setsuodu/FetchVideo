@@ -159,11 +159,12 @@ public class BilibiliController : ControllerBase
         var jsonData = JsonNode.Parse(roomJson).AsObject();
         //string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
         var durlArray = jsonData["data"]?["durl"]?.AsArray();
-        //Console.WriteLine($"durlArray: {durlArray.Count()}"); //3
+        Console.WriteLine($"durlArray: {durlArray.Count()}"); //3
         string[] urls = new string[durlArray.Count()];
         for (int i = 0; i < durlArray.Count(); i++)
         {
             urls[i] = jsonData["data"]?["durl"]?[i]?["url"]?.ToString();
+            Console.WriteLine($"[{i}]: {urls[i]}");
         }
         string m3u8Url = await Shared.GetFirstValidUrlAsync(urls);
         Console.WriteLine($"m3u8Url: {m3u8Url}");
@@ -224,8 +225,9 @@ public class BilibiliController : ControllerBase
     public async Task<RoomInfo> GetRoomInfo(string room_id)
     {
         string finalUrl = $"{Shared.BILI_ROOM}get_info?room_id={room_id}";
-        var httpClient = new HttpClient();
-        string roomJson = await httpClient.GetStringAsync(finalUrl);
+        //var httpClient = new HttpClient();
+        //string roomJson = await httpClient.GetStringAsync(finalUrl);
+        string roomJson = await RequestAsync(finalUrl);
         Console.WriteLine(roomJson);
         var jsonObject = JsonNode.Parse(roomJson).AsObject();
         var info = new RoomInfo

@@ -26,7 +26,8 @@ RUN dotnet publish -c Release -o /app/publish
 
 # 阶段2: 运行
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine
-RUN apk add --no-cache ffmpeg
+RUN sed -i 's|http://dl-cdn.alpinelinux.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apk/repositories && \
+    apk add --no-cache ffmpeg
 WORKDIR /app
 COPY --from=build /app/publish .
 

@@ -68,6 +68,7 @@ public class SharedService : ISharedService
         var displayList = subsList.Select(item =>
         {
             string trimmedName = item.Name?.Trim() ?? string.Empty;
+            //TODO: 不是比名字，还要比ID
             bool isRecording = !string.IsNullOrEmpty(trimmedName) && runningNames.Contains(trimmedName);
 
             DateTime? startTime = null;
