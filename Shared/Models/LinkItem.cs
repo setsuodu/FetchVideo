@@ -202,6 +202,7 @@ public static class LinkItemSQL
             new LinkItem { Name = "卷非宝宝"          , Url = "https://live.bilibili.com/1792591259", IsSubscribed = true },
             new LinkItem { Name = "懒洋洋的困困"      , Url = "https://live.bilibili.com/1829025945", IsSubscribed = true },
             new LinkItem { Name = "火山鱼蛋要早睡"    , Url = "https://live.bilibili.com/1967348970", IsSubscribed = true },
+            new LinkItem { Name = "小七脆脆角"        , Url = "https://live.bilibili.com/30827279"  , IsSubscribed = true },
             // 不订阅的
             new LinkItem { Name = "香脆小海苔"        , Url = "https://live.bilibili.com/1842356567", IsSubscribed = false },
             new LinkItem { Name = "草莓果酱呐"        , Url = "https://live.bilibili.com/30950163"  , IsSubscribed = false },
@@ -369,7 +370,6 @@ public static class LinkItemSQL
             new LinkItem { Name = "板栗_123"          , Url = "https://live.bilibili.com/1954465030", IsSubscribed = false },
             new LinkItem { Name = "小念吖y"           , Url = "https://live.bilibili.com/1880052768", IsSubscribed = false },
             new LinkItem { Name = "奶酥爱吃鱼c"       , Url = "https://live.bilibili.com/1922179083", IsSubscribed = false },
-            new LinkItem { Name = "小七脆脆角"        , Url = "https://live.bilibili.com/30827279"  , IsSubscribed = false },
             new LinkItem { Name = "小O的心动日记"     , Url = "https://live.bilibili.com/1996444579", IsSubscribed = false },
             new LinkItem { Name = "沈佳壹-"           , Url = "https://live.bilibili.com/1991386767", IsSubscribed = false },
             new LinkItem { Name = "Xh-川渝甜妹"       , Url = "https://live.bilibili.com/32307212"  , IsSubscribed = false },
