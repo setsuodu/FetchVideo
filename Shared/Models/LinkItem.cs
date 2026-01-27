@@ -200,6 +200,8 @@ public static class LinkItemSQL
             new LinkItem { Name = "早早-笨蛋会幸运me" , Url = "https://live.bilibili.com/1929351230", IsSubscribed = true },
             new LinkItem { Name = "陈颠颠大王"        , Url = "https://live.bilibili.com/1819585285", IsSubscribed = true },
             new LinkItem { Name = "卷非宝宝"          , Url = "https://live.bilibili.com/1792591259", IsSubscribed = true },
+            new LinkItem { Name = "懒洋洋的困困"      , Url = "https://live.bilibili.com/1829025945", IsSubscribed = true },
+            new LinkItem { Name = "火山鱼蛋要早睡"    , Url = "https://live.bilibili.com/1967348970", IsSubscribed = true },
             // 不订阅的
             new LinkItem { Name = "香脆小海苔"        , Url = "https://live.bilibili.com/1842356567", IsSubscribed = false },
             new LinkItem { Name = "草莓果酱呐"        , Url = "https://live.bilibili.com/30950163"  , IsSubscribed = false },
@@ -570,7 +572,7 @@ public static class LinkItemSQL
             new LinkItem { Name = "七七七七月-减肥版" , Url = "https://live.bilibili.com/25393098"  , IsSubscribed = false },
             new LinkItem { Name = "霞霞呆"            , Url = "https://live.bilibili.com/1929359592", IsSubscribed = false },
             new LinkItem { Name = "与江亭dddd"        , Url = "https://live.bilibili.com/1830090023", IsSubscribed = false },
-            new LinkItem { Name = "楽楽小皇帝-18号生日版", Url = "https://live.bilibili.com/1713422095", IsSubscribed = false },
+            new LinkItem { Name = "楽楽小皇帝"        , Url = "https://live.bilibili.com/1713422095", IsSubscribed = false },
             new LinkItem { Name = "小鱼尾巴ovo"       , Url = "https://live.bilibili.com/1827706658", IsSubscribed = false },
             new LinkItem { Name = "冉冉是kk的小狗"    , Url = "https://live.bilibili.com/1954824295", IsSubscribed = false },
             new LinkItem { Name = "吃个圆圆子"        , Url = "https://live.bilibili.com/1735946278", IsSubscribed = false },
@@ -747,10 +749,8 @@ public static class LinkItemSQL
             new LinkItem { Name = "七七北杯"          , Url = "https://live.bilibili.com/6001757"   , IsSubscribed = false },
             new LinkItem { Name = "妮妮爱次薯条"      , Url = "https://live.bilibili.com/1815457655", IsSubscribed = false },
             new LinkItem { Name = "甜心佳宝"          , Url = "https://live.bilibili.com/1707152696", IsSubscribed = false },
-            //懒洋洋的困困,true
-            //火山鱼蛋要早睡,true
-            //申大超超,false
-            //可以继续添加更多默认链接（698）
+            new LinkItem { Name = "申大超超"          , Url = "https://live.bilibili.com/24323102"  , IsSubscribed = false }
+            //可以继续添加更多默认链接（701）
         };
     }
 
