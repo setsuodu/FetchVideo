@@ -191,10 +191,25 @@ public static class LinkItemSQL
             new LinkItem { Name = "水水lg"            , Url = "https://live.bilibili.com/1847353198", IsSubscribed = true },
             new LinkItem { Name = "蜡蜡不卡拉恩师李老板", Url = "https://live.bilibili.com/1814407101", IsSubscribed = true },
             new LinkItem { Name = "卷非宝宝"          , Url = "https://live.bilibili.com/1792591259", IsSubscribed = true },
+            new LinkItem { Name = "我不是小夕"        , Url = "https://live.bilibili.com/1882500991", IsSubscribed = true },
+            new LinkItem { Name = "一杯椰子水Ray_"    , Url = "https://live.bilibili.com/1790626717", IsSubscribed = true },
             new LinkItem { Name = "你清醒一点_阿"     , Url = "https://live.bilibili.com/1966811271", IsSubscribed = true },
             new LinkItem { Name = "-皮咔啾-"          , Url = "https://live.bilibili.com/1746234159", IsSubscribed = true },
             new LinkItem { Name = "流心奶黄包包_"     , Url = "https://live.bilibili.com/1741633204", IsSubscribed = true },
             new LinkItem { Name = "芋泥小知"          , Url = "https://live.bilibili.com/12087229"  , IsSubscribed = true },
+            new LinkItem { Name = "困困小宛"          , Url = "https://live.bilibili.com/1714602607", IsSubscribed = true },
+            new LinkItem { Name = "草莓布丁兔_"       , Url = "https://live.bilibili.com/1805590444", IsSubscribed = true },
+            new LinkItem { Name = "泡面速通小天才"    , Url = "https://live.bilibili.com/1793689833", IsSubscribed = true },
+            new LinkItem { Name = "乖乖沐一"          , Url = "https://live.bilibili.com/1882301100", IsSubscribed = true },
+            new LinkItem { Name = "岁岁不坏oo"        , Url = "https://live.bilibili.com/1881596825", IsSubscribed = true },
+            new LinkItem { Name = "料理猫喵"          , Url = "https://live.bilibili.com/1849824653", IsSubscribed = true },
+            new LinkItem { Name = "恋乔呢喃"          , Url = "https://live.bilibili.com/1785605871", IsSubscribed = true },
+            new LinkItem { Name = "呼噜鱼yyy"         , Url = "https://live.bilibili.com/1975551084", IsSubscribed = true },
+            new LinkItem { Name = "玥_玥上進"         , Url = "https://live.bilibili.com/1883370626", IsSubscribed = true },
+            new LinkItem { Name = "酸酸起不来"        , Url = "https://live.bilibili.com/1881595420", IsSubscribed = true },
+            new LinkItem { Name = "小盐大王ono"       , Url = "https://live.bilibili.com/1883377214", IsSubscribed = true },
+            new LinkItem { Name = "牛牛夹馍-"         , Url = "https://live.bilibili.com/1837225476", IsSubscribed = true },
+            new LinkItem { Name = "翊媛_"             , Url = "https://live.bilibili.com/7401961"   , IsSubscribed = true },
             // 不订阅的
             new LinkItem { Name = "スーパー无敌小猫卡", Url = "https://live.bilibili.com/1713829609", IsSubscribed = false },
             new LinkItem { Name = "樱酱又在说单口相声", Url = "https://live.bilibili.com/23122329"  , IsSubscribed = false },
@@ -346,7 +361,6 @@ public static class LinkItemSQL
             new LinkItem { Name = "阿鱼-财神附体"     , Url = "https://live.bilibili.com/1707009633", IsSubscribed = false },
             new LinkItem { Name = "不是赔钱虎"        , Url = "https://live.bilibili.com/1962439861", IsSubscribed = false },
             new LinkItem { Name = "好命玫瑰"          , Url = "https://live.bilibili.com/1898569298", IsSubscribed = false },
-            new LinkItem { Name = "我不是小夕"        , Url = "https://live.bilibili.com/1882500991", IsSubscribed = false },
             new LinkItem { Name = "一只闪闪酱"        , Url = "https://live.bilibili.com/1828677009", IsSubscribed = false },
             new LinkItem { Name = "酥芙蕾u"           , Url = "https://live.bilibili.com/1917292772", IsSubscribed = false },
             new LinkItem { Name = "超易碎小八酱"      , Url = "https://live.bilibili.com/1874800058", IsSubscribed = false },
@@ -657,7 +671,6 @@ public static class LinkItemSQL
             new LinkItem { Name = "木七柒OwO"         , Url = "https://live.bilibili.com/1917338897", IsSubscribed = false },
             new LinkItem { Name = "suki小蛋"          , Url = "https://live.bilibili.com/1880053228", IsSubscribed = false },
             new LinkItem { Name = "点点-21号公会赛"   , Url = "https://live.bilibili.com/1791983383", IsSubscribed = false },
-            new LinkItem { Name = "一杯椰子水Ray_"    , Url = "https://live.bilibili.com/1790626717", IsSubscribed = false },
             new LinkItem { Name = "学鱼文"            , Url = "https://live.bilibili.com/1791358663", IsSubscribed = false },
             new LinkItem { Name = "一条小糖糖"        , Url = "https://live.bilibili.com/52032"     , IsSubscribed = false },
             new LinkItem { Name = "眨眨眼早点睡"      , Url = "https://live.bilibili.com/1879185655", IsSubscribed = false },
@@ -893,8 +906,18 @@ public static class LinkItemSQL
             new LinkItem { Name = "蓝莓汁vvcc"        , Url = "https://live.bilibili.com/1820290880", IsSubscribed = false },
             new LinkItem { Name = "陈囡囡-"           , Url = "https://live.bilibili.com/1852350607", IsSubscribed = false },
             new LinkItem { Name = "天赋eat饼o"        , Url = "https://live.bilibili.com/1938415209", IsSubscribed = false },
-            new LinkItem { Name = "奈奈树_"           , Url = "https://live.bilibili.com/1806668430", IsSubscribed = false }
-            //可以继续添加更多默认链接（845）
+            new LinkItem { Name = "奈奈树_"           , Url = "https://live.bilibili.com/1806668430", IsSubscribed = false },
+            new LinkItem { Name = "超大块硬糖_"       , Url = "https://live.bilibili.com/1844979267", IsSubscribed = false },
+            new LinkItem { Name = "不可不爱圆"        , Url = "https://live.bilibili.com/1814406586", IsSubscribed = false },
+            new LinkItem { Name = "米兜大王oo"        , Url = "https://live.bilibili.com/1726398442", IsSubscribed = false },
+            new LinkItem { Name = "奶油纸包鱼-"       , Url = "https://live.bilibili.com/32747833"  , IsSubscribed = false },
+            new LinkItem { Name = "是阿酱酿"          , Url = "https://live.bilibili.com/339657"    , IsSubscribed = false },
+            new LinkItem { Name = "饭饭要开心"        , Url = "https://live.bilibili.com/1930272778", IsSubscribed = false },
+            new LinkItem { Name = "吱吱有荔枝"        , Url = "https://live.bilibili.com/1992690838", IsSubscribed = false },
+            new LinkItem { Name = "橙伊叶汐"          , Url = "https://live.bilibili.com/32688941"  , IsSubscribed = false },
+            new LinkItem { Name = "小天我就这样"      , Url = "https://live.bilibili.com/1713683991", IsSubscribed = false },
+            new LinkItem { Name = "雨诺Akari"         , Url = "https://live.bilibili.com/1542225"   , IsSubscribed = false }
+            //可以继续添加更多默认链接（868）
         };
     }
 
