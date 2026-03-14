@@ -166,6 +166,7 @@ public class BilibiliController : ControllerBase
             urls[i] = jsonData["data"]?["durl"]?[i]?["url"]?.ToString();
             Console.WriteLine($"[{i}]: {urls[i]}");
         }
+        //string m3u8Url = urls[0];
         string m3u8Url = await Shared.GetFirstValidUrlAsync(urls);
         Console.WriteLine($"m3u8Url: {m3u8Url}");
 
@@ -279,6 +280,7 @@ public class BilibiliController : ControllerBase
 
     private static readonly HttpClient client = new HttpClient();
     // ←←← 这里填你的 SESSDATA（必须登录有效）
+    // 【获取方法】直播页F12→Application→Storage→Cookies→bilibili（有效期半年左右）
     private const string SessData = "f0ce3d2c%2C1780465626%2C7172e%2Ac2CjBGS5AJwPcfnaaVc8XogrSvBMwv_ARSaHY0GVUqDuByTCC9RpyOO_86Ks4WuQE1whASVl9Zb2JMVDlPMVBNTEkxdnhhdUJlajFMTkpCeWU2aVV0Z21PVnR2TDVkWlMyY2c2V20yaE1sSTQ4d3o1MzlhZzJaOElMMmVpejN1OVpKbTBmU1B5RHpnIIEC";
     // 统一请求方法（自动加 Cookie 和常见 Header）
     static async Task<string> RequestAsync(string url)

@@ -102,6 +102,11 @@ public class Shared
         {
             // 优先尝试 HEAD 请求（只取响应头）
             using var headRequest = new HttpRequestMessage(HttpMethod.Head, url);
+
+            // 关键点：必须模拟 B 站官方环境
+            headRequest.Headers.Referrer = new Uri("https://live.bilibili.com/");
+            headRequest.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+
             using var headResponse = await _client.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead, ct);
 
             Console.WriteLine($"检查单个 URL 是否有效: {url}👉{headResponse.StatusCode}");
