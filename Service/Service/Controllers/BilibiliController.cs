@@ -1,10 +1,10 @@
-﻿using FetchVideo.Models;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using FetchVideo.Models;
 using FetchVideo.Services;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace FetchVideo.Controllers;
 
@@ -159,16 +159,42 @@ public class BilibiliController : ControllerBase
         var jsonData = JsonNode.Parse(roomJson).AsObject();
         //string m3u8Url = jsonData["data"]?["durl"]?[0]?["url"]?.ToString();
         var durlArray = jsonData["data"]?["durl"]?.AsArray();
-        Console.WriteLine($"durlArray: {durlArray.Count()}"); //3
+        //Console.WriteLine($"durlArray: {durlArray.Count()}"); //3
         string[] urls = new string[durlArray.Count()];
         for (int i = 0; i < durlArray.Count(); i++)
         {
             urls[i] = jsonData["data"]?["durl"]?[i]?["url"]?.ToString();
-            Console.WriteLine($"[{i}]: {urls[i]}");
+            //Console.WriteLine($"[{i}]: {urls[i]}");
         }
         //string m3u8Url = urls[0];
         string m3u8Url = await Shared.GetFirstValidUrlAsync(urls);
-        Console.WriteLine($"m3u8Url: {m3u8Url}");
+        //Console.WriteLine($"m3u8Url: {m3u8Url}");
+
+        //https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id=1975553478
+        string pkUrl = $"{Shared.BILI_PK}?room_id={room_id}";
+        //Console.WriteLine($"pkUrl: {pkUrl}");
+        string pkJson = await RequestAsync(pkUrl);
+        //Console.WriteLine($"pkJson: {pkJson}");
+        var jsonData2 = JsonNode.Parse(pkJson).AsObject();
+        // 非PK时，"universal_interact_info_v2": null,
+        var is_pk = jsonData2["data"]?["universal_interact_info_v2"] != null;
+        if (is_pk)
+        {
+            var members = jsonData2["data"]?["universal_interact_info_v2"]?["members"]?.AsArray();
+            Console.WriteLine($"→→PK人数: {members.Count}");
+            foreach (var up in members)
+            {
+                var _uname = up["uname"];
+                var _room_id = up["room_id"];
+                Console.WriteLine($"→→{_uname}的房间是{_room_id}");
+
+                up_name += $"([vs]{_uname})";
+            }
+        }
+        else
+        {
+            Console.WriteLine("→→没PK");
+        }
 
         // 输出目录
         string dateFolder = DateTime.Now.ToString("yyyy-MM-dd"); //"2025-12-09";
@@ -187,7 +213,7 @@ public class BilibiliController : ControllerBase
         Console.WriteLine($"FFmpeg命令是: {command}");
         var task = ffManager.StartFFmpeg(command, up_name, minute); //B站直播
         //Console.WriteLine($"FFmpeg任务状态: {task.Status}"); //Running
-
+        
         var roomInfo = await GetRoomInfo(room_id);
         if (!string.IsNullOrEmpty(roomInfo.user_cover))
         {
@@ -282,14 +308,17 @@ public class BilibiliController : ControllerBase
     // ←←← 这里填你的 SESSDATA（必须登录有效）
     // 【获取方法】直播页F12→Application→Storage→Cookies→bilibili（有效期半年左右）
     private const string SessData = "f0ce3d2c%2C1780465626%2C7172e%2Ac2CjBGS5AJwPcfnaaVc8XogrSvBMwv_ARSaHY0GVUqDuByTCC9RpyOO_86Ks4WuQE1whASVl9Zb2JMVDlPMVBNTEkxdnhhdUJlajFMTkpCeWU2aVV0Z21PVnR2TDVkWlMyY2c2V20yaE1sSTQ4d3o1MzlhZzJaOElMMmVpejN1OVpKbTBmU1B5RHpnIIEC";
+    private const string WebCookie = "buvid3=5CC72C42-1C15-B97D-A8BE-7E259C059E2846197infoc; b_nut=1763480746; _uuid=F64634EC-41D1-68C8-19F7-47EC4994DB9C47694infoc; buvid_fp=ac30564e89319fbb34558e05cf7787cd; buvid4=D22D5F87-3975-7BFF-63CB-D8CFC09209F747329-025111823-LfQJGmB1N2u9vWgqZ5LdlA%3D%3D; SESSDATA=6fcecffe%2C1779032799%2C1640c%2Ab1CjCdBZacmoJHtNvDoxNSPR_nyMXcHOysWkMtlhDLl1CDG0znFFCCMvATAXTucJ9P2tQSVlJCV2h3S1J0TlFFZ2Zsc1dzZU9aNVRKN3NXRGZlZWZhMzF5NTZ3VTcyak5paG4xNHdwZzlna1VoMVFsVm1wVDZqMnZua2V3b1Q5Rm1UbU9sZFFyUXBnIIEC; bili_jct=809e7003559471e244a1cb8fa9386bc5; DedeUserID=20573602; DedeUserID__ckMd5=7af13897284e133a; sid=6xa8fd46; theme-tip-show=SHOWED; rpdid=|(m~mYllmm)0J'u~YJR)|)|~; LIVE_BUVID=AUTO7617634841892045; theme-avatar-tip-show=SHOWED; theme-switch-show=SHOWED; hit-dyn-v2=1; CURRENT_QUALITY=32; ogv_device_support_hdr=0; ogv_device_support_dolby=0; home_feed_column=5; browser_resolution=1707-791; bili_ticket=eyJhbGciOiJIUzI1NiIsImtpZCI6InMwMyIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzUxMjQ2NTEsImlhdCI6MTc3NDg2NTM5MSwicGx0IjotMX0.Tjwa7TA0B0kPE3-rkYq7FDV17fdLU_Ry1jRJYjSICP4; bili_ticket_expires=1775124591; bp_t_offset_20573602=1186452563394822144; CURRENT_FNVAL=4048; PVID=26; b_lsid=5979A6C1_19D4B886E42";
     // 统一请求方法（自动加 Cookie 和常见 Header）
     static async Task<string> RequestAsync(string url)
     {
-        client.DefaultRequestHeaders.Remove("Cookie");
-        client.DefaultRequestHeaders.Add("Cookie", $"SESSDATA={SessData}");
-        client.DefaultRequestHeaders.Remove("User-Agent");
-        client.DefaultRequestHeaders.Add("User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        // 建议在初始化 client 时只设置一次，而不是每次 Request 都在那 Remove/Add
+        client.DefaultRequestHeaders.Clear();
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        client.DefaultRequestHeaders.Add("Referer", "https://live.bilibili.com/");
+        client.DefaultRequestHeaders.Add("Origin", "https://live.bilibili.com");
+        client.DefaultRequestHeaders.Add("Cookie", WebCookie);
+        //client.DefaultRequestHeaders.Add("Cookie", $"SESSDATA={SessData}");
 
         var resp = await client.GetAsync(url);
         resp.EnsureSuccessStatusCode();

@@ -12,6 +12,7 @@ public class Shared
     public const string BILI_SPACE = "https://api.bilibili.com/x/space/";
     public const string BILI_INTERFACE = "https://api.bilibili.com/x/web-interface/";
     public const string BILI_ROOM = "https://api.live.bilibili.com/room/v1/Room/";
+    public const string BILI_PK = "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom";
 
     public static string GetBvId(string url)
     {
