@@ -125,44 +125,8 @@
     <!-- 模块化 JS -->
     <script type="module" src="js/main.js"></script>
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-    <script>
-        // 修改这里的初始化代码
-        var vConsole = new VConsole({
-            theme: 'dark', // 可选
-            onReady: function () {
-                // 强制插件按钮靠左
-                const vcBtn = document.querySelector('.vc-switch');
-                if (vcBtn) {
-                    vcBtn.style.right = 'auto';
-                    vcBtn.style.left = '20px';
-                    vcBtn.style.bottom = '20px';
-                }
-            }
-        });
-    </script>
     <button type="button" class="btn btn-primary rounded-circle shadow" id="backToTop" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 45px; height: 45px; z-index: 1050;">
         ↑
     </button>
-    <script>
-        const backToTopBtn = document.getElementById('backToTop');
-
-        // 监听滚动事件
-        window.onscroll = function () {
-            // 当网页向下滚动 300px 时显示按钮
-            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-                backToTopBtn.style.display = "block";
-            } else {
-                backToTopBtn.style.display = "none";
-            }
-        };
-
-        // 点击按钮平滑回滚到顶部
-        backToTopBtn.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth' // 平滑滚动
-            });
-        });
-    </script>
 </body>
 </html >
