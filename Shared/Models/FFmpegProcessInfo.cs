@@ -10,6 +10,8 @@ public class FFmpegTask
     public Process Process { get; set; }
 
     public string UpName { get; set; } = string.Empty; // 主播名
+    public string RoomId { get; set; } = string.Empty; // 直播间Id
+
     public DateTime StartTime { get; set; } // 开始时间
     public int Duration { get; set; } = 2; // 录制时间（分钟）
     public string Status { get; set; } = "Running"; // Running / Stopped / Error
@@ -21,6 +23,7 @@ public class FFmpegTaskDto
     public string Command { get; set; } = string.Empty;
 
     public string UpName { get; set; } = string.Empty;
+    public string RoomId { get; set; } = string.Empty; // 直播间Id
 
     public DateTime StartTime { get; set; } // 开始时间
     public string StartTimeDisplay => StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");

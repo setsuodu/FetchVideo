@@ -14,7 +14,7 @@ public class FFmpegManager
     // 兼容（BV视频，B站直播，Youtube视频）
     // 传入实际命令 command
     // 传入任务描述
-    public FFmpegTask StartFFmpeg(string command, string up_name = "", int minute = 0)
+    public FFmpegTask StartFFmpeg(string command, string up_name = "", string roomid = "", int minute = 0)
     {
         var taskId = Guid.NewGuid().ToString();
         //Console.WriteLine($"ffmpeg任务: {taskId}, up: {up_name}");
@@ -26,6 +26,7 @@ public class FFmpegManager
             Process = null,
 
             UpName = up_name,
+            RoomId = roomid,
             StartTime = DateTime.UtcNow,
             Duration = minute,
             Status = "Running",
@@ -188,6 +189,7 @@ public class FFmpegManager
             TaskId = task.TaskId,
             Command = task.Command,
             UpName = task.UpName,
+            RoomId = task.RoomId,
             StartTime = task.StartTime,
             Duration = task.Duration,
             Status = task.Status,

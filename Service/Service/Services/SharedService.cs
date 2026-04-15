@@ -59,17 +59,16 @@ public class SharedService : ISharedService
 #endif
 
         // 将正在录制的 UpName 提取为 HashSet，快速匹配（忽略大小写和空格）
-        var runningNames = runningTasks
-            .Where(t => !string.IsNullOrWhiteSpace(t.UpName))
-            .Select(t => t.UpName.Trim())
+        var runningRooms = runningTasks
+            .Where(t => !string.IsNullOrWhiteSpace(t.RoomId))
+            .Select(t => t.RoomId.Trim())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // 转换为 DisplayDto
         var displayList = subsList.Select(item =>
         {
-            string trimmedName = item.Name?.Trim() ?? string.Empty;
-            //TODO: 不是比名字，还要比ID
-            bool isRecording = !string.IsNullOrEmpty(trimmedName) && runningNames.Contains(trimmedName);
+            string trimmedRoomId = item.RoomId?.Trim() ?? string.Empty; // 用 RoomId 判断
+            bool isRecording = !string.IsNullOrEmpty(trimmedRoomId) && runningRooms.Contains(trimmedRoomId);
 
             DateTime? startTime = null;
             int durationSeconds = 0;
@@ -81,7 +80,7 @@ public class SharedService : ISharedService
 
                 // 找到对应的任务，取出开始时间和时长
                 var task = runningTasks.FirstOrDefault(t =>
-                    string.Equals(t.UpName?.Trim(), trimmedName, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(t.RoomId?.Trim(), trimmedRoomId, StringComparison.OrdinalIgnoreCase));
 
                 if (task != null)
                 {

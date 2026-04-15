@@ -211,7 +211,7 @@ public class BilibiliController : ControllerBase
         // FFmpeg 转码
         string command = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         Console.WriteLine($"FFmpeg命令是: {command}");
-        var task = ffManager.StartFFmpeg(command, up_name, minute); //B站直播
+        var task = ffManager.StartFFmpeg(command, up_name, room_id, minute); //B站直播
         //Console.WriteLine($"FFmpeg任务状态: {task.Status}"); //Running
         
         var roomInfo = await GetRoomInfo(room_id);

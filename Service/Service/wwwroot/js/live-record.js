@@ -50,6 +50,7 @@ export function initLiveRecordManager() {
                         <th style="width:60px;">序号</th>
                         <th style="width:140px;">状态</th>
                         <th>主播</th>
+                        <th>房间号</th>
                         <th style="width:120px;text-align:center;">是否订阅</th>
                     </tr>
                 </thead>
@@ -86,6 +87,7 @@ export function initLiveRecordManager() {
                         <td class="upname" title="${escapeHtml(item.Name || '-')}">
                             ${escapeHtml(item.Name || '-')}
                         </td>
+                        <td>${escapeHtml(item.RoomId || '-')}</td>
                         <td style="text-align:center;">
                             <label class="toggle-switch">
                                 <input type="checkbox"
