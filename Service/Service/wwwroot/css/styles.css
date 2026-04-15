@@ -206,3 +206,12 @@ input:checked + .slider:before {
     text-shadow: 1px 1px 1px rgba(255,255,255,0.9);
     line-height: 1.6; /* 垂直居中微调 */
 }
+
+/* styles.css */
+#backToTop {
+    transition: opacity 0.3s ease-in-out;
+    /* 如果不想用 JS 直接改 display，可以用类名控制显隐 */
+}
+#backToTop:hover {
+    transform: scale(1.1);
+}
