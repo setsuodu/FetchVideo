@@ -35,15 +35,15 @@ public class LinkItemController : ControllerBase
         if (linkList == null || !linkList.Any())
             return BadRequest("列表不能为空");
 
-        var urls = linkList.Select(l => l.Url).ToList(); //先查询
+        var urls = linkList.Select(l => l.RoomId).ToList(); //先查询
 
         var existingUrls = await _context.LinkItems
-            .Where(l => urls.Contains(l.Url))
-            .Select(l => l.Url)
+            .Where(l => urls.Contains(l.RoomId))
+            .Select(l => l.RoomId)
             .ToListAsync();
 
         // 过滤掉已存在的
-        var newItems = linkList.Where(l => !existingUrls.Contains(l.Url)).ToList();
+        var newItems = linkList.Where(l => !existingUrls.Contains(l.RoomId)).ToList();
 
         if (newItems.Any())
         {
@@ -54,6 +54,7 @@ public class LinkItemController : ControllerBase
         return Ok(new { message = "批量添加成功", count = linkList.Count });
     }
 
+    // 开始下载，检查是否添加 SQL
     // POST: api/LinkItem/add_live_room
     [HttpPost("add_live_room")]
     public async Task<IActionResult> AddLiveRoom([FromBody] LinkItem link)

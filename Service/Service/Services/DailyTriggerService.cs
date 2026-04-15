@@ -150,21 +150,18 @@ public class DailyTriggerService : BackgroundService
         for (int i = 0; i < subsList.Count; i++)
         {
             var linkItem = subsList[i];
-            string url = linkItem.Url;
+            string room_id = linkItem.RoomId;
+            string url = Shared.BILI_LIVE + room_id;
 
             try
             {
-                // 1. 获取房间 ID (静态方法不消耗实例内存)
-                string room_id = Shared.GetRoomId(url);
-
-                // 2. 检查开播状态
+                // 检查开播状态
                 var room_info = await bili.GetRoomInfo(room_id);
 
                 if (room_info.live_status == 1) // 正在直播
                 {
                     _logger.LogInformation($"[{i}] - 确定开播 - 准备录制: {url}");
-                    // 调用录制逻辑
-                    await route.Check(url, linkItem.Duration);
+                    await route.Check(url, linkItem.Duration); // 开始录制
                 }
                 else if (room_info.live_status == 0) // 未开播
                 {

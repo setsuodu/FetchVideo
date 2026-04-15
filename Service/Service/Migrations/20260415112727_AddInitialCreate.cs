@@ -5,7 +5,7 @@
 namespace FetchVideo.Service.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class AddInitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,7 +17,7 @@ namespace FetchVideo.Service.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Url = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    RoomId = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                     IsSubscribed = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false),
                     Duration = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 2)
                 },

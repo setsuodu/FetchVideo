@@ -15,6 +15,23 @@ A Windows console application, to download a video you should follow these steps
 3. press 'enter' on your keyboard;
 4. check your desktop, .mp4 file is there;
 
+## Migrate
+
+1. Delete
+```
+dotnet ef migrations remove
+```
+
+2. Add
+```
+dotnet ef migrations add Init
+```
+
+3. Update
+```
+dotnet ef database update
+```
+
 ## Run
 
 ```

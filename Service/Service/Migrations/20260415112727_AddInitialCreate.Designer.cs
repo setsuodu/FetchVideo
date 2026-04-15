@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FetchVideo.Service.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251219093547_Init")]
-    partial class Init
+    [Migration("20260415112727_AddInitialCreate")]
+    partial class AddInitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,7 +40,7 @@ namespace FetchVideo.Service.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("RoomId")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");

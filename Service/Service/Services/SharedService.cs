@@ -25,14 +25,14 @@ public class SharedService : ISharedService
     {
         // 这里放业务逻辑（如数据库查询、计算等）
         var existingUrl = await _context.LinkItems
-            .Where(x => (link.Name == x.Name || link.Url == x.Url))
+            .Where(x => (link.Name == x.Name || link.RoomId == x.RoomId))
             .FirstOrDefaultAsync();
         if (existingUrl != null)
         {
             Console.WriteLine("AddNewLiveRoom: 已存在");
             return false;
         }
-        Console.WriteLine($"AddNewLiveRoom: {link.Name}:{link.Url}");
+        Console.WriteLine($"AddNewLiveRoom: {link.Name}:{link.RoomId}");
         _context.LinkItems.Add(link);
         await _context.SaveChangesAsync();
         return true;
@@ -95,7 +95,7 @@ public class SharedService : ISharedService
             {
                 Id = item.Id,
                 Name = item.Name ?? string.Empty,
-                Url = item.Url ?? string.Empty,
+                RoomId = item.RoomId ?? string.Empty,
                 IsSubscribed = item.IsSubscribed,
                 CurrentStatus = status,
                 StartTime = startTime,

@@ -240,7 +240,7 @@ public class BilibiliController : ControllerBase
         LinkItem link = new LinkItem
         {
             Name = up_name,
-            Url = Shared.CleanUrl(url),
+            RoomId = Shared.GetRoomId(Shared.CleanUrl(url)),
             IsSubscribed = false,
         };
         bool added = await _sharedService.AddNewLiveRoom(link);
@@ -252,8 +252,6 @@ public class BilibiliController : ControllerBase
     public async Task<RoomInfo> GetRoomInfo(string room_id)
     {
         string finalUrl = $"{Shared.BILI_ROOM}get_info?room_id={room_id}";
-        //var httpClient = new HttpClient();
-        //string roomJson = await httpClient.GetStringAsync(finalUrl);
         string roomJson = await RequestAsync(finalUrl);
         Console.WriteLine(roomJson);
         var jsonObject = JsonNode.Parse(roomJson).AsObject();
@@ -275,8 +273,6 @@ public class BilibiliController : ControllerBase
     public async Task<string> GetTitleAsync(string url)
     {
         string title = "找不到 <title> 标签";
-        //string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        //string logFile = $"log_{timestamp}.txt";
 
         using (var http = new HttpClient())
         {
@@ -298,9 +294,6 @@ public class BilibiliController : ControllerBase
 
             string title_result = Shared.GetMiddleText(title);
             return title_result;
-
-            //Console.WriteLine("标题：" + title);
-            //return $"{title_result}_{timestamp}";
         }
     }
 

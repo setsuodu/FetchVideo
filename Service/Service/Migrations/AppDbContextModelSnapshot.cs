@@ -37,7 +37,7 @@ namespace FetchVideo.Service.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("RoomId")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");

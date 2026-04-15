@@ -7,7 +7,7 @@ namespace FetchVideo.Utils;
 public class Shared
 {
     public const string BILI_VIDEO = "https://www.bilibili.com/video/";
-    public const string BILI_LIVE = "https://live.bilibili.com/";
+    public const string BILI_LIVE = "https://live.bilibili.com/"; // 直播间前缀
     public const string BILI_PLAYER = "https://api.bilibili.com/x/player/";
     public const string BILI_SPACE = "https://api.bilibili.com/x/space/";
     public const string BILI_INTERFACE = "https://api.bilibili.com/x/web-interface/";
@@ -203,12 +203,6 @@ public class Shared
 
         // 2. 保留一个 ?，去掉所有查询参数
         string baseUrl = uri.Scheme + "://" + uri.Authority + path;
-
-        // 如果原始 URL 有 ?，保留一个 ?（但不带参数）
-        //if (url.Contains('?'))
-        //{
-        //    baseUrl += "?";
-        //}
 
         return baseUrl;
     }

@@ -25,7 +25,7 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Url).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.RoomId).IsRequired().HasMaxLength(500);
             entity.Property(e => e.Duration).HasDefaultValue(2);
             entity.Property(e => e.IsSubscribed).HasDefaultValue(false);
         });
