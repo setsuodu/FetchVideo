@@ -3,7 +3,6 @@ export function initVideoDownloader() {
     const form = document.getElementById('videoDownloadForm');
     const submitBtn = form.querySelector('button[type="submit"]');
     const videoInput = document.getElementById('videoUrl');
-    //const videoLengh = document.getElementById('recordLength');
     const DEFAULT_LENGTH = 10; // 定义默认值常量（placeholder只作提示，没有值）
     const resultDiv = document.getElementById('videoResult');
     const progressBar = document.getElementById('videoProgressBar');
