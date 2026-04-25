@@ -29,10 +29,12 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: setsuodu/fetch-service # 您的 Docker Hub 镜像名称
+          images: setsuodu/fetch-service
           tags: |
-            type=sha,format=short,prefix= # 使用短 SHA 作为标签 (例如: setsuodu/fetch-service:abcdef1)
-            type=raw,value=latest         # 推送 latest 标签 (例如: setsuodu/fetch-service:latest)
+            # 如果你推送的是 git tag (如 v1.2.3)，它会提取 1.2.3 作为镜像标签
+            type=semver,pattern={{version}}
+            # 同时也保留一个 latest 标签
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
