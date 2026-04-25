@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '*'  # 只要是 Tag 统统抓过来，不管带不带 v，也不管是不是版本号
 
 jobs:
   build-and-push-docker-image:
