@@ -5,7 +5,7 @@
 namespace FetchVideo.Service.Migrations
 {
     /// <inheritdoc />
-    public partial class AddInitialCreate : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
