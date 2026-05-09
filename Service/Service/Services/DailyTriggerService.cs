@@ -161,7 +161,7 @@ public class DailyTriggerService : BackgroundService
                 if (room_info.live_status == 1) // 正在直播
                 {
                     _logger.LogInformation($"[{i}] - 确定开播 - 准备录制: {url}");
-                    await route.Check(url, linkItem.Duration); // 开始录制
+                    await route.Check(url, linkItem.Duration, false); // 开始录制
                 }
                 else if (room_info.live_status == 0) // 未开播
                 {

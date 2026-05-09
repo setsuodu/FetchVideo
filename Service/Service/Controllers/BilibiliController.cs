@@ -141,7 +141,7 @@ public class BilibiliController : ControllerBase
 
     // B站直播流录制
     [HttpGet("get_bili_live")]
-    public async Task<FFmpegTaskDto> LiveRecord(string url, int minute)
+    public async Task<FFmpegTaskDto> LiveRecord(string url, int minute, bool subscribe = false)
     {
         string room_id = Shared.GetRoomId(url);
         //Console.WriteLine($"是 Bilibili直播: 房间: {room_id}");
@@ -241,7 +241,7 @@ public class BilibiliController : ControllerBase
         {
             Name = up_name,
             RoomId = Shared.GetRoomId(Shared.CleanUrl(url)),
-            IsSubscribed = false,
+            IsSubscribed = subscribe,
         };
         bool added = await _sharedService.AddNewLiveRoom(link);
 

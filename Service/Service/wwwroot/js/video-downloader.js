@@ -159,11 +159,11 @@ export function initVideoDownloader() {
 
         const videoUrl = encodeURIComponent(extractCleanUrl(videoInput.value)); // 移除空白字符
         console.log(`videoUrl: ${videoUrl}`);
+        let subscribe = false;
 
-        //const lengthNum = getRecordLength();
         recordLength = getRecordLength();
         console.log(`录制时长: ${recordLength} min`);
-        const apiUrl = `/api/route/check?url=${videoUrl}&length=${recordLength}`;
+        const apiUrl = `/api/route/check?url=${videoUrl}&length=${recordLength}&subscribe=${subscribe}`;
 
         try {
             const responsePromise = fetch(apiUrl, {

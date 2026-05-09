@@ -62,6 +62,9 @@ dotnet build -c Release
 
 # Deploy
 
+Ctrl + `
+D:\GitHub\[Workspace]\FetchVideo>
+
 💻从项目根目录构建（推荐）：
 ```
 docker build -f Service/Service/Dockerfile -t fetch-service .

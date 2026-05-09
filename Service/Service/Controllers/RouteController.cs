@@ -23,7 +23,7 @@ public class RouteController : ControllerBase //路由器
     }
 
     [HttpGet("check")]
-    public async Task<IActionResult> Check([FromQuery] string url, [FromQuery] int? length)
+    public async Task<IActionResult> Check([FromQuery] string url, [FromQuery] int? length, bool subscribe = false)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
@@ -55,7 +55,7 @@ public class RouteController : ControllerBase //路由器
         else if (url.Contains("live.bilibili"))
         {
             int minute = length ?? 10; //默认十分钟
-            dto = await bili.LiveRecord(url, minute);
+            dto = await bili.LiveRecord(url, minute, subscribe);
         }
         else if (url.Contains("youtu"))
         {
