@@ -11,6 +11,10 @@ export function initVideoDownloader() {
     const logLink = document.getElementById('videoLogLink');
     const clearBtn = document.getElementById('clearBtn');
 
+    // ====================== 新增：订阅 Toggle ======================
+    const subscribeToggle = document.getElementById('subscribeToggle');
+    // ============================================================
+
     let currentTaskId = null; // 记录当前录制任务 ID
     let isRecording = false;
 
@@ -31,11 +35,8 @@ export function initVideoDownloader() {
 
         } else {
             // 3. 如果用户输入了值，则将其转换为数字。
-            // 使用 Number() 或 parseFloat() 来处理数字类型的转换。
             finalLength = Number(inputValue);
 
-            // 可选：如果用户输入了非数字内容 (虽然 type="number" 限制了，但仍可能出现)，
-            // 或者用户删除了所有内容导致值为 0 等，这里可以添加额外的 NaN 检查：
             if (isNaN(finalLength)) {
                 console.warn("输入值无效，回退到默认值。");
                 finalLength = DEFAULT_LENGTH;
@@ -63,14 +64,11 @@ export function initVideoDownloader() {
             seconds++;
             progressBar.textContent = formatTime(seconds);
 
-            // 计时超过预设时间，UI停止
             if (seconds > recordLengthSec) {
                 console.log(`计时器到了: ${seconds}`);
                 if (isRecording && currentTaskId) {
                     console.log(`计时器满足条件，重置 taskId=${currentTaskId}`);
                     stopTimer();
-                    //await stopRecording(); //后台自己会停，不用发请求
-                    // 执行 try{ } 中的重置流程
                     status.innerHTML = `
                         <strong class="text-info">已停止录制</strong><br>
                         任务 ID: <code>${currentTaskId}</code><br>
@@ -78,7 +76,6 @@ export function initVideoDownloader() {
                     `;
                     log.textContent = `录制已终止，文件已保存。`;
 
-                    // 执行 finally{ } 中的重置流程
                     setStartButton();
                     unlockForm();
                     progressBar.style.width = '0%';
@@ -88,12 +85,10 @@ export function initVideoDownloader() {
             }
         }, 1000);
     }
-    // 停止时钟
     function stopTimer() {
         clearInterval(timer);
         timer = null;
     }
-    // 重置时钟
     function resetTimer() {
         stopTimer();
         seconds = 0;
@@ -101,7 +96,6 @@ export function initVideoDownloader() {
     }
     /* 时钟功能end */
     /////////////////
-
 
     // 锁定表单
     const lockForm = () => {
@@ -119,7 +113,6 @@ export function initVideoDownloader() {
 
     // 设置按钮为“停止录制”（红色）
     const setStopButton = () => {
-        //console.log('停止录制');
         submitBtn.textContent = '停止录制';
         submitBtn.classList.remove('btn-success');
         submitBtn.classList.add('btn-danger');
@@ -157,13 +150,23 @@ export function initVideoDownloader() {
         log.textContent = '';
         logLink.classList.add('d-none');
 
-        const videoUrl = encodeURIComponent(extractCleanUrl(videoInput.value)); // 移除空白字符
+        const videoUrl = encodeURIComponent(extractCleanUrl(videoInput.value));
         console.log(`videoUrl: ${videoUrl}`);
+
+        // ====================== 新增订阅逻辑 ======================
         let subscribe = false;
+        if (subscribeToggle) {
+            subscribe = subscribeToggle.checked;
+        }
+        console.log(`[订阅] 状态: ${subscribe}`);
+        // =========================================================
 
         recordLength = getRecordLength();
         console.log(`录制时长: ${recordLength} min`);
+
+        // ====================== 关键修改：加上 subscribe ======================
         const apiUrl = `/api/route/check?url=${videoUrl}&length=${recordLength}&subscribe=${subscribe}`;
+        // =====================================================================
 
         try {
             const responsePromise = fetch(apiUrl, {
@@ -171,7 +174,6 @@ export function initVideoDownloader() {
                 headers: { 'Accept': 'application/json' }
             });
 
-            // 假进度
             let fakeProgress = 0;
             const fakeInterval = setInterval(() => {
                 fakeProgress += Math.random() * 8 + 2;
@@ -182,26 +184,22 @@ export function initVideoDownloader() {
 
             const response = await responsePromise;
             const data = await response.json();
-            console.log(`收到响应: ${data}👈无法展开`);
-            console.log(data);
+            console.log(`收到响应:`, data);
             clearInterval(fakeInterval);
 
             if (!response.ok) throw new Error(data.message || data.error || '请求失败');
 
-            // —— 成功响应处理 ——
             progressBar.style.width = '100%';
             progressBar.textContent = '100%';
-            progressBar.classList.remove('progress-bar-animated'); 
+            progressBar.classList.remove('progress-bar-animated');
 
-            // 判断是否为【直播录制任务】
             const isLiveRecording = data.downloadUrl == "Convert";
 
             if (isLiveRecording) {
-                //console.log(`录制时长: ${getRecordLength()}`);
-                currentTaskId = data.file; // 提取 taskId
-                setStopButton(); // 显示`停止录制`
-                unlockForm(); // 激活可点击
-                resetTimer();  // 每次提交都从 00:00 开始
+                currentTaskId = data.file;
+                setStopButton();
+                unlockForm();
+                resetTimer();
                 startTimer();
                 progressBar.classList.add('progress-bar-animated');
 
@@ -214,7 +212,6 @@ export function initVideoDownloader() {
                 log.textContent = `直播录制已启动，任务 ID: ${currentTaskId}，点击按钮可停止。`;
 
             } else {
-                // 普通下载完成
                 setStartButton();
                 status.innerHTML = `
                     <strong class="text-success">下载完成！</strong><br>
@@ -234,23 +231,24 @@ export function initVideoDownloader() {
         } catch (err) {
             progressBar.style.width = '100%';
             progressBar.textContent = '错误';
-            progressBar.classList.add('bg-danger'); // 红色动画
+            progressBar.classList.add('bg-danger');
             status.innerHTML = `<span class="text-danger">错误: ${err.message}</span>`;
             log.textContent = '请检查 URL 或服务状态。';
-            setStartButton(); // 错误也恢复按钮
+            setStartButton();
         } finally {
             if (!isRecording) {
-                unlockForm(); // 只有非录制状态才解锁输入框
+                unlockForm();
             }
         }
     });
-    // 清理 URL 如👉【此女极其擅长嫌弃脸-哔哩哔哩直播】 https://b23.tv/4eU6Qsp
+
+    // 清理 URL
     function extractCleanUrl(str) {
         const match = str.match(/(https?:\/\/[^\s"。』」】）》]+)/i);
         return match ? match[1].trim() : '';
     }
 
-    // —— 停止录制函数 ——
+    // 停止录制函数
     async function stopRecording() {
         if (!currentTaskId) return;
 
@@ -268,7 +266,6 @@ export function initVideoDownloader() {
 
             if (!stopResponse.ok) throw new Error(stopData.message || '停止失败');
 
-            // 停止成功
             status.innerHTML = `
                 <strong class="text-info">已停止录制</strong><br>
                 任务 ID: <code>${currentTaskId}</code><br>
@@ -306,6 +303,6 @@ export function initVideoDownloader() {
     clearBtn.addEventListener('click', function () {
         videoInput.value = '';
         clearBtn.classList.add('d-none');
-        videoInput.focus(); // Optional: refocus on input
+        videoInput.focus();
     });
 }
