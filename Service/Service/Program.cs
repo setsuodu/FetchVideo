@@ -70,13 +70,11 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
-
-// 关键：启用 wwwroot 静态文件
-app.UseStaticFiles();// <-- 新增
-app.UseRouting();
+//app.UseHttpsRedirection();
+app.UseStaticFiles(); // 1. 先看是不是拿图片、html等静态文件
+app.UseRouting();    // 2. 再进路由匹配
+app.UseAuthorization(); // 3. 鉴权
+app.MapControllers();  // 4. 最后找 Controller
 
 // Swagger
 if (app.Environment.IsDevelopment())
