@@ -52,6 +52,7 @@ export function initLiveRecordManager() {
                         <th>主播</th>
                         <th>房间号</th>
                         <th style="width:120px;text-align:center;">是否订阅</th>
+                        <th style="width:160px;">最后录制</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -80,6 +81,8 @@ export function initLiveRecordManager() {
                         statusHtml = `<span class="badge other">空闲</span>`;
                     }
 
+                    const lastRecordedHtml = formatLastRecorded(item.LastRecordedAt);
+
                     html += `
                     <tr>
                         <td>${index + 1}</td>
@@ -96,6 +99,7 @@ export function initLiveRecordManager() {
                                 <span class="slider"></span>
                             </label>
                         </td>
+                        <td class="last-recorded">${lastRecordedHtml}</td>
                     </tr>`;
                 });
             }
@@ -224,7 +228,20 @@ export function initLiveRecordManager() {
         });
     }
 
-    //👆合并👇//
+    // 格式化最后录制时间
+    function formatLastRecorded(dateStr) {
+        if (!dateStr) return '<span style="color:#999;">从未录制</span>';
+
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return `<span style="color:#4ade80;">今天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}</span>`;
+        if (diffDays === 1) return `<span style="color:#fbbf24;">昨天</span>`;
+        if (diffDays < 7) return `<span>${diffDays}天前</span>`;
+
+        return `<span style="color:#999;">${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}</span>`;
+    }
 
     /**
      * POST 停止所有任务

@@ -215,3 +215,8 @@ input:checked + .slider:before {
 #backToTop:hover {
     transform: scale(1.1);
 }
+
+.last-recorded {
+    white-space: nowrap;
+    font-size: 0.9em;
+}

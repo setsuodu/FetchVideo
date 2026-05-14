@@ -98,7 +98,11 @@ public class SharedService : ISharedService
                 IsSubscribed = item.IsSubscribed,
                 CurrentStatus = status,
                 StartTime = startTime,
-                DurationSeconds = durationSeconds
+                DurationSeconds = durationSeconds,
+
+                // ================== 新增 ==================
+                LastRecordedAt = item.LastRecordedAt
+                // =========================================
             };
         }).ToList();
 

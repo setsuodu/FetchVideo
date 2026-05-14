@@ -36,7 +36,7 @@ public class LinkItemDisplayDto
 
     public int DurationSeconds { get; set; } = 0;  // 计划录制时长（秒）
 
-    public DateTime? LastRecordedAt { get; set; }   // 新增
+    public DateTime? LastRecordedAt { get; set; }   // 新增，上一次录制时间
 }
 
 // 请求模型（只用于单个操作）
