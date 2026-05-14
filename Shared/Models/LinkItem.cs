@@ -14,6 +14,9 @@ public class LinkItem
     public bool IsSubscribed { get; set; } = false;  // 默认不订阅
 
     public int Duration { get; set; } = 2;  // 默认录制2分钟
+
+    // 新增：最后一次成功录制的时间（UTC，推荐）
+    public DateTime? LastRecordedAt { get; set; }
 }
 
 public class LinkItemDisplayDto
@@ -32,6 +35,8 @@ public class LinkItemDisplayDto
     public DateTime? StartTime { get; set; }  // 录制开始时间（UTC 或本地时间，保持一致即可）
 
     public int DurationSeconds { get; set; } = 0;  // 计划录制时长（秒）
+
+    public DateTime? LastRecordedAt { get; set; }   // 新增
 }
 
 // 请求模型（只用于单个操作）

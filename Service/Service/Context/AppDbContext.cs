@@ -28,6 +28,10 @@ public class AppDbContext : DbContext
             entity.Property(e => e.RoomId).IsRequired().HasMaxLength(500);
             entity.Property(e => e.Duration).HasDefaultValue(2);
             entity.Property(e => e.IsSubscribed).HasDefaultValue(false);
+            // 新增
+            entity.Property(e => e.LastRecordedAt)
+                  .HasColumnType("DATETIME")   // SQLite 中 DATETIME 实际存 TEXT，但 EF 会处理
+                  .IsRequired(false);          // 可空
         });
 
         base.OnModelCreating(modelBuilder);

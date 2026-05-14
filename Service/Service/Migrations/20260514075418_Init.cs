@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -19,7 +20,8 @@ namespace FetchVideo.Service.Migrations
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     RoomId = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                     IsSubscribed = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false),
-                    Duration = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 2)
+                    Duration = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 2),
+                    LastRecordedAt = table.Column<DateTime>(type: "DATETIME", nullable: true)
                 },
                 constraints: table =>
                 {
