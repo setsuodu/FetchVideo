@@ -146,8 +146,8 @@ public class BilibiliController : ControllerBase
     {
         string room_id = Shared.GetRoomId(url);
         //Console.WriteLine($"是 Bilibili直播: 房间: {room_id}");
-        string up_name = await GetTitleAsync(url); // 小福包iu_
-                                                   //Console.WriteLine($"直播标题: {title}");
+        string up_name = await GetTitleAsync(url);
+        //Console.WriteLine($"直播标题: {title}");
 
         int second = minute * 60;
         string finalUrl = $"{Shared.BILI_ROOM}playUrl?cid={room_id}&platform=web";

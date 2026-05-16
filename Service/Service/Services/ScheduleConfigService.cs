@@ -42,11 +42,22 @@ public class ScheduleConfigService
         if (times == null) throw new ArgumentNullException(nameof(times));
 
         var entity = await _db.Set<ScheduleConfig>()
-            .FirstOrDefaultAsync(x => x.Key == GlobalKey) ?? new ScheduleConfig { Key = GlobalKey };
+            .FirstOrDefaultAsync(x => x.Key == GlobalKey);
 
-        if (entity.Id == 0) _db.Set<ScheduleConfig>().Add(entity);
+        if (entity == null)
+        {
+            entity = new ScheduleConfig { Key = GlobalKey };
+            entity.TriggerTimes = times; // 触发 set，赋值 Cache 和 Json 字符串
+            _db.Set<ScheduleConfig>().Add(entity);
+        }
+        else
+        {
+            entity.TriggerTimes = times; // 触发 set，此时内部的 TriggerTimesJson 已经变了
 
-        entity.TriggerTimes = times;
+            // 👈【核心核心核心】加入下面这一行，强行通知 EF 物理字段被改了，必须生成 UPDATE
+            _db.Entry(entity).Property(x => x.TriggerTimesJson).IsModified = true;
+        }
+
         await _db.SaveChangesAsync();
     }
 }
