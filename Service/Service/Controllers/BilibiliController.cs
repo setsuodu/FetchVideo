@@ -1,10 +1,11 @@
-﻿using System.Text.Json;
-using System.Text.Json.Nodes;
-using FetchVideo.Models;
+﻿using FetchVideo.Models;
 using FetchVideo.Services;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace FetchVideo.Controllers;
 
@@ -146,7 +147,7 @@ public class BilibiliController : ControllerBase
         string room_id = Shared.GetRoomId(url);
         //Console.WriteLine($"是 Bilibili直播: 房间: {room_id}");
         string up_name = await GetTitleAsync(url); // 小福包iu_
-        //Console.WriteLine($"直播标题: {title}");
+                                                   //Console.WriteLine($"直播标题: {title}");
 
         int second = minute * 60;
         string finalUrl = $"{Shared.BILI_ROOM}playUrl?cid={room_id}&platform=web";
@@ -236,24 +237,41 @@ public class BilibiliController : ControllerBase
             Console.WriteLine("没有封面");
         }
 
-        // 检测新人，加入列表
+        // 1. 初始化 LinkItem 记录（默认设为 false 入库）
         LinkItem link = new LinkItem
         {
             Name = up_name,
             RoomId = Shared.GetRoomId(Shared.CleanUrl(url)),
-            IsSubscribed = subscribe,
+            IsSubscribed = false,
         };
+
+        // 2. 尝试添加新人入库（如果已存在则不重复添加）
         bool added = await _sharedService.AddNewLiveRoom(link);
 
+        // 3. 处理 subscribe 参数
+        // 如果 subscribe 是 false：直接跳过，什么都不做
+        // 如果 subscribe 是 true：直接在数据库中强制设为 true（只设为 true，绝不取反关掉）
+        if (subscribe)
+        {
+            var dbItem = await _sharedService._context.LinkItems
+                .FirstOrDefaultAsync(l => l.RoomId == link.RoomId);
 
-        // === 新增：更新最后录制时间 ===
-        // 先有房间ID，再有up主名字，最后录制时间
+            if (dbItem != null)
+            {
+                dbItem.IsSubscribed = true; // 强制设为 true，安全、防抖、符合逻辑
+
+                await _sharedService._context.SaveChangesAsync();
+                Console.WriteLine($"[{up_name}] 录制时传入了 subscribe=true，已确保该直播间处于【已订阅】状态。");
+            }
+        }
+
+        // === 更新最后录制时间 ===
         await _sharedService._context.UpdateLastRecordedAsync(room_id);   // 注意 _sharedService 有 _context
         Console.WriteLine($"[{up_name}] 录制启动成功，已更新 LastRecordedAt");
 
-
         return FFmpegManager.ConvertDto(task);
     }
+
     // 获取直播房间信息
     [HttpGet("get_bili_roominfo")]
     public async Task<RoomInfo> GetRoomInfo(string room_id)
