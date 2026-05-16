@@ -232,15 +232,30 @@ export function initLiveRecordManager() {
     function formatLastRecorded(dateStr) {
         if (!dateStr) return '<span style="color:#999;">从未录制</span>';
 
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+        // 【核心就在这里】
+        // 后端 Docker 存的是标准 UTC 并在 API 吐出了 ISO 格式，但少了个 'Z'。
+        // 我们在这里手动补上 'Z'，告诉 JavaScript 它是 UTC。
+        // 浏览器会自动把它 +8 小时，转换成真正的北京时间！
+        const recordDate = new Date(dateStr.includes('Z') ? dateStr : dateStr + 'Z');
 
-        if (diffDays === 0) return `<span style="color:#4ade80;">今天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}</span>`;
-        if (diffDays === 1) return `<span style="color:#fbbf24;">昨天</span>`;
+        const now = new Date();
+
+        // 下面是原有的对齐 0 点计算天数的逻辑，保持不动
+        const recordDateZero = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+        const nowZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const diffDays = Math.floor((nowZero - recordDateZero) / (1000 * 60 * 60 * 24));
+
+        const hours = recordDate.getHours().toString().padStart(2, '0');
+        const minutes = recordDate.getMinutes().toString().padStart(2, '0');
+
+        if (diffDays === 0) return `<span style="color:#4ade80;">今天 ${hours}:${minutes}</span>`;
+        if (diffDays === 1) return `<span style="color:#fbbf24;">昨天 ${hours}:${minutes}</span>`;
         if (diffDays < 7) return `<span>${diffDays}天前</span>`;
 
-        return `<span style="color:#999;">${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}</span>`;
+        const yyyy = recordDate.getFullYear();
+        const mm = (recordDate.getMonth() + 1).toString().padStart(2, '0');
+        const dd = recordDate.getDate().toString().padStart(2, '0');
+        return `<span style="color:#999;">${yyyy}-${mm}-${dd}</span>`;
     }
 
     /**
