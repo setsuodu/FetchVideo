@@ -4,7 +4,7 @@
 }
 
 .card {
-    max-width: 600px;
+    max-width: 640px;
     margin: auto;
 }
 
@@ -55,9 +55,12 @@ input.disabled {
 }
 
 /*↓列表表格↓*/
+/*↓列表表格↓*/
 .process-table {
     width: 100%;
-    border-collapse: collapse;
+    /* 关键修改 1：放弃 collapse，改用 separate 并配合 0 间距，消灭行高小数点 */
+    border-collapse: separate;
+    border-spacing: 0;
     margin: 10px 0;
     font-size: 15px;
     background: #fff;
@@ -65,51 +68,89 @@ input.disabled {
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
-.process-table th {
-    background: #2c3e50;
-    color: white;
-    padding: 12px 10px;
-    text-align: left;
-    font-weight: 600;
-}
-.process-table td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #eee;
-}
-.process-table tr:hover {
-    background: #f5f8ff;
-}
 
+    /* 核心强制高度 */
+    .process-table th,
+    .process-table td {
+        /* 关键修改 2：把上下 padding 从 12px 缩减到 10px（或者 8px）
+           内部组件 28px + 20px = 48px，小于 52px，这样高度就会由下面的 height 绝对控制，不再被内容撑大 */
+        padding: 10px 10px !important;
+        vertical-align: middle !important;
+        box-sizing: border-box !important;
+        line-height: 1.4 !important;
+        /* 关键修改 3：去掉无效的 min-height 和 max-height，对 td 只留 height */
+        height: 52px !important;
+    }
+
+    /* 表头 */
+    .process-table th {
+        background: #2c3e50;
+        color: white;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    /* 数据行强制高度 */
+    .process-table tr {
+        height: 52px !important;
+    }
+
+    /* 主播列 - 省略号 */
+    .process-table td.upname {
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: table-cell !important;
+    }
+
+    /* 房间号列 */
+    .process-table td:nth-child(4) {
+        white-space: nowrap !important;
+    }
+
+    /* 普通 td 边框 */
+    .process-table td {
+        border-bottom: 1px solid #eee;
+    }
+
+    .process-table tr:hover {
+        background: #f5f8ff;
+    }
+
+/* badge 样式保持不变 */
 .badge {
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 13px;
     font-weight: bold;
-}
-.badge.running {
-    background: #d5f5e3;
-    color: #27ae60;
-}
-.badge.completed {
-    background: #e3f2fd;
-    color: #2980b9;
-}
-.badge.failed {
-    background: #fdeaea;
-    color: #c0392b;
-}
-.badge.other {
-    background: #f0f0f0;
-    color: #7f8c8d;
+    line-height: 1.4;
+    display: inline-block;
+    width: 56px !important;
+    height: 28px !important;
+    box-sizing: border-box;
+    vertical-align: middle;
 }
 
-.upname {
-    max-width: 180px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: inline-block;
-}
+    .badge.running {
+        background: #d5f5e3;
+        color: #27ae60;
+    }
+
+    .badge.completed {
+        background: #e3f2fd;
+        color: #2980b9;
+    }
+
+    .badge.failed {
+        background: #fdeaea;
+        color: #c0392b;
+    }
+
+    .badge.other {
+        background: #f0f0f0;
+        color: #7f8c8d;
+    }
 /*↑列表表格↑*/
 
 /* Toggle Switch 美化 */
@@ -167,7 +208,9 @@ input:checked + .slider:before {
     background: #d5f5e3; /* 和你原 .badge.running 一致 */
     color: #27ae60;
     font-weight: bold;
-    min-width: 110px; /* 宽一点，数字好看 */
+    min-width: 100px; /* 宽一点，数字好看 */
+    height: 28px !important;
+    line-height: 1.4;
     padding: 6px 16px; /* 左右空间更大 */
     text-align: center;
     background-image: linear-gradient(45deg, #c8e6d3 25%, transparent 25%, transparent 50%, #c8e6d3 50%, #c8e6d3 75%, transparent 75%, transparent);
