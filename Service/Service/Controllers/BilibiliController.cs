@@ -212,11 +212,6 @@ public class BilibiliController : ControllerBase
         string command = $"-headers \"Referer: {Shared.BILI_LIVE}{room_id}\r\nUser-Agent: Mozilla/5.0\" -i \"{m3u8Url}\" -t {second} -c copy \"{outputFile}\" -y"; // -y 直接覆盖同名文件，不用交互式选择
         Console.WriteLine($"FFmpeg命令是: {command}");
         var task = ffManager.StartFFmpeg(command, up_name, room_id, minute); //B站直播
-                                                                             //Console.WriteLine($"FFmpeg任务状态: {task.Status}"); //Running
-
-        // === 新增：更新最后录制时间 ===
-        await _sharedService._context.UpdateLastRecordedAsync(room_id);   // 注意 _sharedService 有 _context
-        Console.WriteLine($"[{up_name}] 录制启动成功，已更新 LastRecordedAt");
 
 
         var roomInfo = await GetRoomInfo(room_id);
@@ -249,6 +244,13 @@ public class BilibiliController : ControllerBase
             IsSubscribed = subscribe,
         };
         bool added = await _sharedService.AddNewLiveRoom(link);
+
+
+        // === 新增：更新最后录制时间 ===
+        // 先有房间ID，再有up主名字，最后录制时间
+        await _sharedService._context.UpdateLastRecordedAsync(room_id);   // 注意 _sharedService 有 _context
+        Console.WriteLine($"[{up_name}] 录制启动成功，已更新 LastRecordedAt");
+
 
         return FFmpegManager.ConvertDto(task);
     }

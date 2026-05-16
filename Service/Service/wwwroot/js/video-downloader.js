@@ -13,6 +13,11 @@ export function initVideoDownloader() {
 
     // ====================== 新增：订阅 Toggle ======================
     const subscribeToggle = document.getElementById('subscribeToggle');
+    // ====================== 新增：默认关闭订阅 ======================
+    if (subscribeToggle) {
+        subscribeToggle.checked = false;   // 默认关闭（未订阅）
+        console.log('[订阅 Toggle] 已设置为默认关闭');
+    }
     // ============================================================
 
     let currentTaskId = null; // 记录当前录制任务 ID

@@ -205,16 +205,20 @@ input:checked + .slider:before {
 .badge.recording {
     position: relative;
     overflow: hidden;
-    background: #d5f5e3; /* 和你原 .badge.running 一致 */
+    background: #d5f5e3;
     color: #27ae60;
     font-weight: bold;
-    min-width: 100px; /* 宽一点，数字好看 */
+    min-width: 80px; /* ← 显著变窄 */
+    width: fit-content;
     height: 28px !important;
-    line-height: 1.4;
-    padding: 6px 16px; /* 左右空间更大 */
+    padding: 0 10px; /* ← 左右 padding 减小 */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
+    border-radius: 20px;
     background-image: linear-gradient(45deg, #c8e6d3 25%, transparent 25%, transparent 50%, #c8e6d3 50%, #c8e6d3 75%, transparent 75%, transparent);
-    background-size: 1rem 1rem;
+    background-size: 1rem 1rem; /* 条纹宽度保持原样（可改 0.8rem 0.8rem 更细） */
     animation: stripe-move 3s linear infinite;
 }
 
@@ -242,12 +246,13 @@ input:checked + .slider:before {
 .badge.recording .countdown-text {
     position: relative;
     display: block;
-    width: 100%;
-    font-size: 16px; /* 数字更大更清晰 */
+    font-size: 15.5px; /* 稍调小，更紧凑清晰 */
     font-weight: bold;
     color: #1e8449;
     text-shadow: 1px 1px 1px rgba(255,255,255,0.9);
-    line-height: 1.6; /* 垂直居中微调 */
+    line-height: 1; /* 完美垂直居中 */
+    width: 100%;
+    z-index: 2;
 }
 
 /* styles.css */
