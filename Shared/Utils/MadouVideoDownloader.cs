@@ -66,7 +66,7 @@ public class MadouVideoDownloader
                 }
                 else
                 {
-                    Console.WriteLine($"下载完成: {safeFileName}");
+                    Console.WriteLine($"下载完成: {outputPath}");
                 }
             }
 
