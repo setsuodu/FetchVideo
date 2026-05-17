@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace FetchVideo.Models;
@@ -1392,4 +1393,77 @@ public static class LinkItemSQL
 
     // 辅助方法：转义字符串中的双引号
     static string EscapeString(string s) => s.Replace("\"", "\\\"");
+
+    private static List<LinkItem>? _defaultList;
+    private static readonly object _lock = new();
+
+    // JSON 文件路径（推荐放在程序目录的 Data 文件夹）
+    private static readonly string JsonFilePath =
+        Path.Combine(AppContext.BaseDirectory, "Data", "LinkItems.json");
+
+    // 从 JSON 文件加载
+    public static List<LinkItem> Load()
+    {
+        try
+        {
+            if (!File.Exists(JsonFilePath))
+            {
+                // 如果文件不存在，创建空文件并返回空列表
+                Directory.CreateDirectory(Path.GetDirectoryName(JsonFilePath)!);
+                Save(new List<LinkItem>());
+                return new List<LinkItem>();
+            }
+
+            var json = File.ReadAllText(JsonFilePath);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+
+            return JsonSerializer.Deserialize<List<LinkItem>>(json, options)
+                   ?? new List<LinkItem>();
+        }
+        catch (Exception ex)
+        {
+            // 生产环境建议换成日志
+            Console.WriteLine($"Load LinkItems failed: {ex.Message}");
+            return new List<LinkItem>();
+        }
+    }
+
+    // 保存到 JSON 文件
+    public static void Save(List<LinkItem> items)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(JsonFilePath)!);
+            Console.WriteLine($"JsonFilePath: {JsonFilePath}");
+            //JsonFilePath: D:\GitHub\[Workspace]\FetchVideo\Service\Service\bin\Debug\net9.0\Data\LinkItems.json
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true,     // 格式化，便于人工查看和编辑
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
+            var json = JsonSerializer.Serialize(items, options);
+            File.WriteAllText(JsonFilePath, json);
+
+            // 清空缓存，下次 DefaultList 会重新加载
+            _defaultList = null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Save LinkItems failed: {ex.Message}");
+            throw; // 或者根据需要处理
+        }
+    }
+
+    // 可选：清空缓存，强制下次重新加载
+    public static void ClearCache()
+    {
+        _defaultList = null;
+    }
 }
