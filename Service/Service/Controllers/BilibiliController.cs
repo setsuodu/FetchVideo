@@ -26,52 +26,51 @@ public class BilibiliController : ControllerBase
 
     // 视频下载 bvId 👉 cid/title 👉 url
     [HttpGet("get_bili_video")]
-    public async Task<FFmpegTaskDto> GetBVAsync(string bvId)
+    // ==================== 修改后的 GetBVAsync ====================
+    public async Task<FFmpegTaskDto> GetBVAsync(string bvId, string? customOutputDir = null)
     {
         // 1. 获取 cid
         var videoView = await GetUpInfo(bvId);
         string cid = videoView.cid;
 
-        // 2. 获取视频 URL
+        // 2. 获取视频 URL（这部分保持不变）
         var httpClient = new HttpClient();
         var apiUrl = $"{Shared.BILI_PLAYER}playurl?bvid={bvId}&cid={cid}&qn=80&fnval=16";
         var playUrlJson = await httpClient.GetStringAsync(apiUrl);
-        //Console.WriteLine($"返回值: {playUrlJson}");
         var jsonPlayer = JsonNode.Parse(playUrlJson).AsObject();
 
         var videoArray = jsonPlayer["data"]?["dash"]?["video"]?.AsArray();
         var bestVideo = videoArray.OrderByDescending(v => (int)v["width"]).First();
         var videoUrl = bestVideo["baseUrl"].ToString();
-        //Console.WriteLine($"视频地址: {videoUrl}");
 
         var audioArray = jsonPlayer["data"]?["dash"]?["audio"]?.AsArray();
         var bestAudio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
         var audioUrl = bestAudio["baseUrl"].ToString();
-        //Console.WriteLine($"音频地址: {audioUrl}");
 
-        // videoArray, audioArray 已从 JSON 获取
-        var video = videoArray.OrderByDescending(v => (int)v["width"]).First();
-        var audio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
+        // ====================== 关键修改 ======================
+        // 输出目录
+        string outputDir = customOutputDir ?? _downloadPath;
 
-        // 3. 输出路径
-        string desktopPath = _downloadPath;
-        string videoFile = Path.Combine(desktopPath, "video.m4s");
-        string audioFile = Path.Combine(desktopPath, "audio.m4s");
-        string outputFile = Path.Combine(desktopPath, $"【{videoView.owner.name}】{Shared.MakeFileNameSafe(videoView.title)}.mp4");
+        // 临时文件改成带 bvid 的唯一名称，避免并发冲突
+        string videoFile = Path.Combine(outputDir, $"{bvId}_video.m4s");
+        string audioFile = Path.Combine(outputDir, $"{bvId}_audio.m4s");
 
-        // 4. 下载到本地
+        // 最终输出文件
+        string outputFile = Path.Combine(outputDir,
+            $"【{videoView.owner.name}】{Shared.MakeFileNameSafe(videoView.title)}_{bvId}.mp4");
+        // =====================================================
+
+        // 3. 下载 m4s
         string referer = $"{Shared.BILI_VIDEO}{bvId}";
         await DownloadBilibiliM4sAsync(videoUrl, referer, videoFile);
-        Console.WriteLine($"视频下载: {videoFile}");
         await DownloadBilibiliM4sAsync(audioUrl, referer, audioFile);
-        Console.WriteLine($"音频下载: {audioFile}");
 
-        // 5. FFmpeg 合并
+        // 4. FFmpeg 合并
         string command = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
-        var task = ffManager.StartFFmpeg(command); //BV视频
-        Console.WriteLine($"开始时间: {DateTime.Now}");
+        var task = ffManager.StartFFmpeg(command);
         await task.Process.WaitForExitAsync();
-        Console.WriteLine($"完成时间: {DateTime.Now}");
+
+        // 5. 删除临时文件
         System.IO.File.Delete(videoFile);
         System.IO.File.Delete(audioFile);
 
@@ -325,7 +324,6 @@ public class BilibiliController : ControllerBase
     private static readonly HttpClient client = new HttpClient();
     // ←←← 这里填你的 SESSDATA（必须登录有效）
     // 【获取方法】直播页F12→Application→Storage→Cookies→bilibili（有效期半年左右）
-    private const string SessData = "f0ce3d2c%2C1780465626%2C7172e%2Ac2CjBGS5AJwPcfnaaVc8XogrSvBMwv_ARSaHY0GVUqDuByTCC9RpyOO_86Ks4WuQE1whASVl9Zb2JMVDlPMVBNTEkxdnhhdUJlajFMTkpCeWU2aVV0Z21PVnR2TDVkWlMyY2c2V20yaE1sSTQ4d3o1MzlhZzJaOElMMmVpejN1OVpKbTBmU1B5RHpnIIEC";
     private const string WebCookie = "buvid3=5CC72C42-1C15-B97D-A8BE-7E259C059E2846197infoc; b_nut=1763480746; _uuid=F64634EC-41D1-68C8-19F7-47EC4994DB9C47694infoc; buvid_fp=ac30564e89319fbb34558e05cf7787cd; buvid4=D22D5F87-3975-7BFF-63CB-D8CFC09209F747329-025111823-LfQJGmB1N2u9vWgqZ5LdlA%3D%3D; SESSDATA=6fcecffe%2C1779032799%2C1640c%2Ab1CjCdBZacmoJHtNvDoxNSPR_nyMXcHOysWkMtlhDLl1CDG0znFFCCMvATAXTucJ9P2tQSVlJCV2h3S1J0TlFFZ2Zsc1dzZU9aNVRKN3NXRGZlZWZhMzF5NTZ3VTcyak5paG4xNHdwZzlna1VoMVFsVm1wVDZqMnZua2V3b1Q5Rm1UbU9sZFFyUXBnIIEC; bili_jct=809e7003559471e244a1cb8fa9386bc5; DedeUserID=20573602; DedeUserID__ckMd5=7af13897284e133a; sid=6xa8fd46; theme-tip-show=SHOWED; rpdid=|(m~mYllmm)0J'u~YJR)|)|~; LIVE_BUVID=AUTO7617634841892045; theme-avatar-tip-show=SHOWED; theme-switch-show=SHOWED; hit-dyn-v2=1; CURRENT_QUALITY=32; ogv_device_support_hdr=0; ogv_device_support_dolby=0; home_feed_column=5; browser_resolution=1707-791; bili_ticket=eyJhbGciOiJIUzI1NiIsImtpZCI6InMwMyIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzUxMjQ2NTEsImlhdCI6MTc3NDg2NTM5MSwicGx0IjotMX0.Tjwa7TA0B0kPE3-rkYq7FDV17fdLU_Ry1jRJYjSICP4; bili_ticket_expires=1775124591; bp_t_offset_20573602=1186452563394822144; CURRENT_FNVAL=4048; PVID=26; b_lsid=5979A6C1_19D4B886E42";
     // 统一请求方法（自动加 Cookie 和常见 Header）
     static async Task<string> RequestAsync(string url)
@@ -434,5 +432,59 @@ public class BilibiliController : ControllerBase
 
         await ffManager.StopAll();
         return Ok(running); //[] 👉 0个任务，成功
+    }
+
+    // ==================== 批量下载（带并发控制） ====================
+    [HttpPost("batch-download")]
+    public async Task<IActionResult> BatchDownloadFromJson([FromBody] BiliBatchRequest request)
+    {
+        if (request?.Videos == null || request.Videos.Count == 0)
+            return BadRequest(new { error = "videos 列表不能为空" });
+
+        // 用前端传过来的 upName 和 mid
+        string folderName = $"{request.UpName}_{request.Mid}";
+        string targetFolder = Path.Combine(_downloadPath, folderName);
+
+        if (!Directory.Exists(targetFolder))
+            Directory.CreateDirectory(targetFolder);
+
+        var semaphore = new SemaphoreSlim(3); // 同时最多 3 个
+
+        _ = Task.Run(async () =>
+        {
+            foreach (var video in request.Videos)
+            {
+                await semaphore.WaitAsync();
+                try
+                {
+                    await DownloadSingleBiliVideoAsync(video.Bvid, targetFolder, video.Title);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }
+            Console.WriteLine($"[批量下载] {folderName} 全部完成，共 {request.Videos.Count} 个视频");
+        });
+
+        return Ok(new { message = "已提交", folder = folderName, total = request.Videos.Count });
+    }
+
+    // ==================== 下载单个视频（带独立临时目录） ====================
+    private async Task DownloadSingleBiliVideoAsync(string bvid, string targetFolder, string title)
+    {
+        try
+        {
+            Console.WriteLine($"[批量下载] 开始下载: {title} ({bvid})");
+
+            // 直接传 targetFolder 进去
+            await GetBVAsync(bvid, targetFolder);
+
+            Console.WriteLine($"[批量下载] 下载完成: {title}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[批量下载] 下载失败 {bvid}: {ex.Message}");
+        }
     }
 }

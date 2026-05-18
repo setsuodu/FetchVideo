@@ -30,6 +30,9 @@
                 <li class="nav-item" role="presentation">
                     <a class="nav-link" id="live-record-tab" data-bs-toggle="tab" data-bs-target="#live-record-content" role="tab">订阅录制</a>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="bilibili-batch-tab" data-bs-toggle="tab" data-bs-target="#bilibili-batch-content" type="button" role="tab">B站UP批量下载</button>
+                </li>
             </ul>
             <div class="tab-content" id="downloadTabContent">
                 <!-- 图片下载 -->
@@ -125,6 +128,44 @@
                         </div>
                         <button type="submit" class="btn btn-success w-100" id="processStop">停止所有</button>
                     </form>
+                </div>
+                <!-- B站UP批量下载内容 -->
+                <div class="tab-pane fade" id="bilibili-batch-content" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">从油猴JSON批量下载B站UP视频</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">上传 JSON 文件（油猴导出）</label>
+                                <input class="form-control" type="file" id="biliJsonFile" accept=".json">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">或直接粘贴JSON</label>
+                                <textarea class="form-control font-monospace" id="biliJsonText" rows="5"
+                                          placeholder='[{"title":"xxx","bvid":"BVxxxxxx"}]'></textarea>
+                            </div>
+
+                            <button type="button" class="btn btn-danger" id="biliBatchStartBtn">
+                                开始批量下载（后台持续运行）
+                            </button>
+
+                            <!-- 进度显示区 -->
+                            <div id="biliBatchProgressArea" class="mt-4" style="display: none;">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>下载进度</span>
+                                    <span id="biliBatchProgressText">0/0</span>
+                                </div>
+                                <div class="progress" style="height: 24px;">
+                                    <div id="biliBatchProgressBar"
+                                         class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                         role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div id="biliBatchCurrentVideo" class="text-muted small mt-1"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

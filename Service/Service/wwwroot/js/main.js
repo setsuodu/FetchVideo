@@ -3,6 +3,8 @@ import { initImageDownloader } from './image-downloader.js';
 import { initVideoDownloader } from './video-downloader.js';
 import { initScheduleManager } from './schedule.js';
 import { initLiveRecordManager } from './live-record.js';
+// 新增：B站UP批量下载模块
+import { initBilibiliBatchDownloader } from './bilibili-batch-downloader.js';
 
 // --- 新增：初始化 vConsole ---
 function initVConsole() {
@@ -47,4 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initVideoDownloader();
     initScheduleManager();
     initLiveRecordManager();
+    // 新增这一行
+    initBilibiliBatchDownloader();
 });
