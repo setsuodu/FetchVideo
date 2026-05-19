@@ -2,6 +2,7 @@
 using FetchVideo.Services;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -55,9 +56,11 @@ public class BilibiliController : ControllerBase
         string videoFile = Path.Combine(outputDir, $"{bvId}_video.m4s");
         string audioFile = Path.Combine(outputDir, $"{bvId}_audio.m4s");
 
-        // 最终输出文件
-        string outputFile = Path.Combine(outputDir,
-            $"【{videoView.owner.name}】{Shared.MakeFileNameSafe(videoView.title)}_{bvId}.mp4");
+        // 最终输出文件（Unix 文件名限长 255）
+        string fileName = $"【{videoView.owner.name}】{Shared.MakeFileNameSafe(videoView.title)}_{bvId}";
+        if (fileName.Length > 240)
+            fileName = fileName.Substring(0, 200) + "_" + bvId;
+        string outputFile = Path.Combine(outputDir, $"{fileName}.mp4");
         // =====================================================
 
         // 3. 下载 m4s
@@ -486,5 +489,65 @@ public class BilibiliController : ControllerBase
         {
             Console.WriteLine($"[批量下载] 下载失败 {bvid}: {ex.Message}");
         }
+    }
+
+    // 新增：对比 JSON 与实际下载文件夹，找出缺失的视频
+    [HttpPost("check-missing")]
+    public IActionResult CheckMissing([FromBody] BatchCheckRequest request)
+    {
+        if (string.IsNullOrEmpty(request.UpName) || string.IsNullOrEmpty(request.Mid))
+            return BadRequest(new { error = "缺少 upName 或 mid" });
+
+        string folderName = $"{request.UpName}_{request.Mid}";
+        string folderPath = Path.Combine(_downloadPath, folderName);
+
+        if (!Directory.Exists(folderPath))
+            return Ok(new { totalInJson = request.Videos?.Count ?? 0, downloaded = 0, missing = request.Videos, message = "文件夹不存在" });
+
+        // 提取文件夹里已存在的 BV
+        var existingBvs = Directory.GetFiles(folderPath, "*_video.m4s")
+            .Select(f => Path.GetFileName(f).Split('_')[0])  // BV 开头的部分
+            .Concat(Directory.GetFiles(folderPath, "*_audio.m4s")
+                .Select(f => Path.GetFileName(f).Split('_')[0]))
+            .Where(bv => bv.StartsWith("BV"))
+            .Distinct()
+            .ToHashSet();
+
+        // JSON 里的所有 BV
+        var jsonBvs = request.Videos?
+            .Select(v => v.bvid ?? v.Bvid ?? "")
+            .Where(b => !string.IsNullOrEmpty(b))
+            .ToList() ?? new List<string>();
+
+        var missing = jsonBvs
+            .Where(bv => !existingBvs.Contains(bv))
+            .Select(bv => request.Videos.FirstOrDefault(v =>
+                (v.bvid ?? v.Bvid) == bv))
+            .ToList();
+
+        return Ok(new
+        {
+            totalInJson = jsonBvs.Count,
+            downloaded = existingBvs.Count,
+            missingCount = missing.Count,
+            missing = missing.Select(m => new { title = m.title, bvid = m.bvid ?? m.Bvid }).ToList(),
+            folderPath = folderPath
+        });
+    }
+
+    // 请求模型（加在文件顶部 using 下面，或文件末尾）
+    public class BatchCheckRequest
+    {
+        public string UpName { get; set; } = "";
+        public string Mid { get; set; } = "";
+        public List<JsonVideoItem> Videos { get; set; } = new();
+    }
+
+    public class JsonVideoItem   // 根据你的 JSON 结构调整字段名
+    {
+        public string? title { get; set; }
+        public string? bvid { get; set; }
+        public string? Bvid { get; set; }  // 兼容大写
+                                           // 其他字段可不写
     }
 }

@@ -31,7 +31,7 @@
                     <a class="nav-link" id="live-record-tab" data-bs-toggle="tab" data-bs-target="#live-record-content" role="tab">订阅录制</a>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="bilibili-batch-tab" data-bs-toggle="tab" data-bs-target="#bilibili-batch-content" type="button" role="tab">B站UP批量下载</button>
+                    <button class="nav-link" id="bilibili-batch-tab" data-bs-toggle="tab" data-bs-target="#bilibili-batch-content" type="button" role="tab">UP投稿打包</button>
                 </li>
             </ul>
             <div class="tab-content" id="downloadTabContent">
@@ -137,18 +137,17 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label">上传 JSON 文件（油猴导出）</label>
+                                <label class="form-label">
+                                    上传 JSON 文件
+                                </label>
                                 <input class="form-control" type="file" id="biliJsonFile" accept=".json">
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">或直接粘贴JSON</label>
-                                <textarea class="form-control font-monospace" id="biliJsonText" rows="5"
-                                          placeholder='[{"title":"xxx","bvid":"BVxxxxxx"}]'></textarea>
-                            </div>
-
                             <button type="button" class="btn btn-danger" id="biliBatchStartBtn">
-                                开始批量下载（后台持续运行）
+                                🚀 开始批量下载
+                            </button>
+                            <button type="button" class="btn btn-warning ms-2" id="biliBatchCheckBtn">
+                                🔍 检查缺失视频
                             </button>
 
                             <!-- 进度显示区 -->

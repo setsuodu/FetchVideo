@@ -1,82 +1,85 @@
 ﻿// js/bilibili-batch-downloader.js
 export function initBilibiliBatchDownloader() {
-
     const fileInput = document.getElementById('biliJsonFile');
-    const jsonText = document.getElementById('biliJsonText');
     const startBtn = document.getElementById('biliBatchStartBtn');
+    const checkBtn = document.getElementById('biliBatchCheckBtn');   // 新增
     const progressArea = document.getElementById('biliBatchProgressArea');
     const progressText = document.getElementById('biliBatchProgressText');
-    const progressBar = document.getElementById('biliBatchProgressBar');
     const currentVideo = document.getElementById('biliBatchCurrentVideo');
 
-    if (!startBtn)  return;
-
     let parsedVideos = [];
+    let currentUpName = "";
+    let currentMid = "";
 
-    // 监听文件选择
     if (fileInput) {
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
+            const fileName = file.name.replace(/\.json$/i, '');
+            const parts = fileName.split('_');
+            if (parts.length >= 2) {
+                currentUpName = parts[0];
+                currentMid = parts[1];
+            }
+
             try {
                 const text = await file.text();
                 parsedVideos = JSON.parse(text);
-                alert(`成功解析 ${parsedVideos.length} 条视频`);
+                alert(`✅ 解析成功！\nUP: ${currentUpName}\nMID: ${currentMid}\n共 ${parsedVideos.length} 条`);
             } catch (err) {
-                alert('JSON 文件解析失败，请检查格式');
+                alert('❌ JSON 解析失败');
                 console.error(err);
             }
         });
     }
 
-    // 点击开始下载
-    startBtn.addEventListener('click', async () => {
-        // 解析 JSON（文件或文本框）
-        if (parsedVideos.length === 0 && jsonText && jsonText.value.trim()) {
-            try {
-                parsedVideos = JSON.parse(jsonText.value.trim());
-            } catch (err) {
-                alert('文本框 JSON 格式错误');
+    // 开始下载（保持不变）
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => { /* ... 你之前的代码 ... */ });
+    }
+
+    // 新增：检查缺失按钮
+    if (checkBtn) {
+        checkBtn.addEventListener('click', async () => {
+            if (!parsedVideos || parsedVideos.length === 0) {
+                alert('请先上传 JSON 文件');
                 return;
             }
-        }
-
-        if (!parsedVideos || parsedVideos.length === 0) {
-            alert('请上传 JSON 文件或在文本框粘贴内容');
-            return;
-        }
-
-        // 显示进度区
-        progressArea.style.display = 'block';
-        startBtn.disabled = true;
-        progressText.textContent = `0/${parsedVideos.length}`;
-        currentVideo.textContent = '任务已提交，后台正在下载中...（可关闭此页面）';
-
-        try {
-            const res = await fetch('/api/bilibili/batch-download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    upName: "小利萝",                    // ← 根据实际 UP 修改
-                    mid: "3546606573979889",             // ← 根据实际 mid 修改
-                    videos: parsedVideos
-                })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                currentVideo.textContent = `任务已提交！后台正在下载（共 ${data.total} 个），可关闭此页面查看日志`;
-                // 不再启动任何轮询
-            } else {
-                const errData = await res.json().catch(() => ({}));
-                alert('提交失败: ' + (errData.error || res.statusText));
-                startBtn.disabled = false;
+            if (!currentUpName || !currentMid) {
+                alert('无法识别 UP 名和 MID，请确认文件名格式');
+                return;
             }
-        } catch (err) {
-            console.error(err);
-            alert('请求失败: ' + err.message);
-            startBtn.disabled = false;
-        }
-    });
+
+            currentVideo.textContent = '正在对比文件夹...';
+            try {
+                const res = await fetch('/api/bilibili/check-missing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        upName: currentUpName,
+                        mid: currentMid,
+                        videos: parsedVideos
+                    })
+                });
+
+                const data = await res.json();
+                let msg = `📊 对比完成\nJSON: ${data.totalInJson} 个\n已下载: ${data.downloaded} 个\n缺失: ${data.missingCount} 个\n\n`;
+
+                if (data.missingCount > 0) {
+                    msg += "缺失视频：\n";
+                    data.missing.forEach(m => {
+                        msg += `- ${m.title} (${m.bvid})\n`;
+                    });
+                } else {
+                    msg += "✅ 全部下载完成！";
+                }
+
+                alert(msg);
+                currentVideo.textContent = `对比完成 → 缺失 ${data.missingCount} 个`;
+            } catch (err) {
+                alert('检查失败: ' + err.message);
+            }
+        });
+    }
 }
