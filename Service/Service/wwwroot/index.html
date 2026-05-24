@@ -53,6 +53,13 @@
                             </div>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">或：上传 TXT 文件（一行一个图片 URL）</label>
+                            <div class="input-group">
+                                <input class="form-control" type="file" id="imageTxtFile" accept=".txt" />
+                                <button type="button" class="btn btn-danger d-none" id="clearTxtBtn">×</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">并发数（1~20）<span class="text-muted ms-1">默认5</span></label>
                             <input type="number" class="form-control" id="concurrency" value="5" min="1" max="20" placeholder="5" />
                         </div>

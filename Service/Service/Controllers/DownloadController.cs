@@ -239,4 +239,81 @@ public class DownloadController : ControllerBase
             return false;
         }
     }
+
+    /// <summary>
+    /// 新增：根据前端解析出的 TXT 图片链接列表进行批量并发下载
+    /// </summary>
+    /// <param name="request">包含 Urls 数组、并发数、可选文件夹名</param>
+    [HttpPost("download-list")]
+    public async Task<IActionResult> DownloadList([FromBody] ListDownloadRequest request)
+    {
+        if (request.Urls == null || request.Urls.Count == 0)
+            return BadRequest("接收到的 URL 列表为空");
+
+        // 1. 净化并确定保存的文件夹名（如果未提供则使用时间戳命名）
+        var folderName = string.IsNullOrWhiteSpace(request.FolderName)
+            ? "list_" + DateTime.Now.ToString("yyyyMMdd_HHmmss")
+            : request.FolderName;
+
+        // 过滤 Windows/Linux 系统不支持的文件夹非法字符
+        folderName = string.Join("_", folderName.Split(Path.GetInvalidFileNameChars()));
+        var folderPath = Path.Combine(_downloadPath, folderName);
+        Directory.CreateDirectory(folderPath);
+
+        // 2. 建立多线程并发分配
+        var failedUrls = new ConcurrentBag<string>();
+        var semaphore = new SemaphoreSlim(request.Concurrency <= 0 ? 5 : request.Concurrency);
+        var tasks = new List<Task>();
+
+        foreach (var url in request.Urls)
+        {
+            if (string.IsNullOrWhiteSpace(url)) continue;
+
+            tasks.Add(Task.Run(async () =>
+            {
+                await semaphore.WaitAsync();
+                try
+                {
+                    // 复用原有的 TryDownloadSingleToFolder 核心下载机制
+                    var success = await TryDownloadSingleToFolder(url, folderPath);
+                    if (!success) failedUrls.Add(url);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }));
+        }
+
+        // 等待当前队列所有图片下载完毕
+        await Task.WhenAll(tasks);
+
+        // 3. 生成 404 错误失败日志
+        var logPath = Path.Combine(folderPath, "download_404.txt");
+        if (failedUrls.Count > 0)
+        {
+            await System.IO.File.WriteAllLinesAsync(logPath, failedUrls);
+        }
+
+        // 4. 返回与原连号下载完全一致的数据结构，保证前端 UI 渲染兼容性
+        return Ok(new
+        {
+            Success = true,
+            Total = request.Urls.Count,
+            Downloaded = request.Urls.Count - failedUrls.Count,
+            Failed = failedUrls.Count,
+            Folder = folderName,
+            LogPath = failedUrls.Count > 0 ? $"/downloads/{folderName}/download_404.txt" : null
+        });
+    }
+}
+
+/// <summary>
+/// 新增：接收不连号自定义文本链接集合的模型实体
+/// </summary>
+public class ListDownloadRequest
+{
+    public List<string> Urls { get; set; } = new List<string>();
+    public int Concurrency { get; set; } = 5;
+    public string? FolderName { get; set; }
 }
