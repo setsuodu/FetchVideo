@@ -44,8 +44,8 @@ public class BilibiliController
         var audio = audioArray.OrderByDescending(a => (int)a["bandwidth"]).First();
 
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        string videoFile = Path.Combine(desktopPath, "video.m4s");
-        string audioFile = Path.Combine(desktopPath, "audio.m4s");
+        string videoFile = Path.Combine(desktopPath, $"{bvId}_video.m4s");
+        string audioFile = Path.Combine(desktopPath, $"{bvId}_audio.m4s");
         string outputFile = Path.Combine(desktopPath, $"【{videoView.owner.name}】{Shared.MakeFileNameSafe(videoView.title)}.mp4");
 
         string referer = $"{Shared.BILI_VIDEO}{bvId}";
