@@ -38,7 +38,17 @@ function initBackToTop() {
     });
 
     backToTopBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        //window.scrollTo({ top: 0, behavior: 'smooth' });
+        const html = document.documentElement;
+
+        // 强制禁用 smooth
+        html.style.setProperty('scroll-behavior', 'auto', 'important');
+
+        // 滚动到顶
+        html.scrollTop = 0;
+
+        // 恢复（让页面其他锚点跳转保持平滑）
+        html.style.scrollBehavior = '';
     });
 }
 
