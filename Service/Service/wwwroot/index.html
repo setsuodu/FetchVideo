@@ -127,9 +127,16 @@
                 <!-- 订阅录制 -->
                 <div class="tab-pane fade" id="live-record-content" role="tabpanel">
                     <form id="liveRecordForm">
-                        <div>
+                        <div class="mb-3">
                             <label class="form-label">订阅主播</label>
+                            <!-- 新增搜索框 -->
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="liveSearchInput"
+                                       placeholder="搜索主播名称 或 房间号...">
+                                <button type="button" class="btn btn-outline-secondary" id="liveSearchClear">清空</button>
+                            </div>
                         </div>
+
                         <div>
                             <div class="form-text-container" id="upListText">[]</div>
                         </div>

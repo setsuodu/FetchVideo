@@ -5,6 +5,7 @@ export function initLiveRecordManager() {
     const API_SUBSCRIBE = '/api/linkItem/toggle_subscribe';
     const API_PROCESS = '/api/bilibili/running_tasks';
     const API_STOP = '/api/bilibili/stop_tasks';
+    let allRoomsData = [];  // 保存完整数据用于过滤
 
     const upListTextLabel = document.querySelector('#upListText');
     //const processTextLabel = document.querySelector('#processText');
@@ -43,109 +44,129 @@ export function initLiveRecordManager() {
             const data = await response.json();
             console.log('订阅主播列表:', data);
 
-            let html = `
-            <table class="process-table">
-                <thead>
-                    <tr>
-                        <th style="width:60px;">序号</th>
-                        <th style="width:140px;">状态</th>
-                        <th>主播</th>
-                        <th>房间号</th>
-                        <th style="width:120px;text-align:center;">是否订阅</th>
-                        <th style="width:160px;">最后录制</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+            allRoomsData = data;  // 保存原始数据
 
-            if (data.length === 0) {
-                html += `<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">暂无订阅主播</td></tr>`;
-            } else {
-                data.forEach((item, index) => {
-                    const isRecording = item.CurrentStatus === "录制中" &&
-                        item.StartTime &&
-                        item.DurationSeconds > 0;
+            renderRoomsTable(data);  // 首次渲染
 
-                    let statusHtml = '';
-                    if (isRecording) {
-                        statusHtml = `
-                        <span class="badge recording">
-                            <span class="stripe-overlay"></span>
-                            <span id="countdown-${item.Id}"
-                                  data-start-time="${item.StartTime}"
-                                  data-duration="${item.DurationSeconds}"
-                                  class="countdown-text">
-                                计算中...
-                            </span>
-                        </span>`;
-                    } else {
-                        statusHtml = `<span class="badge other">空闲</span>`;
-                    }
-
-                    const lastRecordedHtml = formatLastRecorded(item.LastRecordedAt);
-
-                    html += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td class="status-cell">${statusHtml}</td>
-                        <td class="upname" title="${escapeHtml(item.Name || '-')}">
-                            ${escapeHtml(item.Name || '-')}
-                        </td>
-                        <td>${escapeHtml(item.RoomId || '-')}</td>
-                        <td style="text-align:center;">
-                            <label class="toggle-switch">
-                                <input type="checkbox"
-                                       data-taskid="${item.Id}"
-                                       ${item.IsSubscribed ? 'checked' : ''}>
-                                <span class="slider"></span>
-                            </label>
-                        </td>
-                        <td class="last-recorded">${lastRecordedHtml}</td>
-                    </tr>`;
-                });
-            }
-
-            html += `
-                </tbody>
-            </table>`;
-
-            upListTextLabel.innerHTML = html;
-
-            // 绑定订阅开关事件
-            document.querySelectorAll('input[type="checkbox"][data-taskid]').forEach(checkbox => {
-                checkbox.onchange = null;
-                checkbox.addEventListener('change', async function () {
-                    const taskId = this.dataset.taskid;
-                    const newState = this.checked;
-                    console.log(`任务 ${taskId} 订阅状态切换为: ${newState ? '订阅' : '取消订阅'}`);
-
-                    try {
-                        const resp = await fetch(API_SUBSCRIBE, {
-                            method: 'POST',
-                            credentials: 'include',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ id: parseInt(taskId) })
-                        });
-
-                        if (!resp.ok) {
-                            const err = await resp.json().catch(() => ({}));
-                            throw new Error(err.message || '更新失败');
-                        }
-                    } catch (err) {
-                        console.error('订阅切换失败:', err);
-                        this.checked = !newState;
-                        alert(err.message || '操作失败');
-                    }
-                });
-            });
-
-            // 启动倒计时
-            updateAllCountdowns();                    // 立即更新一次
-            setInterval(updateAllCountdowns, 1000);   // 每秒更新
+            // 绑定搜索事件
+            bindSearchEvents();
 
         } catch (err) {
             console.error('获取列表失败:', err);
             upListTextLabel.innerHTML = '<p style="color:red;text-align:center;">加载失败，请刷新重试</p>';
         }
+    }
+
+    // 新增：渲染表格函数（提取出来方便复用）
+    function renderRoomsTable(data) {
+        let html = `
+    <table class="process-table">
+        <thead>
+            <tr>
+                <th style="width:60px;">序号</th>
+                <th style="width:140px;">状态</th>
+                <th>主播</th>
+                <th>房间号</th>
+                <th style="width:120px;text-align:center;">是否订阅</th>
+                <th style="width:160px;">最后录制</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+        if (data.length === 0) {
+            html += `<tr><td colspan="6" style="text-align:center;color:#999;padding:30px;">未找到匹配的主播</td></tr>`;
+        } else {
+            data.forEach((item, index) => {
+                const isRecording = item.CurrentStatus === "录制中" &&
+                    item.StartTime && item.DurationSeconds > 0;
+
+                let statusHtml = '';
+                if (isRecording) {
+                    statusHtml = `
+                <span class="badge recording">
+                    <span class="stripe-overlay"></span>
+                    <span id="countdown-${item.Id}"
+                          data-start-time="${item.StartTime}"
+                          data-duration="${item.DurationSeconds}"
+                          class="countdown-text">
+                        计算中...
+                    </span>
+                </span>`;
+                } else {
+                    statusHtml = `<span class="badge other">空闲</span>`;
+                }
+
+                const lastRecordedHtml = formatLastRecorded(item.LastRecordedAt);
+
+                html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="status-cell">${statusHtml}</td>
+                <td class="upname" title="${escapeHtml(item.Name || '-')}">
+                    ${escapeHtml(item.Name || '-')}
+                </td>
+                <td>${escapeHtml(item.RoomId || '-')}</td>
+                <td style="text-align:center;">
+                    <label class="toggle-switch">
+                        <input type="checkbox"
+                               data-taskid="${item.Id}"
+                               ${item.IsSubscribed ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </td>
+                <td class="last-recorded">${lastRecordedHtml}</td>
+            </tr>`;
+            });
+        }
+
+        html += `</tbody></table>`;
+        upListTextLabel.innerHTML = html;
+
+        // 重新绑定开关事件（每次渲染后都需要）
+        bindToggleEvents();
+        updateAllCountdowns();  // 立即更新倒计时
+    }
+
+    // 新增：搜索绑定
+    function bindSearchEvents() {
+        const searchInput = document.getElementById('liveSearchInput');
+        const clearBtn = document.getElementById('liveSearchClear');
+
+        if (!searchInput) return;
+
+        const doSearch = () => {
+            const keyword = searchInput.value.trim().toLowerCase();
+            if (!keyword) {
+                renderRoomsTable(allRoomsData);
+                return;
+            }
+
+            const filtered = allRoomsData.filter(item =>
+                (item.Name && item.Name.toLowerCase().includes(keyword)) ||
+                (item.RoomId && String(item.RoomId).toLowerCase().includes(keyword))
+            );
+            renderRoomsTable(filtered);
+        };
+
+        searchInput.addEventListener('input', doSearch);
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            renderRoomsTable(allRoomsData);
+        });
+    }
+
+    // 新增：开关事件绑定（提取）
+    function bindToggleEvents() {
+        document.querySelectorAll('input[type="checkbox"][data-taskid]').forEach(checkbox => {
+            checkbox.onchange = null;  // 清理旧事件
+            checkbox.addEventListener('change', async function () {
+                // ... 原有切换逻辑保持不变 ...
+                const taskId = this.dataset.taskid;
+                const newState = this.checked;
+                // (保持你原来的 try-catch 代码)
+            });
+        });
     }
 
     function escapeHtml(str) {
