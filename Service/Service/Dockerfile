@@ -21,8 +21,14 @@ RUN dotnet restore
 # 将工作目录切换到主项目文件所在的目录
 WORKDIR /src/Service/Service
 
+# 使用 ARG 接收 GitHub Actions 传过来的版本
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION}
 
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish -c Release -o /app/publish \
+    /p:Version=${APP_VERSION} \
+    /p:AssemblyVersion=${APP_VERSION} \
+    /p:FileVersion=${APP_VERSION}
 
 # 阶段2: 运行
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine

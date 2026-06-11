@@ -23,6 +23,35 @@ function initVConsole() {
     }
 }
 
+// 获取版本号并显示
+async function loadAppVersion() {
+    //alert('✅ 版本号加载...');
+    try {
+        const response = await fetch('/api/version');
+        if (!response.ok) throw new Error('Failed to fetch version');
+
+        const data = await response.json();
+        const version = data.version || 'dev';
+
+        // 更新卡片头部
+        const headerVersion = document.getElementById('header-version');
+        if (headerVersion) {
+            headerVersion.textContent = `v${version}`;
+        }
+
+        // 可选：同时更新页面 title（纯文本）
+        document.title = `下载工具 v${version}`;
+
+        console.log('✅ 版本号加载成功:', version);
+    } catch (err) {
+        console.log('⚠️ 获取版本号失败，使用默认值', err);
+        document.getElementById('header-version').textContent = 'vdev';
+    }
+}
+
+// 在页面加载完成后执行
+//document.addEventListener('DOMContentLoaded', loadAppVersion);
+
 // --- 新增：回到顶部按钮逻辑 ---
 function initBackToTop() {
     const backToTopBtn = document.getElementById('backToTop');
@@ -54,6 +83,7 @@ function initBackToTop() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initVConsole();     // 初始化调试面板
+    loadAppVersion();   // 加载并显示版本号
     initBackToTop();    // 初始化回到顶部
     initImageDownloader();
     initVideoDownloader();

@@ -210,6 +210,17 @@ app.MapGet("/api/debug/gc-collect", () =>
         Analysis = after > 250 ? "警告：手动回收后内存依然较高，可能存在真泄露" : "提示：内存已回落，属于 .NET GC 正常延迟回收"
     });
 });
+// 添加版本号接口（GitHub Tag 注入）
+app.MapGet("/api/version", () =>
+{
+    Console.WriteLine("【请求版本号】");
+    var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "dev";
+    return Results.Ok(new
+    {
+        version = version,
+        buildTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+    });
+});
 // 可选：默认跳转到 WebView
 app.MapGet("/", () => Results.Redirect("/index.html")); //重定向
 
