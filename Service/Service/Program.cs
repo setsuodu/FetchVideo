@@ -211,16 +211,10 @@ app.MapGet("/api/debug/gc-collect", () =>
     });
 });
 // 添加版本号接口（GitHub Tag 注入）
-app.MapGet("/api/version", () =>
+app.MapGet("/api/version", () => Results.Ok(new
 {
-    Console.WriteLine("【请求版本号】");
-    var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "dev";
-    return Results.Ok(new
-    {
-        version = version,
-        buildTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
-    });
-});
+    version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev"
+}));
 // 可选：默认跳转到 WebView
 app.MapGet("/", () => Results.Redirect("/index.html")); //重定向
 

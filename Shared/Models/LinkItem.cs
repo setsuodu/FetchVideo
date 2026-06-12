@@ -233,7 +233,6 @@ public static class LinkItemSQL
             new LinkItem { Name = "阿猫猫-好运常在"     , RoomId = "27631442"    , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-12T14:01:15.7507033") },
             new LinkItem { Name = "喵呓bb"              , RoomId = "1933482994"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-12T14:01:18.3293806") },
             new LinkItem { Name = "栖柔-"               , RoomId = "1879003701"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-11T16:00:45.8739759") },
-            new LinkItem { Name = "你的灵宠"            , RoomId = "1746702240"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-11T16:00:46.6478895") },
             new LinkItem { Name = "ovo小昕超人ovo"      , RoomId = "1814190351"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-04T07:00:32.0731671") },
             new LinkItem { Name = "一只小猫鹿"          , RoomId = "1726557824"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-12T14:01:23.5930383") },
             new LinkItem { Name = "筱筱亿er"            , RoomId = "1940892431"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-11T07:00:21.3163462") },
@@ -303,7 +302,7 @@ public static class LinkItemSQL
             new LinkItem { Name = "小尾绒绒"            , RoomId = "1743121272"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-12T14:03:47.5046231") },
             new LinkItem { Name = "摩托车哥哥酱"        , RoomId = "1968148040"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-10T12:01:06.6079276") },
             new LinkItem { Name = "碎绵绵"              , RoomId = "1879856497"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-07T23:00:17.1231216") },
-            new LinkItem { Name = "bili_96934322844"    , RoomId = "1994822768"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-12T12:01:01.5641499") },
+            new LinkItem { Name = "一只愈愈"            , RoomId = "1994822768"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-12T12:01:01.5641499") },
             new LinkItem { Name = "叫我小趴菜o"         , RoomId = "1729312656"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-12T14:03:48.5180167") },
             new LinkItem { Name = "元气萌小萌"          , RoomId = "1803520968"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-11T11:20:05.1489827") },
             new LinkItem { Name = "姜姜爱生气"          , RoomId = "1867552512"  , IsSubscribed = true, LastRecordedAt = DateTime.Parse("2026-06-12T12:01:07.8768539") },
@@ -1712,6 +1711,7 @@ public static class LinkItemSQL
             new LinkItem { Name = "超级小懒cc"          , RoomId = "1904316988"  , IsSubscribed = false, LastRecordedAt = DateTime.Parse("2026-06-11T11:06:30.0467803") },
             new LinkItem { Name = "清钰呀OvO"           , RoomId = "1896299516"  , IsSubscribed = false, LastRecordedAt = DateTime.Parse("2026-06-11T11:14:33.1564568") },
             new LinkItem { Name = "椰幼"                , RoomId = "1758146499"  , IsSubscribed = false, LastRecordedAt = DateTime.Parse("2026-06-11T11:19:41.1194382") },
+            new LinkItem { Name = "你的灵宠"            , RoomId = "1746702240"  , IsSubscribed = false, LastRecordedAt = DateTime.Parse("2026-06-11T16:00:46.6478895") },
             new LinkItem { Name = "天菜小九九"          , RoomId = "1968147908"  , IsSubscribed = false, LastRecordedAt = DateTime.Parse("2026-06-11T17:32:20.2001562") }
             //可以继续添加更多默认链接（1657）
         };

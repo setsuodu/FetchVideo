@@ -32,6 +32,11 @@ RUN dotnet publish -c Release -o /app/publish \
 
 # 阶段2: 运行
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine
+
+# 添加这两行：重新声明 ARG 并设为 ENV
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION}
+
 RUN sed -i 's|http://dl-cdn.alpinelinux.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apk/repositories && \
     apk add --no-cache ffmpeg
 WORKDIR /app

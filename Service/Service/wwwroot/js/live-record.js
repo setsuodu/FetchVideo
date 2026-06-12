@@ -5,29 +5,29 @@ export function initLiveRecordManager() {
     const API_SUBSCRIBE = '/api/linkItem/toggle_subscribe';
     const API_PROCESS = '/api/bilibili/running_tasks';
     const API_STOP = '/api/bilibili/stop_tasks';
+
     let allRoomsData = [];  // 保存完整数据用于过滤
+    let countdownIntervalId = null; // 用于管理全局定时器，防止多次渲染后定时器叠加叠加变快
 
     const upListTextLabel = document.querySelector('#upListText');
-    //const processTextLabel = document.querySelector('#processText');
     const processStopBtn = document.getElementById('processStop');
+
     if (!upListTextLabel || !processStopBtn) {
         console.warn('LiveRecord 模块未找到对应元素，跳过初始化');
         return;
     }
+
     // 关键：监听 Bootstrap Tab 切换事件
     const liveRecordTab = document.querySelector('a[data-bs-target="#live-record-content"], a[href="#live-record-content"]');
-    // 兼容两种常见写法：data-bs-target 或 href
     if (liveRecordTab) {
         liveRecordTab.addEventListener('shown.bs.tab', () => {
-            // 每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）
-            console.log('每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）')
+            console.log('每次切到 liveRecord Tab 都刷新一次（即使已经请求过，也拿最新）');
             fetchGetRooms();
         });
     } else {
         console.warn('未找到 liveRecord 的 Tab 按钮，降级为页面加载时请求一次');
-        fetchGetRooms(); // 降级方案
+        fetchGetRooms();
     }
-
 
     /**
      * GET 订阅的主播列表
@@ -45,7 +45,6 @@ export function initLiveRecordManager() {
             console.log('订阅主播列表:', data);
 
             allRoomsData = data;  // 保存原始数据
-
             renderRoomsTable(data);  // 首次渲染
 
             // 绑定搜索事件
@@ -57,7 +56,9 @@ export function initLiveRecordManager() {
         }
     }
 
-    // 新增：渲染表格函数（提取出来方便复用）
+    /**
+     * 渲染表格函数
+     */
     function renderRoomsTable(data) {
         let html = `
     <table class="process-table">
@@ -124,16 +125,24 @@ export function initLiveRecordManager() {
 
         // 重新绑定开关事件（每次渲染后都需要）
         bindToggleEvents();
-        updateAllCountdowns();  // 立即更新倒计时
+
+        // 重置并拉起倒计时
+        updateAllCountdowns(); // 立即更新一次
+        if (countdownIntervalId) clearInterval(countdownIntervalId); // 清除旧的，防止多重定时器叠加
+        countdownIntervalId = setInterval(updateAllCountdowns, 1000); // 解决问题①：重新注入每秒更新
     }
 
-    // 新增：搜索绑定
+    /**
+     * 搜索事件绑定
+     */
     function bindSearchEvents() {
         const searchInput = document.getElementById('liveSearchInput');
         const clearBtn = document.getElementById('liveSearchClear');
 
         if (!searchInput) return;
 
+        // 移除旧监听防止重复触发
+        searchInput.oninput = null;
         const doSearch = () => {
             const keyword = searchInput.value.trim().toLowerCase();
             if (!keyword) {
@@ -150,22 +159,24 @@ export function initLiveRecordManager() {
 
         searchInput.addEventListener('input', doSearch);
 
-        clearBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            renderRoomsTable(allRoomsData);
-        });
+        if (clearBtn) {
+            clearBtn.onclick = null;
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                renderRoomsTable(allRoomsData);
+            });
+        }
     }
 
-    // 新增：开关事件绑定（提取）
+    /**
+     * 解决问题②&③：复活并绑定原版 Toggle 切换逻辑
+     */
     function bindToggleEvents() {
         document.querySelectorAll('input[type="checkbox"][data-taskid]').forEach(checkbox => {
             checkbox.onchange = null;  // 清理旧事件
             checkbox.addEventListener('change', async function () {
-                // ... 原有切换逻辑保持不变 ...
                 const taskId = this.dataset.taskid;
                 const newState = this.checked;
-                // (保持你原来的 try-catch 代码)
-
                 console.log(`任务 ${taskId} 订阅状态切换为: ${newState ? '订阅' : '取消订阅'}`);
 
                 try {
@@ -180,9 +191,16 @@ export function initLiveRecordManager() {
                         const err = await resp.json().catch(() => ({}));
                         throw new Error(err.message || '更新失败');
                     }
+
+                    // 同步修改本地内存中的数据状态，确保搜索筛选时状态是对的
+                    const localItem = allRoomsData.find(item => item.Id === parseInt(taskId));
+                    if (localItem) {
+                        localItem.IsSubscribed = newState;
+                    }
+
                 } catch (err) {
                     console.error('订阅切换失败:', err);
-                    this.checked = !newState;
+                    this.checked = !newState; // 失败时回滚开关状态
                     alert(err.message || '操作失败');
                 }
             });
@@ -196,10 +214,17 @@ export function initLiveRecordManager() {
         return div.innerHTML;
     }
 
-    // 倒计时更新 + 详细时间打印
+    /**
+     * 倒计时核心计算
+     */
     function updateAllCountdowns() {
-        document.querySelectorAll('.badge.recording .countdown-text').forEach(span => {
-            const startTimeIso = span.dataset.startTime;  // 后端传的原始 ISO 字符串
+        const remainingElements = document.querySelectorAll('.badge.recording .countdown-text');
+
+        // 如果当前页面没有任何录制中的节点，且定时器还在，可以考虑不执行
+        if (remainingElements.length === 0) return;
+
+        remainingElements.forEach(span => {
+            const startTimeIso = span.dataset.startTime;
             const durationSec = parseInt(span.dataset.duration) || 0;
             const itemId = span.id.replace('countdown-', '');
             const upName = span.closest('tr')?.querySelector('.upname')?.textContent.trim() || '未知主播';
@@ -209,40 +234,13 @@ export function initLiveRecordManager() {
                 return;
             }
 
-            // ========== 时间计算 ==========
-            const startTime = new Date(startTimeIso);                  // 解析为 Date 对象
-            const startTimestamp = startTime.getTime();                // 毫秒时间戳
-            const nowTimestamp = Date.now();                           // 当前毫秒时间戳
-            const now = new Date(nowTimestamp);                        // 当前 Date 对象
+            const startTime = new Date(startTimeIso);
+            const startTimestamp = startTime.getTime();
+            const nowTimestamp = Date.now();
 
             const elapsedSec = Math.floor((nowTimestamp - startTimestamp) / 1000);
             const remainingSec = Math.max(0, durationSec - elapsedSec);
 
-            const plannedEndTime = new Date(startTimestamp + durationSec * 1000);
-
-            /*
-            // ========== 详细打印 ==========
-            console.log(`%c[时间详情] 主播: ${upName} (ID: ${itemId})`, 'font-weight: bold; color: #3498db;');
-            console.log(`   开始时间（原始）: ${startTimeIso}`);
-            console.log(`   开始时间（本地）: ${startTime.toLocaleString()}`);
-            console.log(`   当前时间（本地）: ${now.toLocaleString()}`);
-            console.log(`   计划结束时间    : ${plannedEndTime.toLocaleString()}`);
-            console.log(`   已过去秒数      : ${elapsedSec} 秒`);
-            console.log(`   计划时长        : ${durationSec} 秒`);
-            console.log(`   剩余秒数        : ${remainingSec} 秒`);
-            console.log(`   倒计时显示      : ${remainingSec > 0 ?
-                Math.floor(remainingSec / 60).toString().padStart(2, '0') + ':' + (remainingSec % 60).toString().padStart(2, '0') :
-                '00:00'}`);
-
-            // ========== 原有每秒更新打印 ==========
-            if (remainingSec > 0) {
-                const m = Math.floor(remainingSec / 60).toString().padStart(2, '0');
-                const s = (remainingSec % 60).toString().padStart(2, '0');
-                console.log(`[倒计时更新] 主播: ${upName} (ID: ${itemId})  剩余: ${m}:${s}`);
-            }
-            */
-
-            // ========== UI 更新 ==========
             if (remainingSec > 0) {
                 const m = Math.floor(remainingSec / 60).toString().padStart(2, '0');
                 const s = (remainingSec % 60).toString().padStart(2, '0');
@@ -251,14 +249,12 @@ export function initLiveRecordManager() {
             } else {
                 span.textContent = '00:00';
 
-                // 只在刚结束时打印一次结束日志
                 if (span.dataset.lastRemaining && parseInt(span.dataset.lastRemaining) > 0) {
                     console.log(`%c[录制结束] 主播: ${upName} (ID: ${itemId})  已完成录制，时长 ${durationSec} 秒`,
                         'color: #27ae60; font-weight: bold; font-size: 14px;');
                 }
                 span.dataset.lastRemaining = '0';
 
-                // 自动变回“空闲”
                 const badge = span.closest('.badge.recording');
                 if (badge && !badge.dataset.ended) {
                     badge.outerHTML = '<span class="badge other">空闲</span>';
