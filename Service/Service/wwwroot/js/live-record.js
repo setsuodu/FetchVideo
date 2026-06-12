@@ -165,6 +165,26 @@ export function initLiveRecordManager() {
                 const taskId = this.dataset.taskid;
                 const newState = this.checked;
                 // (保持你原来的 try-catch 代码)
+
+                console.log(`任务 ${taskId} 订阅状态切换为: ${newState ? '订阅' : '取消订阅'}`);
+
+                try {
+                    const resp = await fetch(API_SUBSCRIBE, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: parseInt(taskId) })
+                    });
+
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        throw new Error(err.message || '更新失败');
+                    }
+                } catch (err) {
+                    console.error('订阅切换失败:', err);
+                    this.checked = !newState;
+                    alert(err.message || '操作失败');
+                }
             });
         });
     }
