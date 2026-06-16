@@ -216,7 +216,7 @@ public class BilibiliController : ControllerBase
         Console.WriteLine($"FFmpeg命令是: {command}");
         var task = ffManager.StartFFmpeg(command, up_name, room_id, minute); //B站直播
 
-
+        /* 触发风控，先注释掉封面下载了，后续再想办法优化
         var roomInfo = await GetRoomInfo(room_id);
         if (!string.IsNullOrEmpty(roomInfo.user_cover))
         {
@@ -237,7 +237,7 @@ public class BilibiliController : ControllerBase
         else
         {
             Console.WriteLine("没有封面");
-        }
+        }*/
 
         // 1. 初始化 LinkItem 记录（默认设为 false 入库）
         LinkItem link = new LinkItem
@@ -337,6 +337,7 @@ public class BilibiliController : ControllerBase
         client.DefaultRequestHeaders.Add("Referer", "https://live.bilibili.com/");
         client.DefaultRequestHeaders.Add("Origin", "https://live.bilibili.com");
         client.DefaultRequestHeaders.Add("Cookie", WebCookie);
+        client.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
         //client.DefaultRequestHeaders.Add("Cookie", $"SESSDATA={SessData}");
 
         var resp = await client.GetAsync(url);

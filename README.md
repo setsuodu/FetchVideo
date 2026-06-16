@@ -111,18 +111,6 @@ docker images -a
 docker rmi <Image_ID>
 ```
 
-
-## Docker Desktop for Windows
-```
-mkdir -p C:\downloads  ##-p : make sure folder exist
-
-docker run -d \
-  --name downloader \
-  -p 8080:8080 \
-  -v C:/users/33913/downloads:/app/downloads \  ## use C:/ the Host is Windows
-  fetch-service
-```
-
 ## Ubuntu / Synology / fnOS Common
 
 - Windows: c:\users\你的用户名\downloads
@@ -130,15 +118,6 @@ docker run -d \
 - Synology: /volume1/download
 - fnOS: /vol1/1000/download
 
-```
-mkdir -p /download  ##create Host folder
-
-docker run -d \
-  --name downloader \
-  -p 8080:8080 \
-  -v /download:/app/downloads \
-  setsuodu/fetch-service:latest
-```
 
 ## Push DockerHub
 
