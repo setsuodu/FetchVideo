@@ -274,6 +274,67 @@ public class BilibiliController : ControllerBase
         return FFmpegManager.ConvertDto(task);
     }
 
+    [HttpGet("get_cover")]
+    public async Task<IActionResult> GetCover(string url)
+    {
+        try
+        {
+            string roomId = Shared.GetRoomId(url);
+            if (string.IsNullOrEmpty(roomId))
+                return BadRequest(new { message = "无法提取房间号" });
+
+            Console.WriteLine($"[GetCover] 开始获取封面，roomId: {roomId}, url: {url}");
+
+            // 调 get_info 拿封面信息
+            string infoApi = $"{Shared.BILI_ROOM}get_info?room_id={roomId}";
+            string infoJson = await RequestAsync(infoApi);
+            var infoData = JsonNode.Parse(infoJson)["data"];
+
+            string coverUrl = infoData?["user_cover"]?.ToString();
+            string title = infoData?["title"]?.ToString();
+
+            if (string.IsNullOrEmpty(coverUrl))
+                return NotFound(new { message = "未找到封面" });
+
+            // ✅ 直接用现成的 GetTitleAsync 拿主播名
+            string upName = await GetTitleAsync(url) ?? title ?? roomId;
+
+            // 准备保存路径
+            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+            string saveDir = Path.Combine(_downloadPath, dateFolder);
+            Directory.CreateDirectory(saveDir);
+
+            // 从 url 提取原扩展名
+            string ext = Path.GetExtension(coverUrl)?.TrimStart('.');
+            if (string.IsNullOrEmpty(ext))
+                ext = "jpg";
+
+            // 文件名：up名字_日期.扩展名
+            string timestamp = DateTime.Now.ToString("yyyyMMdd");
+            string fileName = $"【{upName}】_{title}_{timestamp}.{ext}";
+
+            // 下载（直接传完整文件名，不要 GetFileNameWithoutExtension）
+            await HttpRemote.DownloadImageAsync(coverUrl, saveDir, fileName);
+
+            string savePath = Path.Combine(saveDir, fileName);
+            Console.WriteLine($"[GetCover] 封面已保存: {savePath}");
+
+            return Ok(new
+            {
+                coverUrl,
+                coverPath = savePath,
+                title,
+                upName,
+                roomId
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[GetCover] 错误: {ex.Message}");
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
     // 获取直播房间信息
     [HttpGet("get_bili_roominfo")]
     public async Task<RoomInfo> GetRoomInfo(string room_id)

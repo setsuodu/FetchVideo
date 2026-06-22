@@ -10,6 +10,68 @@ export function initVideoDownloader() {
     const log = document.getElementById('log-video');
     const logLink = document.getElementById('videoLogLink');
     const clearBtn = document.getElementById('clearBtn');
+    // ====================== 新增：获取封面 ======================
+    const getCoverBtn = document.getElementById('getCoverBtn');
+
+    if (getCoverBtn) {
+        getCoverBtn.addEventListener('click', async () => {
+            const videoUrl = extractCleanUrl(videoInput.value);
+            if (!videoUrl) {
+                alert('请输入直播间 URL');
+                return;
+            }
+
+            getCoverBtn.disabled = true;
+            getCoverBtn.textContent = '获取中...';
+
+            // 显示结果区域（像视频下载那样）
+            resultDiv.classList.remove('d-none');
+            progressBar.style.width = '100%';
+            progressBar.textContent = '100%';
+            status.textContent = '正在获取封面...';
+            log.textContent = '';
+            logLink.classList.add('d-none');
+
+            try {
+                const encodedUrl = encodeURIComponent(videoUrl);
+                const response = await fetch(`/api/bilibili/get_cover?url=${encodedUrl}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || '获取失败');
+
+                // ✅ 像视频下载完成那样显示UI
+                status.innerHTML = `
+                <strong class="text-success">封面获取成功！</strong><br>
+                文件: <code>${data.coverPath}</code><br>
+                UP: <code>${data.upName || 'N/A'}</code><br>
+                标题: <code>${data.title || 'N/A'}</code>
+            `;
+
+                log.textContent = `封面已下载至服务器。`;
+
+                // 显示下载按钮（如果路径可访问）
+                if (data.coverPath) {
+                    logLink.href = data.coverPath;
+                    logLink.textContent = '下载封面';
+                    logLink.classList.remove('d-none');
+                }
+
+            } catch (err) {
+                progressBar.style.width = '100%';
+                progressBar.classList.add('bg-danger');
+                status.innerHTML = `<span class="text-danger">获取失败: ${err.message}</span>`;
+                log.textContent = '请检查 URL 或服务状态。';
+            } finally {
+                getCoverBtn.disabled = false;
+                getCoverBtn.textContent = '🖼️ 获取封面';
+            }
+        });
+    }
+
+    // ============================================================
 
     // ====================== 新增：订阅 Toggle ======================
     const subscribeToggle = document.getElementById('subscribeToggle');
