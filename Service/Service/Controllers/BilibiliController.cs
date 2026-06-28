@@ -279,6 +279,14 @@ public class BilibiliController : ControllerBase
     {
         try
         {
+            // ================ 新增：支持手机端短链 b23.tv ================
+            if (url.Contains("b23.tv"))
+            {
+                url = await Shared.Curl_I(url);
+                Console.WriteLine($"[GetCover] 短链转长链: {url}");
+            }
+            // ========================================================
+
             string roomId = Shared.GetRoomId(url);
             if (string.IsNullOrEmpty(roomId))
                 return BadRequest(new { message = "无法提取房间号" });
