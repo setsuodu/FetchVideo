@@ -753,6 +753,44 @@ public class BilibiliController : ControllerBase
         public bool IsRateLimited { get; set; } = false;
     }
 
+    // POST /api/Bilibili/save_uid
+    [HttpPost("save_uid")]
+    public async Task<IActionResult> SaveUid([FromBody] SaveUidRequest req)
+    {
+        if (string.IsNullOrEmpty(req.RoomId) || req.Uid <= 0)
+            return BadRequest(new { success = false });
+
+        var item = await _sharedService._context.LinkItems
+            .FirstOrDefaultAsync(l => l.RoomId == req.RoomId);
+
+        // 1. 数据库中没有该 roomId → 啥也不干
+        if (item == null)
+        {
+            return Ok(new { success = true, message = "RoomId not found" });
+        }
+
+        // 2. 已存在 roomId 且 BiliUid 已经有值 → 啥也不干
+        if (item.BiliUid != null)
+        {
+            return Ok(new { success = true, uid = item.BiliUid, message = "Uid already exists" });
+        }
+
+        // 3. 存在 roomId 但 BiliUid 是 null → 执行更新
+        item.BiliUid = req.Uid;
+        item.UidStatus = "success";
+        item.UidFetchedAt = DateTime.UtcNow;
+
+        await _sharedService._context.SaveChangesAsync();
+
+        return Ok(new { success = true, uid = req.Uid });
+    }
+
+    public class SaveUidRequest
+    {
+        public string RoomId { get; set; } = string.Empty;
+        public long Uid { get; set; }
+    }
+
 
     // 请求模型（加在文件顶部 using 下面，或文件末尾）
     public class BatchCheckRequest
