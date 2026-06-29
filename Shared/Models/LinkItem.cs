@@ -19,6 +19,10 @@ public class LinkItem
 
     // 新增：最后一次成功录制的时间（UTC，推荐）
     public DateTime? LastRecordedAt { get; set; }
+
+    public long? BiliUid { get; set; } = null;           // B站UID (nullable long)
+    public string? UidStatus { get; set; } = null;       // 状态: null(未处理), "success", "error_not_found", "error_banned", "error_other"
+    public DateTime? UidFetchedAt { get; set; }          // 获取时间，用于追踪
 }
 
 public class LinkItemDisplayDto
@@ -2114,8 +2118,12 @@ public static class LinkItemSQL
             string durationPart = item.Duration != 2 ? $", Duration = {item.Duration}" : "";
             string lastRecordAtPart = $"LastRecordedAt = {(item.LastRecordedAt == null ? "null" : $"DateTime.Parse({JsonSerializer.Serialize(item.LastRecordedAt)})")}";
 
+            string biliUidPart = $"BiliUid = {(item.BiliUid == null ? "null" : item.BiliUid)}";
+            string uidStatusPart = $"UidStatus = \"{(item.UidStatus == null ? "null" : item.UidStatus)}\"";
+            string UidFetchedAtPart = $"UidFetchedAt = {(item.UidFetchedAt == null ? "null" : $"DateTime.Parse({JsonSerializer.Serialize(item.UidFetchedAt)})")}";
+
             // 最终 inner：Name(补齐18), Url(补齐36), IsSubscribed...
-            string inner = $"{namePart}, {urlPart}, {subPart}{durationPart}, {lastRecordAtPart}";
+            string inner = $"{namePart}, {urlPart}, {subPart}{durationPart}, {lastRecordAtPart}, {biliUidPart}, {uidStatusPart}, {UidFetchedAtPart}";
 
             string line = $"    new LinkItem {{ {inner} }}";
             if (i < totalCount - 1) line += ",";

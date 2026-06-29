@@ -7,6 +7,17 @@ namespace FetchVideo.Data;
 // 一个csproj →对应→ 一个数据库 →对应→ 一个 DbContext
 public class AppDbContext : DbContext
 {
+    // ✅ 新增：无参构造函数（给 EF 工具用的）
+    public AppDbContext() { }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // ✅ 新增：EF 工具运行时用这个连接字符串
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlite("Data Source=data/app.db");
+        }
+    }
+
     // 全局唯一配置表（永远只有一条记录）
     public DbSet<ScheduleConfig> ScheduleConfigs => Set<ScheduleConfig>();
     public DbSet<LinkItem> LinkItems { get; set; }

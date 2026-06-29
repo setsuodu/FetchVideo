@@ -605,6 +605,155 @@ public class BilibiliController : ControllerBase
         });
     }
 
+    // 工具方法，补全 SQL 里的 UID
+    // POST /api/Bilibili/batch_fetch_uids_auto
+    [HttpPost("batch_fetch_uids_auto")]
+    public async Task<IActionResult> BatchFetchUidsAuto([FromBody] AutoBatchRequest? request = null)
+    {
+        int batchSize = request?.BatchSize ?? 8;      // 默认一次处理8条（可调小更安全）
+        int delayMs = request?.DelayMs ?? 1800;       // 默认1.8秒间隔
+
+        // 🔥 自动拉取所有未处理的（BiliUid为空 或 状态未成功）
+        var toProcess = await _sharedService._context.LinkItems
+            .Where(l => l.BiliUid == null || l.UidStatus != "success")
+            .OrderBy(l => l.Id)           // 按ID顺序，方便断点续跑
+            .Take(batchSize)
+            .ToListAsync();
+
+        if (!toProcess.Any())
+        {
+            return Ok(new
+            {
+                message = "✅ 全部处理完成！没有待处理的直播间了。",
+                processed = 0
+            });
+        }
+
+        var results = new List<UidFetchResult>();
+        int success = 0, skipped = 0, errors = 0;
+
+        foreach (var item in toProcess)
+        {
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 处理 RoomId: {item.RoomId} ({item.Name})");
+
+            var result = await FetchUidForRoomAsync(item.RoomId);
+            results.Add(result);
+
+            item.BiliUid = result.Uid;
+            item.UidStatus = result.Status;
+            item.UidFetchedAt = DateTime.UtcNow;
+
+            if (result.Status == "success") success++;
+            else if (result.Status == "error_not_found" || result.Status.StartsWith("error_")) errors++;
+
+            // 风控立即停止
+            if (result.IsRateLimited)
+            {
+                Console.WriteLine("🚨 检测到风控/限流，立即停止本次批次！建议换设备/IP，明天继续。");
+                await _sharedService._context.SaveChangesAsync();
+                return Ok(new
+                {
+                    message = "风控触发，已保存当前进度",
+                    processed = results.Count,
+                    success,
+                    errors,
+                    stoppedByRiskControl = true
+                });
+            }
+
+            await Task.Delay(delayMs); // 防封关键
+        }
+
+        await _sharedService._context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            processed = results.Count,
+            success,
+            errors,
+            message = $"本次自动处理 {results.Count} 条，成功 {success}，失败 {errors}。下次调用会继续自动拉取剩余的。"
+        });
+    }
+
+    // 简单请求体（可选）
+    public class AutoBatchRequest
+    {
+        public int BatchSize { get; set; } = 8;
+        public int DelayMs { get; set; } = 1800;
+    }
+
+    private async Task<UidFetchResult> FetchUidForRoomAsync(string roomId)
+    {
+        var result = new UidFetchResult { RoomId = roomId };
+
+        // 优先使用现有 get_bili_roominfo（get_info 接口）
+        try
+        {
+            var roomInfo = await GetRoomInfo(roomId); // 已有方法
+            if (roomInfo.uid > 0)
+            {
+                result.Uid = (long)roomInfo.uid;
+                result.Status = "success";
+                return result;
+            }
+        }
+        catch (Exception ex) when (ex.Message.Contains("429") || ex.Message.Contains("rate"))
+        {
+            result.IsRateLimited = true;
+        }
+        catch { /* 继续 fallback */ }
+
+        // Fallback 1: 官方 get_anchor_in_room
+        try
+        {
+            string url = $"https://api.live.bilibili.com/live_user/v1/UserInfo/get_anchor_in_room?roomid={roomId}";
+            string json = await RequestAsync(url); // 已有统一带Cookie方法
+            var data = JsonNode.Parse(json)["data"]?.AsObject();
+
+            if (data != null)
+            {
+                long uid = data["info"]?["uid"]?.GetValue<long>() ?? 0;
+                if (uid > 0)
+                {
+                    result.Uid = uid;
+                    result.Status = "success";
+                    return result;
+                }
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                                             ex.Message.Contains("403") || ex.Message.Contains("ban"))
+        {
+            result.IsRateLimited = true;
+            result.Status = "error_banned";
+            result.Message = "可能被风控/封禁";
+            return result;
+        }
+        catch (Exception ex)
+        {
+            result.Message = ex.Message;
+        }
+
+        // 更多 fallback（可选）：room_init 等接口
+        // ...
+
+        // 最终未找到
+        result.Status = "error_not_found";
+        result.Message = "未找到UID（可能封号/注销/房间不存在）";
+        return result;
+    }
+
+    // 请求模型
+    public class UidFetchResult
+    {
+        public string RoomId { get; set; } = string.Empty;
+        public long? Uid { get; set; }
+        public string Status { get; set; } = "success"; // success / error_not_found / error_banned / error_other
+        public string Message { get; set; } = string.Empty;
+        public bool IsRateLimited { get; set; } = false;
+    }
+
+
     // 请求模型（加在文件顶部 using 下面，或文件末尾）
     public class BatchCheckRequest
     {
