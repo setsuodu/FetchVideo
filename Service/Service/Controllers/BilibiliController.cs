@@ -2,6 +2,7 @@
 using FetchVideo.Services;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
+using JsonExtensions;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -181,6 +182,7 @@ public class BilibiliController : ControllerBase
         var jsonData2 = JsonNode.Parse(pkJson).AsObject();
         // 非PK时，"universal_interact_info_v2": null,
         var is_pk = jsonData2["data"]?["universal_interact_info_v2"] != null;
+        //var uid = jsonData2["data"]?["room_info"]?["uid"]?.ToString();
         if (is_pk)
         {
             var members = jsonData2["data"]?["universal_interact_info_v2"]?["members"]?.AsArray();
@@ -239,12 +241,50 @@ public class BilibiliController : ControllerBase
             Console.WriteLine("没有封面");
         }*/
 
+        long? biliUid = null;
+        string uidStatus = null;
+        DateTime? uidFetchedAt = null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(pkJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("data", out var data) &&
+                data.TryGetProperty("room_info", out var roomInfo) &&
+                roomInfo.TryGetProperty("uid", out var uidElement))
+            {
+                if (uidElement.TryGetInt64(out var uid))
+                {
+                    biliUid = uid;
+                    uidStatus = "success";
+                    uidFetchedAt = DateTime.UtcNow;
+                }
+            }
+
+            // 如果没取到 uid，标记为错误
+            if (!biliUid.HasValue)
+            {
+                uidStatus = "error";
+                uidFetchedAt = DateTime.UtcNow;
+            }
+        }
+        catch
+        {
+            uidStatus = "error";
+            uidFetchedAt = DateTime.UtcNow;
+        }
+
         // 1. 初始化 LinkItem 记录（默认设为 false 入库）
         LinkItem link = new LinkItem
         {
             Name = up_name,
             RoomId = Shared.GetRoomId(Shared.CleanUrl(url)),
             IsSubscribed = false,
+
+            BiliUid = biliUid,
+            UidStatus = uidStatus,
+            UidFetchedAt = uidFetchedAt,
         };
 
         // 2. 尝试添加新人入库（如果已存在则不重复添加）
@@ -605,6 +645,7 @@ public class BilibiliController : ControllerBase
         });
     }
 
+    //TODO: 删除，无法判断【封禁】的房间
     // 工具方法，补全 SQL 里的 UID
     // POST /api/Bilibili/batch_fetch_uids_auto
     [HttpPost("batch_fetch_uids_auto")]
