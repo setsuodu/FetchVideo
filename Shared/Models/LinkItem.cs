@@ -43,6 +43,10 @@ public class LinkItemDisplayDto
     public int DurationSeconds { get; set; } = 0;  // 计划录制时长（秒）
 
     public DateTime? LastRecordedAt { get; set; }   // 新增，上一次录制时间
+
+    public long? BiliUid { get; set; } = null;           // B站UID (nullable long)
+    //public string? UidStatus { get; set; } = null;       // 状态: null(未处理), "success", "error_not_found", "error_banned", "error_other"
+    //public DateTime? UidFetchedAt { get; set; }          // 获取时间，用于追踪
 }
 
 // 请求模型（只用于单个操作）

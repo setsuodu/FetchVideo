@@ -101,7 +101,8 @@ public class SharedService : ISharedService
                 DurationSeconds = durationSeconds,
 
                 // ================== 新增 ==================
-                LastRecordedAt = item.LastRecordedAt
+                LastRecordedAt = item.LastRecordedAt,
+                BiliUid = item.BiliUid,
                 // =========================================
             };
         }).ToList();

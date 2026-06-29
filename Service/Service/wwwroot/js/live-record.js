@@ -70,6 +70,7 @@ export function initLiveRecordManager() {
                 <th>房间号</th>
                 <th style="width:120px;text-align:center;">是否订阅</th>
                 <th style="width:160px;">最后录制</th>
+                <th style="width:110px;">UID</th>
             </tr>
         </thead>
         <tbody>`;
@@ -116,6 +117,7 @@ export function initLiveRecordManager() {
                     </label>
                 </td>
                 <td class="last-recorded">${lastRecordedHtml}</td>
+                <td>${escapeHtml(item.BiliUid ? item.BiliUid.toString() : '-')}</td>
             </tr>`;
             });
         }

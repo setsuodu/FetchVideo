@@ -777,7 +777,7 @@ public class BilibiliController : ControllerBase
 
         // 3. 存在 roomId 但 BiliUid 是 null → 执行更新
         item.BiliUid = req.Uid;
-        item.UidStatus = "success";
+        item.UidStatus = req.Status;
         item.UidFetchedAt = DateTime.UtcNow;
 
         await _sharedService._context.SaveChangesAsync();
@@ -789,6 +789,7 @@ public class BilibiliController : ControllerBase
     {
         public string RoomId { get; set; } = string.Empty;
         public long Uid { get; set; }
+        public string Status { get; set; } = "error"; // "success" 或 "error"
     }
 
 
