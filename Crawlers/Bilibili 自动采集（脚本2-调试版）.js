@@ -63,10 +63,25 @@
         return 0;
     }
 
+    // 关闭标签页函数
+    function closeTab() {
+        log('🚪 2秒后关闭标签页...', '#f0f');
+        setTimeout(() => {
+            window.close();
+            // 备用方案：如果window.close()被阻止，尝试通过打开空白页再关闭
+            if (window.opener) {
+                window.opener = null;
+                window.open('', '_self');
+                window.close();
+            }
+        }, 2000);
+    }
+
     setTimeout(() => {
         const roomId = location.pathname.match(/\/(\d+)/)?.[1];
         if (!roomId) {
             log('[Script2] ❌ 未找到房间号', '#f00');
+            closeTab();
             return;
         }
 
@@ -120,9 +135,11 @@
                 } catch (e) {
                     log(`✅ 上报完成: ${r.responseText}`, '#0f0');
                 }
+                closeTab();
             },
             onerror: (r) => {
                 log(`❌ HTTP 错误 ${r.status}: ${r.responseText}`, '#f00');
+                closeTab();
             }
         });
 
