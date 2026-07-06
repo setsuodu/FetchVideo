@@ -2,8 +2,6 @@
 using FetchVideo.Services;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
-using JsonExtensions;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;

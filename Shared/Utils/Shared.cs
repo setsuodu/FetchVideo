@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace FetchVideo.Utils;
@@ -33,20 +34,98 @@ public class Shared
         return roomId;
     }
 
-    // Windows文件名不允许文件名含（\ / : * ? " < > |）
-    // 替换为 下划线 _
-    public static string MakeFileNameSafe(string name)
+    // Windows 保留设备名（不区分大小写，不能作为文件名，即便加了扩展名也不行）
+    private static readonly string[] ReservedNames =
     {
-        // 常见所有系统的不合法字符
-        //char[] invalidChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }; //跨平台写法
-        char[] invalidChars = Path.GetInvalidFileNameChars(); //Windows写法
+        "CON", "PRN", "AUX", "NUL",
+        "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
+        "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
+    };
 
-        // 过滤
-        foreach (char c in invalidChars)
+    /// <summary>
+    /// 生成 Windows + Linux 双兼容的安全文件名。
+    /// 不依赖 Path.GetInvalidFileNameChars()（该方法是运行时相关的，
+    /// 在 Linux 上跑只会挡掉 "/" 和 "\0"，Windows 的 : * ? " &lt; &gt; | 不会被拦下）。
+    /// 同时清理零宽字符 / 双向文本控制符 / 变体选择符 / 组合符号炸弹等
+    /// 肉眼看不见但会导致乱码、隐藏扩展名、脚本比对失败的 Unicode "地雷"。
+    /// </summary>
+    /// <param name="name">原始文件名（不含目录）</param>
+    /// <param name="maxBytes">UTF-8 字节数上限，默认 200（Linux ext4 单文件名硬限 255 字节）</param>
+    public static string MakeFileNameSafe(string name, int maxBytes = 200)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "untitled";
+
+        // 1. Unicode 归一化，避免同形异义字符/多余组合符导致的诡异结果
+        name = name.Normalize(NormalizationForm.FormC);
+
+        // 2. Windows 明确禁止的字符： \ / : * ? " < > |
+        //    （Linux 只硬性禁止 / 和 \0，但这些字符留着挪到 Windows 用就炸，所以两边都清）
+        char[] hardInvalid = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' };
+        foreach (char c in hardInvalid)
         {
             name = name.Replace(c, '_');
         }
+
+        // 3. 控制字符 (0x00-0x1F, 0x7F)：可能导致终端/脚本解析错误
+        name = Regex.Replace(name, @"[\x00-\x1F\x7F]", "_");
+
+        // 4. 零宽字符 & BOM：肉眼不可见，会让"看起来一样"的文件名实际不同
+        //    ZWSP U+200B, ZWNJ U+200C, ZWJ U+200D, BOM U+FEFF
+        name = Regex.Replace(name, @"[\u200B-\u200D\uFEFF]", "");
+
+        // 5. 双向文本控制符：可用来伪造文件名/隐藏扩展名（经典的 U+202E RTL override 攻击）
+        name = Regex.Replace(name, @"[\u202A-\u202E\u2066-\u2069]", "");
+
+        // 6. 变体选择符：会让普通字符变成 emoji 样式(如 👍 U+FE0F)，BMP 内 + 补充平面 VS17-256
+        name = Regex.Replace(name, @"[\uFE00-\uFE0F]", "");
+        name = Regex.Replace(name, @"\uDB40[\uDD00-\uDDEF]", ""); // U+E0100–E01EF 代理对
+
+        // 7. 组合符号炸弹：连续多个变音符号(Mn/Me/Mc)只保留 1 个，防止渲染异常/长度失控
+        name = Regex.Replace(name, @"(\p{Mn}|\p{Me}|\p{Mc}){2,}", "$1");
+
+        // 8. 白名单：只保留 字母(\p{L}，含中日韩) / 数字(\p{N}) / 空格 / 常见分隔标点
+        //    其余（颜文字、装饰符号、emoji 等）统一替换为 _
+        name = Regex.Replace(name, @"[^\p{L}\p{N}\s\-_\(\)\[\]【】\.,!?]", "_");
+
+        // 9. 折叠连续下划线/空格
+        name = Regex.Replace(name, @"[_\s]{2,}", "_");
+
+        // 10. Windows 不允许文件名以空格/点/下划线堆结尾那么难看
+        name = name.Trim();
+        name = name.TrimEnd('.', ' ', '_');
+
+        if (string.IsNullOrWhiteSpace(name))
+            name = "untitled";
+
+        // 11. Windows 保留设备名处理（CON.mp4 这种也算保留名，一样要加前缀）
+        string baseName = Path.GetFileNameWithoutExtension(name);
+        string ext = Path.GetExtension(name);
+        if (Array.IndexOf(ReservedNames, baseName.ToUpperInvariant()) >= 0)
+        {
+            name = "_" + baseName + ext;
+        }
+
+        // 12. 按 UTF-8 字节数截断（不是字符数！中文一个字 3 字节，
+        //     Linux ext4 单文件名硬限 255 字节，超了会直接报错）
+        name = TruncateByUtf8Bytes(name, maxBytes);
+
         return name;
+    }
+
+    /// <summary>
+    /// 按 UTF-8 字节数安全截断字符串，不会切断多字节字符导致乱码。
+    /// </summary>
+    private static string TruncateByUtf8Bytes(string name, int maxBytes)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(name);
+        if (bytes.Length <= maxBytes) return name;
+
+        int len = maxBytes;
+        // 回退到字符边界：UTF-8 续字节的高两位是 10xxxxxx
+        while (len > 0 && (bytes[len] & 0xC0) == 0x80) len--;
+
+        return Encoding.UTF8.GetString(bytes, 0, len);
     }
 
     // "又长大了是时候夺回属于我的一切了 - 沐汐BB - 哔哩哔哩直播，二次元弹幕直播平台"
