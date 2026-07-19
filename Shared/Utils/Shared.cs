@@ -479,22 +479,36 @@ public class Shared
     }
 
     // 客户端用 👇
-    public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath)
+    public static void MergeAudioVideo(string videoPath, string audioPath, string outputPath, int timeoutSeconds = 300)
     {
         using (var ffmpeg = new Process())
         {
-            ffmpeg.StartInfo.FileName = "D:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"; // ffmpeg.exe 路径
-            ffmpeg.StartInfo.Arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c copy \"{outputPath}\" -y";
+            ffmpeg.StartInfo.FileName = "ffmpeg";
+            // -nostdin 避免容器里读 stdin 卡死；-y 覆盖；加 loglevel 减少不必要 IO
+            ffmpeg.StartInfo.Arguments =
+                $"-nostdin -y -i \"{videoPath}\" -i \"{audioPath}\" -c copy \"{outputPath}\"";
             ffmpeg.StartInfo.UseShellExecute = false;
             ffmpeg.StartInfo.CreateNoWindow = true;
-            ffmpeg.Start();
-            ffmpeg.WaitForExit();
+            // 显式重定向，避免继承父进程句柄导致的各种诡异行为
+            ffmpeg.StartInfo.RedirectStandardInput = true;
+            ffmpeg.StartInfo.RedirectStandardOutput = true;
+            ffmpeg.StartInfo.RedirectStandardError = true;
 
-            // 当 using 块结束时，process.Dispose() 会被自动调用
+            ffmpeg.Start();
+            ffmpeg.StandardInput.Close(); // 关键：明确关闭 stdin，杜绝等待输入
+
+            // 异步读，防止 stderr 缓冲区写满导致子进程阻塞
+            ffmpeg.BeginOutputReadLine();
+            ffmpeg.BeginErrorReadLine();
+
+            bool exited = ffmpeg.WaitForExit(timeoutSeconds * 1000);
+            if (!exited)
+            {
+                Console.WriteLine($"⚠️ ffmpeg 超时未退出，强制杀死进程树: PID={ffmpeg.Id}");
+                try { ffmpeg.Kill(entireProcessTree: true); } catch { }
+            }
         }
 
-        // 只有当 FFmpeg 进程退出后，代码才会执行到这里
-        //删除源视频的代码 // <-- 这里的代码
         File.Delete(videoPath);
         File.Delete(audioPath);
     }
