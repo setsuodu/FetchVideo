@@ -113,6 +113,6 @@ public class MadouController
     public async Task Parallel(List<MadouDto> list)
     {
         var downloader = new MadouVideoDownloader();
-        await downloader.DownloadAllAsync(list, @"W:\【杏吧】");
+        await downloader.DownloadAllAsync(list, @"V:\【杏吧】");
     }
 }
