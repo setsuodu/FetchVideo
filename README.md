@@ -75,14 +75,14 @@ docker run -d --name downloader -p 8080:8080  -v C:/users/33913/downloads:/app/d
 ```
 💻（运行没问题）推送远程
 ```
-# 1. 先给本地镜像打上 1.0.7 标签
-docker tag fetch-service setsuodu/fetch-service:1.0.7
+# 1. 先给本地镜像打上 1.4.1 标签
+docker tag fetch-service setsuodu/fetch-service:1.4.1
 
 # 2. 再给本地镜像打上 latest 标签（如果你本地还没有 latest，可以再打一次）
 docker tag fetch-service setsuodu/fetch-service:latest
 
-# 3. 推送 1.0.7 标签
-docker push setsuodu/fetch-service:1.0.7
+# 3. 推送 1.4.1 标签
+docker push setsuodu/fetch-service:1.4.1
 
 # 4. 推送 latest 标签
 docker push setsuodu/fetch-service:latest
@@ -98,7 +98,9 @@ docker run -d \
   -p 8080:8080 \
   -v /vol1/1000/download:/app/downloads \
   -v /vol1/1000/docker/fetch-service:/app/data \
-  setsuodu/fetch-service:latest
+  setsuodu/fetch-service:1.4.1
+  
+docker run -d --name downloader -p 8080:8080 -v /vol1/1000/download:/app/downloads -v /vol1/1000/docker/fetch-service:/app/data setsuodu/fetch-service:1.4.1
 ```
 
 🐳删除旧的镜像，出现<none>是latest标签被取代了
