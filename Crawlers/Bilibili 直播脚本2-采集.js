@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Bilibili 自动采集（脚本2-调试版）
+// @name         Bilibili 直播脚本2-采集
 // @match        https://live.bilibili.com/*
 // @grant        GM_xmlhttpRequest
 // @connect      localhost

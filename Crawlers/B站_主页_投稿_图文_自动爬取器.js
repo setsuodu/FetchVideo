@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         B站用户动态/图文 (Opus) 元素URL爬取器
+// @name         B站_主页_投稿_图文_自动爬取器
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  自动爬取 B站 指定用户主页动态/图文(Opus)页面的所有元素链接并导出 JSON/CSV

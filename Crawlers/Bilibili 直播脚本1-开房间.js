@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Bilibili 自动开房间（脚本1-开标签）
+// @name         Bilibili 直播脚本1-开房间
 // @match        http://localhost:8080/index.html
 // @grant        GM_openInTab
 // ==/UserScript==

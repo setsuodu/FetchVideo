@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         B站投稿页 自动翻页合并导出（最终版）
+// @name         B站_主页_投稿_视频_自动翻页合并导出
 // @namespace    https://github.com/
 // @version      1.0
 // @description  自动翻页 + 内存合并 + 最后只导出一个文件
