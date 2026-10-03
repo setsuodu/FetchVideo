@@ -7,22 +7,25 @@ namespace FetchVideo.Controllers;
 
 public class YoutubeController
 {
-    private readonly string _downloadPath;
-    private readonly FFmpegManager _manager;
+    private readonly string _downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+    // Client 端无 DI，直接实例化，避免 NullReferenceException
+    private readonly FFmpegManager _manager = new FFmpegManager();
 
     // 创建进度回调
     Progress<double> progress = new Progress<double>(p =>
     {
-        Console.Write($"\r下载进度: {p:P1}"); // P1 = 百分比(一位小数)
+        Console.Write($"\r下载进度: {p:P1}");
     });
 
     public async Task<FFmpegTask> GetYoutubeVideoAsync(string url)
     {
         string title = await GetVideoInfoAsync(url);
-        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        string videoFile = Path.Combine(desktopPath, $"video.mp4");
-        string audioFile = Path.Combine(desktopPath, $"audio.m4a");
-        string outputFile = Path.Combine(desktopPath, $"{(string.IsNullOrEmpty(title) ? "output" : title)}.mp4");
+        string desktopPath = _downloadPath;
+        string safeTitle = string.IsNullOrEmpty(title) ? "output" : title.Trim();
+        // 用短 GUID 保证多开时临时文件不冲突
+        string tempId = Guid.NewGuid().ToString("N")[..8];
+
+        string outputFile = Path.Combine(desktopPath, $"{safeTitle}.mp4");
         Console.WriteLine($"outputFile是: {outputFile}");
 
         var youtube = new YoutubeClient();
@@ -30,22 +33,31 @@ public class YoutubeController
         var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
 
         // 视频流列表（调试用）
-        var videoStreams = streamManifest.GetVideoOnlyStreams();
-        foreach (var stream in videoStreams)
+        foreach (var stream in streamManifest.GetVideoOnlyStreams())
         {
             Console.WriteLine($"{stream.VideoQuality.Label} | {stream.Container.Name} | {(stream.Bitrate.BitsPerSecond / 1000000.0):F1} Mbps");
         }
 
-        // YouTube 已基本取消传统 Muxed（音视频合一）流
-        // GetMuxedStreams().GetWithHighestVideoQuality() 在空集合上会抛 "Input stream collection is empty"
-        // 因此始终使用 Video-Only + Audio-Only 分离下载，再用 FFmpeg 合并
+        // YouTube 已取消 Muxed 流 → 始终分离下载再合并
         var videoStream = streamManifest.GetVideoOnlyStreams().GetWithHighestVideoQuality();
-        var audioStream = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+
+        // 优先 mp4 容器音频，方便 -c copy 合进 mp4
+        var audioStream = streamManifest.GetAudioOnlyStreams()
+            .Where(s => s.Container == Container.Mp4)
+            .OrderByDescending(s => s.Bitrate)
+            .FirstOrDefault()
+            ?? streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
         if (videoStream == null || audioStream == null)
         {
             throw new InvalidOperationException("无法获取可用的视频或音频流（YouTube 已取消 Muxed 流，且自适应流不可用）");
         }
+
+        string videoExt = videoStream.Container.Name;
+        string audioExt = audioStream.Container.Name;
+        // 临时文件带 tempId，多开互不覆盖
+        string videoFile = Path.Combine(desktopPath, $"_yt_{tempId}_video.{videoExt}");
+        string audioFile = Path.Combine(desktopPath, $"_yt_{tempId}_audio.{audioExt}");
 
         Console.WriteLine($"选择视频: {videoStream.VideoQuality.Label} | {videoStream.Container.Name}");
         Console.WriteLine($"选择音频: {audioStream.Bitrate.BitsPerSecond / 1000.0:F0} kbps | {audioStream.Container.Name}");
@@ -55,14 +67,23 @@ public class YoutubeController
         await youtube.Videos.Streams.DownloadAsync(audioStream, audioFile, progress);
         Console.WriteLine($"音频下载: {audioFile}");
 
-        // FFmpeg 合并（-c copy 无需重新编码，速度极快）
-        string mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
+        string mergeCMD;
+        if (audioStream.Container == Container.Mp4 && videoStream.Container == Container.Mp4)
+        {
+            mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c copy \"{outputFile}\" -y";
+        }
+        else
+        {
+            mergeCMD = $"-i \"{videoFile}\" -i \"{audioFile}\" -c:v copy -c:a aac -b:a 192k \"{outputFile}\" -y";
+        }
+
         var processInfo = _manager.StartFFmpeg(mergeCMD, title);
-        Console.WriteLine($"下载完成: {DateTime.Now}");
+        Console.WriteLine($"合并中: {outputFile}");
         await processInfo.Process.WaitForExitAsync();
-        System.IO.File.Delete(videoFile);
-        System.IO.File.Delete(audioFile);
+        try { System.IO.File.Delete(videoFile); } catch { }
+        try { System.IO.File.Delete(audioFile); } catch { }
         processInfo.Command = "Merge";
+        Console.WriteLine($"完成: {outputFile}");
         return processInfo;
     }
 
@@ -70,7 +91,6 @@ public class YoutubeController
     {
         var youtube = new YoutubeClient();
         var video = await youtube.Videos.GetAsync(url);
-        // 取反：中文、字母、数字、空格，以外移除
         string title = Regex.Replace(video.Title, @"[^\u4e00-\u9fa5a-zA-Z0-9\s]", "");
         Console.WriteLine($"标题: {title}");
         Console.WriteLine($"作者: {video.Author.ChannelTitle}");
@@ -82,7 +102,6 @@ public class YoutubeController
         return title;
     }
 
-    // missav
     public async Task<FFmpegTask> GetM3U8(string m3u8)
     {
         string mergeCMD = $"-i \"{m3u8}\" -c copy \"{_downloadPath}.mp4\"";
