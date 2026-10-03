@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站投稿页 自动翻页合并导出（最终版）
 // @namespace    https://github.com/
-// @version      2.4
+// @version      1.0
 // @description  自动翻页 + 内存合并 + 最后只导出一个文件
 // @author       Grok
 // @match        https://space.bilibili.com/*/upload/video*
