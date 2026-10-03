@@ -1,5 +1,5 @@
-﻿# 阶段1: 构建
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# 阶段1: 构建
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 #COPY . .
 #RUN dotnet restore
@@ -31,7 +31,7 @@ RUN dotnet publish -c Release -o /app/publish \
     /p:FileVersion=${APP_VERSION}
 
 # 阶段2: 运行
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 
 # 添加这两行：重新声明 ARG 并设为 ENV
 ARG APP_VERSION=dev

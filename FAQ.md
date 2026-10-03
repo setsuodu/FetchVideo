@@ -1,7 +1,7 @@
 一、只改这里:
 ```
 # 阶段2: 运行
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 RUN apk add --no-cache ffmpeg
 ```
 
