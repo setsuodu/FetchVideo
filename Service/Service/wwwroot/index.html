@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8" />
@@ -184,6 +184,43 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 图文下载（独立区块，不与视频共用解析） -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">从油猴JSON批量下载B站UP图文</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    上传 图文 JSON 文件
+                                </label>
+                                <input class="form-control" type="file" id="biliOpusJsonFile" accept=".json">
+                            </div>
+
+                            <button type="button" class="btn btn-danger" id="biliOpusBatchStartBtn">
+                                🚀 开始批量下载图文
+                            </button>
+                            <button type="button" class="btn btn-warning ms-2" id="biliOpusBatchCheckBtn">
+                                🔍 检查缺失图文
+                            </button>
+
+                            <!-- 进度显示区 -->
+                            <div id="biliOpusBatchProgressArea" class="mt-4" style="display: none;">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>下载进度</span>
+                                    <span id="biliOpusBatchProgressText">0/0</span>
+                                </div>
+                                <div class="progress" style="height: 24px;">
+                                    <div id="biliOpusBatchProgressBar"
+                                         class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                                         role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div id="biliOpusBatchCurrentItem" class="text-muted small mt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

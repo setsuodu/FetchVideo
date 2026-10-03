@@ -1,4 +1,4 @@
-﻿using FetchVideo.Models;
+using FetchVideo.Models;
 using FetchVideo.Services;
 using FetchVideo.Utils;
 using HtmlAgilityPack;
@@ -847,4 +847,301 @@ public class BilibiliController : ControllerBase
         public string? Bvid { get; set; }  // 兼容大写
                                            // 其他字段可不写
     }
+
+
+    // ==================== 图文（opus）批量下载 ====================
+    // 只取 MODULE_TYPE_TOP → album.pics 中 new_dyn 大图
+    // 随机间隔 1.5~3 秒；图片全部落在根目录，文件名 = 标题+序号
+    [HttpPost("opus-batch-download")]
+    public async Task<IActionResult> OpusBatchDownload([FromBody] BiliOpusBatchRequest request)
+    {
+        if (request?.Items == null || request.Items.Count == 0)
+            return BadRequest(new { error = "items 列表不能为空" });
+
+        string folderName = string.IsNullOrWhiteSpace(request.Mid)
+            ? $"{request.UpName}_opus"
+            : $"{request.UpName}_{request.Mid}_opus";
+        string targetFolder = Path.Combine(_downloadPath, folderName);
+
+        if (!Directory.Exists(targetFolder))
+            Directory.CreateDirectory(targetFolder);
+
+        // 串行 + 随机延迟，不并发
+        _ = Task.Run(async () =>
+        {
+            var rnd = new Random();
+            int ok = 0, fail = 0, imgTotal = 0;
+            foreach (var item in request.Items)
+            {
+                try
+                {
+                    int n = await DownloadSingleOpusAsync(item.OpusId, item.Title, targetFolder);
+                    ok++;
+                    imgTotal += n;
+                }
+                catch (Exception ex)
+                {
+                    fail++;
+                    Console.WriteLine($"[图文下载] 失败 {item.OpusId}: {ex.Message}");
+                }
+
+                int delay = 1500 + rnd.Next(1500); // 1.5~3s
+                await Task.Delay(delay);
+            }
+            Console.WriteLine($"[图文下载] {folderName} 完成，条目成功 {ok} 失败 {fail}，共保存 {imgTotal} 张图");
+        });
+
+        return Ok(new { message = "已提交", folder = folderName, total = request.Items.Count });
+    }
+
+
+    /// <summary>
+    /// 调用 opus/detail，提取 MODULE_TYPE_TOP.album.pics：
+    /// - url（new_dyn 静图）必下
+    /// - live_url（dyn_video mp4）有则也下
+    /// 全部保存到 targetFolder 根目录，文件名 = 安全标题_序号.ext
+    /// </summary>
+    private async Task<int> DownloadSingleOpusAsync(string opusId, string title, string targetFolder)
+    {
+        if (string.IsNullOrWhiteSpace(opusId))
+            throw new ArgumentException("opusId 为空");
+
+        Console.WriteLine($"[图文下载] 开始: {title} ({opusId})");
+
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+        http.DefaultRequestHeaders.TryAddWithoutValidation("Referer", $"https://www.bilibili.com/opus/{opusId}");
+        http.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://www.bilibili.com");
+        http.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json, text/plain, */*");
+
+        string apiUrl =
+            $"https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/detail?id={opusId}&timezone_offset=-480&features=htmlNewStyle";
+
+        string json;
+        try
+        {
+            json = await http.GetStringAsync(apiUrl);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[图文下载] 首次请求失败，3s 后重试: {ex.Message}");
+            await Task.Delay(3000);
+            json = await http.GetStringAsync(apiUrl);
+        }
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (root.TryGetProperty("code", out var codeEl) && codeEl.GetInt32() != 0)
+        {
+            string msg = root.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+            throw new Exception($"API code={codeEl.GetInt32()} message={msg}");
+        }
+
+        var mediaList = ExtractNewDynAlbumMedia(root);
+        if (mediaList.Count == 0)
+        {
+            Console.WriteLine($"[图文下载] {opusId} 无 new_dyn 媒体，跳过");
+            return 0;
+        }
+
+        string safeTitle = Shared.MakeFileNameSafe(
+            string.IsNullOrWhiteSpace(title) ? opusId : title);
+        if (safeTitle.Length > 180)
+            safeTitle = safeTitle.Substring(0, 180);
+
+        int saved = 0;
+        int mediaIndex = 0; // 同一条图文内的序号（图/视频各自递增同一计数）
+
+        foreach (var media in mediaList)
+        {
+            mediaIndex++;
+            // 1) 静图 url
+            if (!string.IsNullOrEmpty(media.ImageUrl))
+            {
+                if (await SaveOneMediaAsync(http, media.ImageUrl, safeTitle, mediaIndex, targetFolder, opusId, preferExt: null))
+                    saved++;
+            }
+            // 2) 有 live_url 再下 mp4（同一序号，扩展名不同）
+            if (!string.IsNullOrEmpty(media.LiveUrl))
+            {
+                if (await SaveOneMediaAsync(http, media.LiveUrl, safeTitle, mediaIndex, targetFolder, opusId, preferExt: ".mp4"))
+                    saved++;
+            }
+        }
+
+        Console.WriteLine($"[图文下载] 完成: {title} → 根目录 {saved} 个文件（含可能的 mp4）");
+        return saved;
+    }
+
+    private async Task<bool> SaveOneMediaAsync(
+        HttpClient http, string rawUrl, string safeTitle, int index,
+        string targetFolder, string opusId, string? preferExt)
+    {
+        try
+        {
+            string cleanUrl = rawUrl.Split('@')[0];
+            if (cleanUrl.StartsWith("//"))
+                cleanUrl = "https:" + cleanUrl;
+            else if (cleanUrl.StartsWith("http://"))
+                cleanUrl = "https://" + cleanUrl.Substring(7);
+
+            string ext = preferExt ?? ".jpg";
+            if (preferExt == null)
+            {
+                int dot = cleanUrl.LastIndexOf('.');
+                if (dot > 0)
+                {
+                    string e = cleanUrl.Substring(dot).Split('?')[0].ToLowerInvariant();
+                    if (e is ".jpg" or ".jpeg" or ".png" or ".webp" or ".gif" or ".mp4")
+                        ext = e;
+                }
+            }
+
+            string fileName = $"{safeTitle}_{index}{ext}";
+            if (fileName.Length > 240)
+                fileName = $"{safeTitle.Substring(0, Math.Min(safeTitle.Length, 200))}_{index}{ext}";
+
+            string savePath = Path.Combine(targetFolder, fileName);
+            if (System.IO.File.Exists(savePath))
+                return true;
+
+            using var req = new HttpRequestMessage(HttpMethod.Get, cleanUrl);
+            req.Headers.TryAddWithoutValidation("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+            req.Headers.TryAddWithoutValidation("Referer", $"https://www.bilibili.com/opus/{opusId}");
+
+            using var resp = await http.SendAsync(req);
+            resp.EnsureSuccessStatusCode();
+            await using var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None);
+            await resp.Content.CopyToAsync(fs);
+            Console.WriteLine($"[图文下载] 已保存 {fileName}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[图文下载] 媒体失败 {rawUrl}: {ex.Message}");
+            return false;
+        }
+    }
+
+    private sealed class OpusMediaItem
+    {
+        public string? ImageUrl { get; set; }
+        public string? LiveUrl { get; set; }
+    }
+
+    /// <summary>
+    /// 只从 MODULE_TYPE_TOP.display.album.pics 取：
+    /// - url 含 new_dyn → 静图
+    /// - live_url 非空 → 动态视频 mp4
+    /// </summary>
+    private static List<OpusMediaItem> ExtractNewDynAlbumMedia(JsonElement root)
+    {
+        var list = new List<OpusMediaItem>();
+        if (!root.TryGetProperty("data", out var data)) return list;
+        if (!data.TryGetProperty("item", out var item)) return list;
+        if (!item.TryGetProperty("modules", out var modules) || modules.ValueKind != JsonValueKind.Array)
+            return list;
+
+        foreach (var mod in modules.EnumerateArray())
+        {
+            if (!mod.TryGetProperty("module_type", out var mt) || mt.GetString() != "MODULE_TYPE_TOP")
+                continue;
+            if (!mod.TryGetProperty("module_top", out var top)) continue;
+            if (!top.TryGetProperty("display", out var display)) continue;
+            if (!display.TryGetProperty("album", out var album)) continue;
+            if (!album.TryGetProperty("pics", out var pics) || pics.ValueKind != JsonValueKind.Array)
+                continue;
+
+            foreach (var pic in pics.EnumerateArray())
+            {
+                string? imgUrl = null;
+                string? liveUrl = null;
+
+                if (pic.TryGetProperty("url", out var urlEl))
+                {
+                    var u = urlEl.GetString();
+                    if (!string.IsNullOrEmpty(u) &&
+                        (u.Contains("/bfs/new_dyn/", StringComparison.OrdinalIgnoreCase) ||
+                         u.Contains("new_dyn", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        imgUrl = u;
+                    }
+                }
+
+                if (pic.TryGetProperty("live_url", out var liveEl))
+                {
+                    var lu = liveEl.GetString();
+                    if (!string.IsNullOrEmpty(lu) &&
+                        (lu.Contains(".mp4", StringComparison.OrdinalIgnoreCase) ||
+                         lu.Contains("dyn_video", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        liveUrl = lu;
+                    }
+                }
+
+                // 至少有一个才加入
+                if (imgUrl != null || liveUrl != null)
+                {
+                    list.Add(new OpusMediaItem { ImageUrl = imgUrl, LiveUrl = liveUrl });
+                }
+            }
+        }
+        return list;
+    }
+
+    // 检查缺失图文：根目录下是否已有「标题_」前缀文件
+    [HttpPost("opus-check-missing")]
+    public IActionResult OpusCheckMissing([FromBody] BiliOpusBatchRequest request)
+    {
+        if (request?.Items == null)
+            return BadRequest(new { error = "items 为空" });
+
+        string folderName = string.IsNullOrWhiteSpace(request.Mid)
+            ? $"{request.UpName}_opus"
+            : $"{request.UpName}_{request.Mid}_opus";
+        string folderPath = Path.Combine(_downloadPath, folderName);
+
+        var existingPrefixes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (Directory.Exists(folderPath))
+        {
+            foreach (var f in Directory.GetFiles(folderPath))
+            {
+                var name = Path.GetFileNameWithoutExtension(f);
+                var idx = name.LastIndexOf('_');
+                if (idx > 0 && int.TryParse(name.Substring(idx + 1), out _))
+                    existingPrefixes.Add(name.Substring(0, idx));
+                else
+                    existingPrefixes.Add(name);
+            }
+        }
+
+        var missing = new List<object>();
+        int downloaded = 0;
+        foreach (var i in request.Items)
+        {
+            string safe = Shared.MakeFileNameSafe(
+                string.IsNullOrWhiteSpace(i.Title) ? i.OpusId : i.Title);
+            if (safe.Length > 180) safe = safe.Substring(0, 180);
+
+            if (existingPrefixes.Contains(safe))
+                downloaded++;
+            else
+                missing.Add(new { title = i.Title, opusId = i.OpusId });
+        }
+
+        return Ok(new
+        {
+            totalInJson = request.Items.Count,
+            downloaded,
+            missingCount = missing.Count,
+            missing,
+            folderPath
+        });
+    }
+
+
+
+
 }
