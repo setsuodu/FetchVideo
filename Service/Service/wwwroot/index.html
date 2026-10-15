@@ -157,10 +157,18 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label">
-                                    上传 JSON 文件
+                                    ① 旧 JSON（可选，用于差包）
+                                </label>
+                                <input class="form-control" type="file" id="biliJsonFileOld" accept=".json">
+                                <div class="form-text">不传则全量下载；传了则只下载「新 JSON」里多出来的视频</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    ② 新 JSON（必填）
                                 </label>
                                 <input class="form-control" type="file" id="biliJsonFile" accept=".json">
                             </div>
+                            <div id="biliBatchStatusHint" class="form-text text-muted mb-3">请上传 JSON 文件</div>
 
                             <button type="button" class="btn btn-danger" id="biliBatchStartBtn">
                                 🚀 开始批量下载
