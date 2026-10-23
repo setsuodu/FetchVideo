@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  downloader:
+    image: setsuodu/fetch-service:1.5.2
+    container_name: downloader
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - /vol1/1000/download:/app/downloads
+      - /vol1/1000/docker/fetch-service:/app/data
