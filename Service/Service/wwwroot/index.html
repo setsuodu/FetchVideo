@@ -155,26 +155,27 @@
                             <h5 class="mb-0">从油猴JSON批量下载B站UP视频</h5>
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">
-                                    ① 旧 JSON（可选，用于差包）
-                                </label>
-                                <input class="form-control" type="file" id="biliJsonFileOld" accept=".json">
-                                <div class="form-text">不传则全量下载；传了则只下载「新 JSON」里多出来的视频</div>
-                            </div>
+                            <!-- 先传新 JSON，旧 JSON 默认灰色禁用，传了新的之后才可上传 -->
                             <div class="mb-3">
                                 <label class="form-label">
                                     ② 新 JSON（必填）
                                 </label>
                                 <input class="form-control" type="file" id="biliJsonFile" accept=".json">
                             </div>
+                            <div class="mb-3" id="biliOldJsonWrapper" style="opacity: 0.5; pointer-events: none;">
+                                <label class="form-label text-muted">
+                                    ① 旧 JSON（可选，用于差包）
+                                </label>
+                                <input class="form-control" type="file" id="biliJsonFileOld" accept=".json" disabled>
+                                <div class="form-text">不传则全量下载；传了则只下载「新 JSON」里多出来的视频。需先上传新 JSON 后才可选择。</div>
+                            </div>
                             <div id="biliBatchStatusHint" class="form-text text-muted mb-3">请上传 JSON 文件</div>
 
                             <button type="button" class="btn btn-danger" id="biliBatchStartBtn">
                                 🚀 开始批量下载
                             </button>
-                            <button type="button" class="btn btn-warning ms-2" id="biliBatchCheckBtn">
-                                🔍 检查缺失视频
+                            <button type="button" class="btn btn-secondary ms-2" id="biliBatchResetBtn">
+                                🔄 重置
                             </button>
 
                             <!-- 进度显示区 -->
@@ -209,8 +210,8 @@
                             <button type="button" class="btn btn-danger" id="biliOpusBatchStartBtn">
                                 🚀 开始批量下载图文
                             </button>
-                            <button type="button" class="btn btn-warning ms-2" id="biliOpusBatchCheckBtn">
-                                🔍 检查缺失图文
+                            <button type="button" class="btn btn-secondary ms-2" id="biliOpusBatchResetBtn">
+                                🔄 重置
                             </button>
 
                             <!-- 进度显示区 -->

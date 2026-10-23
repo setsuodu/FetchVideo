@@ -216,7 +216,11 @@ app.MapGet("/api/version", () => Results.Ok(new
     version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev"
 }));
 // 可选：默认跳转到 WebView
-app.MapGet("/", () => Results.Redirect("/index.html")); //重定向
+// app.MapGet("/", () => Results.Redirect("/index.html"));
+
+// 改成（顺序很重要）：
+app.UseDefaultFiles();   // 访问 / 时自动找 index.html
+app.UseStaticFiles();
 
 // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 // 关键：把 app 传给 GlobalConfig

@@ -1,12 +1,13 @@
 // js/bilibili-opus-batch-downloader.js
 // 图文独立区块，不与视频共用解析逻辑
+// 修改：删除检查缺失；新增重置按钮
 export function initBilibiliOpusBatchDownloader() {
     const fileInput = document.getElementById('biliOpusJsonFile');
     const startBtn = document.getElementById('biliOpusBatchStartBtn');
-    const checkBtn = document.getElementById('biliOpusBatchCheckBtn');
     const progressArea = document.getElementById('biliOpusBatchProgressArea');
     const progressText = document.getElementById('biliOpusBatchProgressText');
     const currentItem = document.getElementById('biliOpusBatchCurrentItem');
+    const resetBtn = document.getElementById('biliOpusBatchResetBtn');
 
     let parsedItems = [];
     let currentUpName = "";
@@ -63,10 +64,10 @@ export function initBilibiliOpusBatchDownloader() {
             return;
         }
 
-        progressArea.style.display = 'block';
+        if (progressArea) progressArea.style.display = 'block';
         startBtn.disabled = true;
-        progressText.textContent = `0/${parsedItems.length}`;
-        currentItem.textContent = '任务已提交，后台正在下载中...（可关闭此页面）';
+        if (progressText) progressText.textContent = `0/${parsedItems.length}`;
+        if (currentItem) currentItem.textContent = '任务已提交，后台正在下载中...（可关闭此页面）';
 
         try {
             const res = await fetch('/api/bilibili/opus-batch-download', {
@@ -85,7 +86,7 @@ export function initBilibiliOpusBatchDownloader() {
 
             if (res.ok) {
                 const data = await res.json();
-                currentItem.textContent = `任务已提交！后台正在下载图文（共 ${data.total} 条），可关闭此页面查看日志`;
+                if (currentItem) currentItem.textContent = `任务已提交！后台正在下载图文（共 ${data.total} 条），可关闭此页面查看日志`;
             } else {
                 const errData = await res.json().catch(() => ({}));
                 alert('提交失败: ' + (errData.error || res.statusText));
@@ -98,43 +99,20 @@ export function initBilibiliOpusBatchDownloader() {
         }
     });
 
-    if (checkBtn) {
-        checkBtn.addEventListener('click', async () => {
-            if (!parsedItems || parsedItems.length === 0) {
-                alert('请先上传图文 JSON 文件');
-                return;
-            }
-            currentItem.textContent = '正在对比文件夹...';
-            try {
-                const res = await fetch('/api/bilibili/opus-check-missing', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        upName: currentUpName || '未知UP',
-                        mid: currentMid || '',
-                        items: parsedItems.map(x => ({
-                            title: x.title || x.Title || '',
-                            opusId: String(x.opusId || x.OpusId || ''),
-                            opusUrl: x.opusUrl || x.OpusUrl || ''
-                        }))
-                    })
-                });
+    // 【重置】按钮：清空图文 JSON、状态、进度
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            parsedItems = [];
+            currentUpName = '';
+            currentMid = '';
 
-                const data = await res.json();
-                let msg = `📊 对比完成\nJSON: ${data.totalInJson} 条\n已下载: ${data.downloaded} 条\n缺失: ${data.missingCount} 条\n\n`;
-                if (data.missingCount > 0) {
-                    msg += "缺失图文：\n";
-                    data.missing.forEach(m => {
-                        msg += `- ${m.title} (${m.opusId})\n`;
-                    });
-                } else {
-                    msg += "✅ 全部下载完成！";
-                }
-                alert(msg);
-                currentItem.textContent = `对比完成 → 缺失 ${data.missingCount} 条`;
-            } catch (err) {
-                alert('检查失败: ' + err.message);
-            }
+            if (fileInput) fileInput.value = '';
+            if (progressArea) progressArea.style.display = 'none';
+            if (progressText) progressText.textContent = '0/0';
+            if (currentItem) currentItem.textContent = '';
+            if (startBtn) startBtn.disabled = false;
+
+            alert('已重置，请重新上传图文 JSON');
         });
     }
 }

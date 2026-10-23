@@ -1,20 +1,43 @@
 // js/bilibili-batch-downloader.js
 // 支持上传 1 个 JSON（全量下载）或 2 个 JSON（计算差包，只下载新增视频）
+// 修改：旧 JSON 默认灰色禁用，需先传新 JSON 才可上传；删除检查缺失；新增重置按钮
 export function initBilibiliBatchDownloader() {
     const fileInputOld = document.getElementById('biliJsonFileOld');
     const fileInputNew = document.getElementById('biliJsonFile');
     const startBtn = document.getElementById('biliBatchStartBtn');
-    const checkBtn = document.getElementById('biliBatchCheckBtn');
     const progressArea = document.getElementById('biliBatchProgressArea');
     const progressText = document.getElementById('biliBatchProgressText');
     const currentVideo = document.getElementById('biliBatchCurrentVideo');
     const statusHint = document.getElementById('biliBatchStatusHint');
+    const resetBtn = document.getElementById('biliBatchResetBtn');
+    const oldJsonWrapper = document.getElementById('biliOldJsonWrapper');
 
     let oldVideos = [];      // 旧 JSON（可选）
     let newVideos = [];      // 新 JSON（主）
     let currentUpName = "";
     let currentMid = "";
     let isDiffMode = false;  // 是否处于差包模式
+
+    // 初始：禁用旧 JSON 上传（灰色）
+    function setOldInputEnabled(enabled) {
+        if (fileInputOld) {
+            fileInputOld.disabled = !enabled;
+        }
+        if (oldJsonWrapper) {
+            if (enabled) {
+                oldJsonWrapper.classList.remove('opacity-50', 'pe-none');
+                oldJsonWrapper.style.opacity = '1';
+                oldJsonWrapper.style.pointerEvents = 'auto';
+            } else {
+                oldJsonWrapper.classList.add('opacity-50');
+                oldJsonWrapper.style.opacity = '0.5';
+                oldJsonWrapper.style.pointerEvents = 'none';
+            }
+        }
+    }
+
+    // 初始禁用
+    setOldInputEnabled(false);
 
     function parseFileName(fileName) {
         const base = fileName.replace(/\.json$/i, '');
@@ -43,8 +66,11 @@ export function initBilibiliBatchDownloader() {
         if (newVideos.length === 0) {
             statusHint.textContent = '请上传 JSON 文件';
             statusHint.className = 'form-text text-muted';
+            setOldInputEnabled(false);
             return;
         }
+        // 有新 JSON 后才允许上传旧 JSON
+        setOldInputEnabled(true);
         if (oldVideos.length === 0) {
             statusHint.innerHTML = `📦 <strong>全量模式</strong>：将下载全部 <strong>${newVideos.length}</strong> 个视频`;
             statusHint.className = 'form-text text-primary';
@@ -88,6 +114,9 @@ export function initBilibiliBatchDownloader() {
                 newVideos = [];
                 currentUpName = '';
                 currentMid = '';
+                // 清空新时，也清旧并禁用旧输入
+                oldVideos = [];
+                if (fileInputOld) fileInputOld.value = '';
                 updateHint();
                 return;
             }
@@ -111,97 +140,77 @@ export function initBilibiliBatchDownloader() {
     }
 
     // 点击开始下载
-    startBtn.addEventListener('click', async () => {
-        if (!newVideos || newVideos.length === 0) {
-            alert('请先上传【新 JSON】文件');
-            return;
-        }
-
-        let videosToDownload = newVideos;
-        let modeLabel = '全量';
-
-        if (oldVideos && oldVideos.length > 0) {
-            videosToDownload = computeDiff(oldVideos, newVideos);
-            modeLabel = '差包';
-            if (videosToDownload.length === 0) {
-                alert('差包结果为空：新 JSON 中没有比旧 JSON 多出的视频，无需下载');
-                return;
-            }
-        }
-
-        // 显示进度区
-        progressArea.style.display = 'block';
-        startBtn.disabled = true;
-        progressText.textContent = `0/${videosToDownload.length}`;
-        currentVideo.textContent = `【${modeLabel}】任务已提交，后台正在下载中...（可关闭此页面）`;
-
-        try {
-            const res = await fetch('/api/bilibili/batch-download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    upName: currentUpName || '未知UP',
-                    mid: currentMid || '',
-                    videos: videosToDownload
-                })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                currentVideo.textContent = `【${modeLabel}】任务已提交！后台正在下载（共 ${data.total} 个），可关闭此页面查看日志`;
-            } else {
-                const errData = await res.json().catch(() => ({}));
-                alert('提交失败: ' + (errData.error || res.statusText));
-                startBtn.disabled = false;
-            }
-        } catch (err) {
-            console.error(err);
-            alert('请求失败: ' + err.message);
-            startBtn.disabled = false;
-        }
-    });
-
-    // 检查缺失按钮（仍基于新 JSON 全量对比本地文件夹）
-    if (checkBtn) {
-        checkBtn.addEventListener('click', async () => {
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
             if (!newVideos || newVideos.length === 0) {
                 alert('请先上传【新 JSON】文件');
                 return;
             }
-            if (!currentUpName || !currentMid) {
-                alert('无法识别 UP 名和 MID，请确认文件名格式为「UP名_MID_xxx.json」');
-                return;
+
+            let videosToDownload = newVideos;
+            let modeLabel = '全量';
+
+            if (oldVideos && oldVideos.length > 0) {
+                videosToDownload = computeDiff(oldVideos, newVideos);
+                modeLabel = '差包';
+                if (videosToDownload.length === 0) {
+                    alert('差包结果为空：新 JSON 中没有比旧 JSON 多出的视频，无需下载');
+                    return;
+                }
             }
 
-            currentVideo.textContent = '正在对比文件夹...';
+            // 显示进度区
+            if (progressArea) progressArea.style.display = 'block';
+            startBtn.disabled = true;
+            if (progressText) progressText.textContent = `0/${videosToDownload.length}`;
+            if (currentVideo) currentVideo.textContent = `【${modeLabel}】任务已提交，后台正在下载中...（可关闭此页面）`;
+
             try {
-                const res = await fetch('/api/bilibili/check-missing', {
+                const res = await fetch('/api/bilibili/batch-download', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        upName: currentUpName,
-                        mid: currentMid,
-                        videos: newVideos
+                        upName: currentUpName || '未知UP',
+                        mid: currentMid || '',
+                        videos: videosToDownload
                     })
                 });
 
-                const data = await res.json();
-                let msg = `📊 对比完成\nJSON: ${data.totalInJson} 个\n已下载: ${data.downloaded} 个\n缺失: ${data.missingCount} 个\n\n`;
-
-                if (data.missingCount > 0) {
-                    msg += "缺失视频：\n";
-                    data.missing.forEach(m => {
-                        msg += `- ${m.title} (${m.bvid})\n`;
-                    });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (currentVideo) currentVideo.textContent = `【${modeLabel}】任务已提交！后台正在下载（共 ${data.total} 个），可关闭此页面查看日志`;
                 } else {
-                    msg += "✅ 全部下载完成！";
+                    const errData = await res.json().catch(() => ({}));
+                    alert('提交失败: ' + (errData.error || res.statusText));
+                    startBtn.disabled = false;
                 }
-
-                alert(msg);
-                currentVideo.textContent = `对比完成 → 缺失 ${data.missingCount} 个`;
             } catch (err) {
-                alert('检查失败: ' + err.message);
+                console.error(err);
+                alert('请求失败: ' + err.message);
+                startBtn.disabled = false;
             }
+        });
+    }
+
+    // 【重置】按钮：清空新旧 JSON、状态、进度
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            oldVideos = [];
+            newVideos = [];
+            currentUpName = '';
+            currentMid = '';
+            isDiffMode = false;
+
+            if (fileInputOld) fileInputOld.value = '';
+            if (fileInputNew) fileInputNew.value = '';
+            if (progressArea) progressArea.style.display = 'none';
+            if (progressText) progressText.textContent = '0/0';
+            if (currentVideo) currentVideo.textContent = '';
+            if (startBtn) startBtn.disabled = false;
+
+            setOldInputEnabled(false);
+            updateHint();
+            alert('已重置，请重新上传 JSON');
         });
     }
 }
