@@ -1,4 +1,5 @@
-﻿// js/video-downloader.js
+import { BASE } from './config.js';
+// js/video-downloader.js
 export function initVideoDownloader() {
     const form = document.getElementById('videoDownloadForm');
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -34,7 +35,7 @@ export function initVideoDownloader() {
 
             try {
                 const encodedUrl = encodeURIComponent(videoUrl);
-                const response = await fetch(`/api/bilibili/get_cover?url=${encodedUrl}`, {
+                const response = await fetch(`${BASE}/api/bilibili/get_cover?url=${encodedUrl}`, {
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
@@ -232,7 +233,7 @@ export function initVideoDownloader() {
         console.log(`录制时长: ${recordLength} min`);
 
         // ====================== 关键修改：加上 subscribe ======================
-        const apiUrl = `/api/route/check?url=${videoUrl}&length=${recordLength}&subscribe=${subscribe}`;
+        const apiUrl = `${BASE}/api/route/check?url=${videoUrl}&length=${recordLength}&subscribe=${subscribe}`;
         // =====================================================================
 
         try {
@@ -323,7 +324,7 @@ export function initVideoDownloader() {
         submitBtn.textContent = '停止中...';
 
         try {
-            const stopResponse = await fetch(`/api/route/stop?taskId=${currentTaskId}`, {
+            const stopResponse = await fetch(`${BASE}/api/route/stop?taskId=${currentTaskId}`, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json' }
             });

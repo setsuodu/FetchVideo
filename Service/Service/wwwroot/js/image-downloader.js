@@ -1,4 +1,5 @@
-﻿// js/image-downloader.js
+import { BASE } from './config.js';
+// js/image-downloader.js
 export function initImageDownloader() {
     const form = document.getElementById('imageDownloadForm');
     const resultDiv = document.getElementById('imageResult');
@@ -100,7 +101,7 @@ export function initImageDownloader() {
                 // 去掉 .txt 扩展名作为保存的文件夹名字
                 const folderName = txtFile.name.replace(/\.[^/.]+$/, "");
 
-                response = await fetch('/api/download/download-list', {
+                response = await fetch(BASE + '/api/download/download-list', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -111,7 +112,7 @@ export function initImageDownloader() {
                 });
             } else {
                 // 【模式一：原有的连号下载】
-                response = await fetch('/api/download/download-batch', {
+                response = await fetch(BASE + '/api/download/download-batch', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

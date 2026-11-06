@@ -1,7 +1,8 @@
-﻿// schedule.js
+import { BASE } from './config.js';
+// schedule.js
 export function initScheduleManager() {
-    const API_GET = '/api/schedule/current';
-    const API_POST = '/api/schedule/update';
+    const API_GET = BASE + '/api/schedule/current';
+    const API_POST = BASE + '/api/schedule/update';
 
     const scheduleForm = document.getElementById('scheduleForm');
     const scheduleJsonInput = document.getElementById('scheduleJson');

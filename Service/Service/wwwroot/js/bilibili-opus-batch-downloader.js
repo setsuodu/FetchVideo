@@ -1,3 +1,4 @@
+import { BASE } from './config.js';
 // js/bilibili-opus-batch-downloader.js
 // 图文独立区块，不与视频共用解析逻辑
 // 修改：删除检查缺失；新增重置按钮
@@ -70,7 +71,7 @@ export function initBilibiliOpusBatchDownloader() {
         if (currentItem) currentItem.textContent = '任务已提交，后台正在下载中...（可关闭此页面）';
 
         try {
-            const res = await fetch('/api/bilibili/opus-batch-download', {
+            const res = await fetch(BASE + '/api/bilibili/opus-batch-download', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

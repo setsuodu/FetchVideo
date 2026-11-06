@@ -1,3 +1,4 @@
+import { BASE } from './config.js';
 // js/bilibili-batch-downloader.js
 // 支持上传 1 个 JSON（全量下载）或 2 个 JSON（计算差包，只下载新增视频）
 // 修改：旧 JSON 默认灰色禁用，需先传新 JSON 才可上传；删除检查缺失；新增重置按钮
@@ -166,7 +167,7 @@ export function initBilibiliBatchDownloader() {
             if (currentVideo) currentVideo.textContent = `【${modeLabel}】任务已提交，后台正在下载中...（可关闭此页面）`;
 
             try {
-                const res = await fetch('/api/bilibili/batch-download', {
+                const res = await fetch(BASE + '/api/bilibili/batch-download', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

@@ -1,3 +1,4 @@
+import { BASE } from './config.js';
 // js/main.js
 import { initImageDownloader } from './image-downloader.js';
 import { initVideoDownloader } from './video-downloader.js';
@@ -28,7 +29,7 @@ function initVConsole() {
 async function loadAppVersion() {
     //alert('✅ 版本号加载...');
     try {
-        const response = await fetch('/api/version');
+        const response = await fetch(BASE + '/api/version');
         if (!response.ok) throw new Error('Failed to fetch version');
 
         const data = await response.json();

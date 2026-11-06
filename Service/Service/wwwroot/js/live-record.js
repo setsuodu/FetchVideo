@@ -1,10 +1,11 @@
-﻿// live-record.js
+import { BASE } from './config.js';
+// live-record.js
 export function initLiveRecordManager() {
-    const API_GET_ROOMS = '/api/linkItem/get_rooms';
-    const API_SET_ROOMS = '/api/linkItem/set_rooms';
-    const API_SUBSCRIBE = '/api/linkItem/toggle_subscribe';
-    const API_PROCESS = '/api/bilibili/running_tasks';
-    const API_STOP = '/api/bilibili/stop_tasks';
+    const API_GET_ROOMS = BASE + '/api/linkItem/get_rooms';
+    const API_SET_ROOMS = BASE + '/api/linkItem/set_rooms';
+    const API_SUBSCRIBE = BASE + '/api/linkItem/toggle_subscribe';
+    const API_PROCESS = BASE + '/api/bilibili/running_tasks';
+    const API_STOP = BASE + '/api/bilibili/stop_tasks';
 
     let allRoomsData = [];  // 保存完整数据用于过滤
     let countdownIntervalId = null; // 用于管理全局定时器，防止多次渲染后定时器叠加叠加变快
